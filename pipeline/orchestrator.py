@@ -15,6 +15,7 @@ import config
 from pipeline.storyboard import generate_storyboard
 from pipeline.generator import VideoGenerator, ShotResult
 from tools import ffmpeg_ops, beat_analyzer
+from tools.tts import synthesize_voiceover, TTSSegment
 
 console = Console()
 
@@ -106,10 +107,9 @@ class VideoPipeline:
 
         # ─── Stage 3: 拼接 + 转场 ───
         console.print("\n[bold cyan]🔗 Stage 3: 拼接 & 转场...[/bold cyan]")
-        transitions = [
-            s.get("transition_to_next", "crossfade")
-            for s in storyboard["shots"][:len(video_files)]
-        ]
+        # 根据相邻镜头运动方向智能推导转场 (覆盖 LLM 无脑 crossfade)
+        used_shots = storyboard["shots"][:len(video_files)]
+        transitions = ffmpeg_ops.infer_transitions(used_shots)
         concat_path = str(self.workspace / "concat.mp4")
         ffmpeg_ops.concat_with_transitions(video_files, transitions, concat_path)
         console.print(f"   ✓ 拼接完成 ({ffmpeg_ops.get_video_duration(concat_path):.1f}s)")
@@ -152,18 +152,48 @@ class VideoPipeline:
             audio_path = graded_path
             console.print("   - 无外部音乐, 保留 Seedance 原生音频")
 
+        # ─── Stage 5.5: 口播合成 + ducking ───
+        console.print("\n[bold cyan]🎙️ Stage 5.5: 口播合成...[/bold cyan]")
+        vo_segments: list[TTSSegment] = []
+        try:
+            vo_segments = await synthesize_voiceover(storyboard, str(self.workspace))
+        except Exception as e:
+            console.print(f"   ⚠ TTS 合成失败 ({e}), 跳过口播")
+
+        vo_path = audio_path  # 默认不变
+        if vo_segments:
+            console.print(f"   ✓ 合成 {len(vo_segments)} 段口播")
+
+            # 计算每段口播在成片中的起始时间 (累加镜头时长)
+            shot_start_times = self._calc_shot_start_times(storyboard)
+            vo_mix_input = []
+            for seg in vo_segments:
+                start = shot_start_times.get(seg.shot_id, 0.0) + 0.5  # 延迟 0.5s 开口
+                vo_mix_input.append({
+                    "audio_path": seg.audio_path,
+                    "start_time": start,
+                    "duration": seg.duration,
+                })
+
+            vo_path = str(self.workspace / "with_voiceover.mp4")
+            ffmpeg_ops.mix_voiceover_with_ducking(audio_path, vo_mix_input, vo_path)
+            console.print("   ✓ 口播已混入 (ducking)")
+        else:
+            console.print("   - 无口播内容")
+
         # ─── Stage 6: 字幕 ───
         console.print("\n[bold cyan]💬 Stage 6: 字幕...[/bold cyan]")
         srt_path = str(self.workspace / "subtitles.srt")
         subtitled_path = str(self.workspace / "subtitled.mp4")
 
-        self._generate_srt(storyboard, srt_path)
+        # 优先用 TTS 真实时长对齐字幕; 无口播时退回镜头时长
+        self._generate_srt(storyboard, srt_path, vo_segments=vo_segments)
 
         if Path(srt_path).stat().st_size > 10:
-            ffmpeg_ops.burn_subtitles(audio_path, srt_path, subtitled_path)
+            ffmpeg_ops.burn_subtitles(vo_path, srt_path, subtitled_path)
             console.print("   ✓ 字幕已烧录")
         else:
-            subtitled_path = audio_path
+            subtitled_path = vo_path
             console.print("   - 无字幕内容")
 
         # ─── Stage 7: 片头片尾 + 多平台导出 ───
@@ -201,31 +231,59 @@ class VideoPipeline:
 
         return final_path
 
-    def _generate_srt(self, storyboard: dict, output_path: str):
-        """根据分镜生成 SRT 字幕"""
+    def _generate_srt(
+        self,
+        storyboard: dict,
+        output_path: str,
+        vo_segments: list[TTSSegment] | None = None,
+    ):
+        """根据分镜生成 SRT 字幕
+
+        如果有 TTS 口播, 用语音真实时长控制字幕显示时长 (与语音同步);
+        如果没有, 退回按镜头时长机械计算 (向下兼容)。
+        """
+        # 建立 shot_id → TTS 时长的映射
+        vo_dur_map: dict[int, float] = {}
+        if vo_segments:
+            for seg in vo_segments:
+                vo_dur_map[seg.shot_id] = seg.duration
+
+        shot_starts = self._calc_shot_start_times(storyboard)
         lines = []
-        current_time = 0.0
         idx = 1
 
         for shot in storyboard["shots"]:
             text = shot.get("subtitle_text", "")
             if not text:
-                current_time += shot["duration"]
                 continue
 
-            start = current_time + 0.5
-            end = current_time + shot["duration"] - 0.5
+            base_start = shot_starts.get(shot["shot_id"], 0.0)
+            start = base_start + 0.5  # 延迟 0.5s 出现
+
+            if shot["shot_id"] in vo_dur_map:
+                # 有口播 → 字幕跟语音时长走
+                end = start + vo_dur_map[shot["shot_id"]]
+            else:
+                # 无口播 → 退回镜头时长 (兼容旧逻辑)
+                end = base_start + shot["duration"] - 0.5
 
             lines.append(f"{idx}")
             lines.append(f"{self._fmt_time(start)} --> {self._fmt_time(end)}")
             lines.append(text)
             lines.append("")
-
             idx += 1
-            current_time += shot["duration"]
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
+
+    def _calc_shot_start_times(self, storyboard: dict) -> dict[int, float]:
+        """计算每个镜头在成片中的起始时间"""
+        result = {}
+        t = 0.0
+        for shot in storyboard["shots"]:
+            result[shot["shot_id"]] = t
+            t += shot["duration"]
+        return result
 
     @staticmethod
     def _fmt_time(seconds: float) -> str:

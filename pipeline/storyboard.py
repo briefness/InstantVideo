@@ -195,7 +195,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个专业的电影级视频分镜师。根�
       "lighting": "soft golden hour, rim light",
       "mood": "premium",
       "negative_prompt": "avoid jitter, stable motion, no text artifacts",
-      "subtitle_text": "字幕文案 (中文)",
+      "subtitle_text": "字幕/口播文案 (必须中文)",
       "transition_to_next": "crossfade",
       "generate_audio": true,
       "characters": ["main"],
@@ -205,4 +205,5 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个专业的电影级视频分镜师。根�
 }
 
 注意: shot 1 如果包含角色, 设置 "extract_character_ref": true (用于后续镜头的角色一致性)
+重要: `subtitle_text` 必须用中文 (面向观众); 仅 `prompt_en` 用英文 (给 Seedance 模型)
 """

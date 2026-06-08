@@ -51,25 +51,109 @@ def normalize_video(
     resolution: str = "1920:1080",
     pixel_format: str = "yuv420p",
 ):
-    """统一视频规格 (帧率/分辨率/编码)，确保后续拼接不报错"""
-    cmd = [
-        "ffmpeg", "-y", "-i", input_path,
-        "-vf", (
-            f"fps={fps},"
-            f"scale={resolution}:force_original_aspect_ratio=decrease,"
-            f"pad={resolution}:(ow-iw)/2:(oh-ih)/2:color=black,"
-            f"setsar=1:1"
-        ),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-        "-pix_fmt", pixel_format,
-        "-c:a", "aac", "-ar", "48000", "-ac", "2",
-        "-movflags", "+faststart",
-        output_path,
-    ]
+    """统一视频规格 (帧率/分辨率/编码)，确保后续拼接不报错
+
+    关键: 始终保证输出带一条音轨。有原生音频则重编码；无音频则补静音轨,
+    否则后续 acrossfade 拼接会因某些片段缺音频流而报错。
+    """
+    vf = (
+        f"fps={fps},"
+        f"scale={resolution}:force_original_aspect_ratio=decrease,"
+        f"pad={resolution}:(ow-iw)/2:(oh-ih)/2:color=black,"
+        f"setsar=1:1"
+    )
+
+    if has_audio_track(input_path):
+        # 有原生音频 → 正常重编码
+        cmd = [
+            "ffmpeg", "-y", "-i", input_path,
+            "-vf", vf,
+            "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+            "-pix_fmt", pixel_format,
+            "-c:a", "aac", "-ar", "48000", "-ac", "2",
+            "-movflags", "+faststart",
+            output_path,
+        ]
+    else:
+        # 无音频 → 用 anullsrc 补一条与视频等长的静音轨
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", input_path,
+            "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+            "-vf", vf,
+            "-map", "0:v", "-map", "1:a",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+            "-pix_fmt", pixel_format,
+            "-c:a", "aac", "-ar", "48000", "-ac", "2",
+            "-shortest",  # 静音轨随视频长度截断
+            "-movflags", "+faststart",
+            output_path,
+        ]
     subprocess.run(cmd, check=True, capture_output=True)
 
 
 # ─── 视频拼接 & 转场 ───
+
+
+def infer_transitions(shots: list[dict]) -> list[str]:
+    """根据相邻镜头运动方向智能推导转场类型
+
+    比 LLM 无脑 crossfade 更有节奏感:
+    - 快速运动 → cut (硬切保持冲击力)
+    - 收束/升华 (pull-out/crane-up) → fadeblack (段落感)
+    - 同方向衔接 → dissolve (平滑过渡)
+    - 方向突变 → fade (柔化跳切)
+    - 默认/安全 → crossfade
+    """
+    if len(shots) < 2:
+        return []
+
+    transitions = []
+    for i in range(len(shots) - 1):
+        current = shots[i]
+        next_shot = shots[i + 1]
+
+        # 提取运动信息
+        cam_cur = current.get("camera", {})
+        cam_nxt = next_shot.get("camera", {})
+        move_cur = cam_cur.get("primary_movement", "").lower()
+        move_nxt = cam_nxt.get("primary_movement", "").lower()
+        speed_cur = cam_cur.get("speed", "").lower()
+
+        # 如果分镜明确指定了非默认转场, 尊重它
+        explicit = current.get("transition_to_next", "")
+        if explicit and explicit != "crossfade":
+            transitions.append(explicit)
+            continue
+
+        # 快速运动之间 → 硬切
+        if speed_cur in ("fast", "quick", "rapid") or "fast" in move_cur:
+            transitions.append("cut")
+        # 收束/升华镜头 (pull-out, crane-up, pull-back) → 渐黑
+        elif any(kw in move_cur for kw in ("pull-out", "pull-back", "crane-up", "drone-up")):
+            transitions.append("fade_to_black")
+        # 相同运动方向衔接 → dissolve
+        elif move_cur and move_nxt and _extract_direction(move_cur) == _extract_direction(move_nxt):
+            transitions.append("dissolve")
+        # 方向突变 → 标准 fade
+        elif move_cur and move_nxt and _extract_direction(move_cur) != _extract_direction(move_nxt):
+            transitions.append("crossfade")
+        # 默认
+        else:
+            transitions.append("crossfade")
+
+    return transitions
+
+
+def _extract_direction(movement: str) -> str:
+    """从运镜描述中提取核心方向关键词"""
+    for d in ("push-in", "pull-out", "pull-back", "pan-left", "pan-right",
+              "pan", "orbit", "tracking", "crane-up", "crane-down",
+              "drone", "fixed", "handheld", "tilt-up", "tilt-down"):
+        if d in movement:
+            return d
+    return movement.split()[0] if movement else "unknown"
+
 
 TRANSITION_MAP = {
     "crossfade": "fade",
@@ -110,9 +194,11 @@ def concat_with_transitions(
         concat_simple(video_files, output_path)
         return
 
-    # 构建 xfade filter chain
+    # 构建 xfade filter chain (视频) + acrossfade chain (音频)
     # 4 个输入需要 3 次 xfade: [0][1]→[v0], [v0][2]→[v1], [v1][3]→[vout]
-    filter_parts = []
+    # 音频同步用 acrossfade 做等长交叉淡化, 保证原生音频不丢、转场处平滑
+    v_parts = []
+    a_parts = []
     cumulative_offset = 0.0
 
     for i in range(len(video_files) - 1):
@@ -122,21 +208,30 @@ def concat_with_transitions(
         # offset = 前面所有视频总时长 - 已使用的转场时长
         if i == 0:
             cumulative_offset = durations[0] - transition_duration
-            prev_label = "[0:v]"
+            v_prev = "[0:v]"
+            a_prev = "[0:a]"
         else:
             cumulative_offset += durations[i] - transition_duration
-            prev_label = f"[v{i-1}]"
+            v_prev = f"[v{i-1}]"
+            a_prev = f"[a{i-1}]"
 
-        next_label = f"[{i+1}:v]"
-        # 最后一次输出用 [vout]
-        out_label = "[vout]" if i == len(video_files) - 2 else f"[v{i}]"
+        v_next = f"[{i+1}:v]"
+        a_next = f"[{i+1}:a]"
+        # 最后一次输出用 [vout]/[aout]
+        is_last = i == len(video_files) - 2
+        v_out = "[vout]" if is_last else f"[v{i}]"
+        a_out = "[aout]" if is_last else f"[a{i}]"
 
-        filter_parts.append(
-            f"{prev_label}{next_label}xfade=transition={xfade_name}"
-            f":duration={transition_duration}:offset={cumulative_offset:.3f}{out_label}"
+        v_parts.append(
+            f"{v_prev}{v_next}xfade=transition={xfade_name}"
+            f":duration={transition_duration}:offset={cumulative_offset:.3f}{v_out}"
+        )
+        # acrossfade 把两段音频交叉淡化拼接, 时长与视频转场一致
+        a_parts.append(
+            f"{a_prev}{a_next}acrossfade=d={transition_duration}{a_out}"
         )
 
-    filter_complex = ";".join(filter_parts)
+    filter_complex = ";".join(v_parts + a_parts)
 
     # 构建命令
     cmd = ["ffmpeg", "-y"]
@@ -144,8 +239,9 @@ def concat_with_transitions(
         cmd += ["-i", f]
     cmd += [
         "-filter_complex", filter_complex,
-        "-map", "[vout]",
+        "-map", "[vout]", "-map", "[aout]",   # ← 同时映射视频和音频
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
         output_path,
     ]
@@ -232,6 +328,82 @@ def add_background_music(
         "ffmpeg", "-y",
         "-i", video_path,
         "-i", music_path,
+        "-filter_complex", filter_complex,
+        "-map", "0:v", "-map", "[aout]",
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        output_path,
+    ]
+    subprocess.run(cmd, check=True, capture_output=True)
+
+
+def mix_voiceover_with_ducking(
+    video_path: str,
+    voiceover_segments: list[dict],
+    output_path: str,
+    vo_volume: float = 1.0,
+    ducking_ratio: float = 4.0,
+):
+    """将口播语音混入视频，带 ducking（人声出现时自动压低背景）
+
+    voiceover_segments: [{"audio_path": str, "start_time": float, "duration": float}, ...]
+    ducking_ratio: 侧链压缩比，越大 BGM 压得越狠 (推荐 3-6)
+    """
+    if not voiceover_segments:
+        # 无口播，直接复制
+        subprocess.run(["cp", video_path, output_path], check=True)
+        return
+
+    video_duration = get_video_duration(video_path)
+
+    # 策略: 先把所有口播片段用 adelay+amix 合并成一条完整的口播轨,
+    # 再用 sidechaincompress 让口播轨控制背景音量 (ducking)。
+    #
+    # 输入流:
+    #   0 = 视频 (含 BGM + 原生音频)
+    #   1..N = 各口播音频
+
+    cmd = ["ffmpeg", "-y", "-i", video_path]
+    for seg in voiceover_segments:
+        cmd += ["-i", seg["audio_path"]]
+
+    n = len(voiceover_segments)
+
+    # 构建 filter_complex
+    parts = []
+
+    # 1. 每段口播做延迟定位 + 音量
+    for i, seg in enumerate(voiceover_segments):
+        delay_ms = int(seg["start_time"] * 1000)
+        parts.append(
+            f"[{i+1}:a]adelay={delay_ms}|{delay_ms},"
+            f"apad=whole_dur={video_duration},"
+            f"volume={vo_volume}[vo{i}]"
+        )
+
+    # 2. 所有口播混合成一条轨
+    if n == 1:
+        parts.append(f"[vo0]acopy[voall]")
+    else:
+        vo_inputs = "".join(f"[vo{i}]" for i in range(n))
+        parts.append(
+            f"{vo_inputs}amix=inputs={n}:duration=longest:normalize=0[voall]"
+        )
+
+    # 3. 用 sidechaincompress 做 ducking: 口播轨作为侧链输入,
+    #    控制视频原始音频的压缩量。人声出现时背景被压低。
+    parts.append(
+        f"[0:a][voall]sidechaincompress="
+        f"threshold=0.02:ratio={ducking_ratio}:attack=200:release=1000[bg_ducked]"
+    )
+
+    # 4. 把 ducked 背景 + 口播混在一起
+    parts.append(
+        f"[bg_ducked][voall]amix=inputs=2:duration=first:normalize=0[aout]"
+    )
+
+    filter_complex = ";".join(parts)
+
+    cmd += [
         "-filter_complex", filter_complex,
         "-map", "0:v", "-map", "[aout]",
         "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",

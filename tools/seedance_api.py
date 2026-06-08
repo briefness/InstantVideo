@@ -123,17 +123,15 @@ class SeedanceAPI:
 
         # 添加参考图
         if image_urls:
-            for idx, url in enumerate(image_urls):
-                # 如果是本地文件路径，转为 base64 data URI
-                if os.path.isfile(url):
-                    img_data_uri = self._local_image_to_data_uri(url)
-                    actual_url = img_data_uri
-                else:
-                    actual_url = url
-
-                # 第一张图作为 first_frame (I2V), 其余作为 reference_image
-                role = "first_frame" if idx == 0 else "reference_image"
-
+            # Seedance 2.0 约束: first_frame(首帧) 不能与 reference_image(参考图) 混用,
+            # 否则报 400 "first/last frame content cannot be mixed with reference media content"。
+            # 单图 → first_frame (I2V, 强衔接); 多图 → 全部 reference_image (主体参考, 规避混用)。
+            role = "first_frame" if len(image_urls) == 1 else "reference_image"
+            for url in image_urls:
+                # 本地文件路径转为 base64 data URI, 远程 URL 直接使用
+                actual_url = (
+                    self._local_image_to_data_uri(url) if os.path.isfile(url) else url
+                )
                 content.append({
                     "type": "image_url",
                     "image_url": {"url": actual_url},

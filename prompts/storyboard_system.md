@@ -84,7 +84,7 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
       "lighting": "soft golden hour, rim light",
       "mood": "premium",
       "negative_prompt": "avoid jitter, stable motion, no text artifacts",
-      "subtitle_text": "字幕文案",
+      "subtitle_text": "字幕/口播文案 (必须中文)",
       "transition_to_next": "crossfade",
       "generate_audio": true,
       "characters": ["main"],
@@ -100,3 +100,4 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 - 每个 prompt_en 必须是完整的独立描述 (Seedance 不知道上下文)
 - duration 必须是 4-15 的整数
 - 不要在 prompt_en 中使用中文
+- `subtitle_text` (字幕/口播文案) 必须使用**中文**，面向观众；仅 `prompt_en` 用英文 (给 Seedance 模型)
