@@ -1,4 +1,4 @@
-"""Stage 1: LLM 分镜生成 — 含电影级运镜 6 步公式"""
+"""Stage 1: LLM 分镜生成 — 创意策略 + 运镜公式 + 丰富度校验"""
 
 from __future__ import annotations
 
@@ -84,6 +84,9 @@ def generate_storyboard(
         shot.setdefault("transition_to_next", "crossfade")
         shot.setdefault("negative_prompt", "avoid jitter, stable motion, no text artifacts")
 
+    # 丰富度校验 (非阻断, 仅输出预警)
+    _validate_storyboard_richness(storyboard)
+
     return storyboard
 
 
@@ -123,122 +126,105 @@ def _load_system_prompt() -> str:
     return _BUILTIN_SYSTEM_PROMPT
 
 
-_BUILTIN_SYSTEM_PROMPT = """你是一个专业的电影级视频分镜师。根据用户需求，生成结构化的分镜脚本。
+_BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师。你的目标不是"描述画面"，而是设计一段让观众看完就想再看一遍的视觉体验。
 
-## 核心规则
+## 最高优先级规则
 
-1. 每个镜头时长 4-15 秒 (整数)
-2. 总时长尽量接近用户要求
-3. 使用英文 prompt (Seedance 2.0 英文效果更好)
-4. 每个镜头的 prompt_en 必须 60-120 词
+1. 场景多样性: 3+ 镜头时至少 2 个不同空间, 连续 2 镜头禁止相同场景
+2. 景别跳跃: 连续镜头景别至少跳 2 级 (特写→全景 OK, 特写→中近景 NG)
+3. 情绪弧线: 每镜头 mood 不得与相邻镜头重复
+4. Insert Shot: 全片至少 1 个无人物的纯产品/纯环境镜头
+5. prompt_en 词数 80-150 词
+6. 每个镜头时长 4-15 秒 (整数)
 
-## 运镜 6 步公式 (每个 prompt_en 必须包含)
+## 运镜 6 步公式
+[Subject] -> [Action] -> [Environment] -> [Camera] -> [Style] -> [Constraints]
 
-[Subject 主体] → [Action 动作] → [Environment 环境] → [Camera 运镜] → [Style 风格] → [Constraints 约束]
-
-## 构图多样性 (禁止所有镜头居中构图)
-
-- 三分法偏置: 主体在画面左/右三分之一处
-- 前景遮挡: 通过门框/树枝/废墟窥视主体
-- 过肩镜头: 从角色A肩膀后方拍角色B (多角色必用)
-- 低角度仰拍: 威压感、英雄感
-- 极端特写: 眼睛/手/物件占满画面
-- 全片不超过 50% 的镜头使用居中构图
-- camera 字段中必须包含 composition 属性
-
-## 叙事与互动 (视频不是幻灯片)
-
-- 动作-反应链: A做什么 → B如何反应 → 推动下一镜头
-- 禁止"站-做-站"流水账
-- 角色之间必须有互动 (对峙/追逐/协作/冲突)
-- 角色必须与环境互动 (踢起碎片/穿越烟雾/撞碎物体)
-- 情绪弧线必须变化, 不能全片同一种情绪
-- 加入微叙事细节 (远处烟柱/衣角飘动/手指颤抖)
-- ❗ 物理逻辑: 动作效果方向必须正确(向前开枪→前方敌人倒), 镜头间空间位置一致, 动作必须承接上一镜头结果
-
-## 真实感增强 (每个 prompt_en 至少包含 2 种)
-
-- 环境微粒: dust particles, smoke wisps, ash falling, sparks
-- 物理细节: fabric rippling, hair swaying, debris scattering
-- 表面质感: scratched metal, wet pavement, peeling paint
-- 光影互动: light rays through windows, flickering reflections
-- 环境活力: distant birds, swaying grass, dripping water
-
-## 运镜铁律
-
-- 每个镜头只用 1 个主运镜指令 (不要叠加多个)
-- 用节奏词: slow, gentle, smooth, controlled (不要用 fps, ISO, 焦距等技术参数)
-- 分离运镜和主体运动: "dancer spins slowly. Camera holds fixed."
-- 复合运镜最多 2 层: "slow push-in then subtle rise"
-- ❗ 动静搭配: 至少 30% 的镜头必须是 fixed (固定机位), 禁止连续 3 个以上动态运镜
-- fixed 不等于无聊: 固定机位让主体的动作/表演/光线变化成为焦点
-
-## 8 类运镜 (选择 1 个)
-
-- push-in (推): 发现感/重要性
-- pull-out (拉): 环境揭示/规模感  
-- pan (横摇): 扫描/展示广度
-- tracking (跟踪): 沉浸/跟随
-- orbit (环绕): 产品360°/肖像
-- crane/drone (升降): 史诗感
-- handheld (手持): 纪录片真实感 (必须加 subtle/controlled)
-- fixed (固定): 让主体运动说话
-
-## 叙事节奏
-
-- 开场: 航拍/pan/push-in (建立世界) 🎬动态
-- 发展: **fixed/微推** (角色表演、沉浸观察) 🔒优先静态
-- 发展: tracking/固定 (展示动作) 🎬动态
-- 高潮: **fixed 特写** (情感爆发点，让表演说话) 🔒优先静态
-- 高潮: orbit/快推 (视觉冲击) 🎬动态
-- 结尾: crane-up/pull-back (升华) 🎬动态
-- 动静交替形成张弛节奏，连续运镜会让观众疲劳
-
-## 负面提示 (negative_prompt 必须包含)
-
-所有镜头: "avoid jitter, stable motion, no text artifacts"
-人物镜头追加: "avoid bent limbs, no identity drift"
-产品镜头追加: "no morphing shapes, keep geometry stable"
-
-## 输出格式 (严格 JSON)
-
-{
-  "title": "视频标题",
-  "total_duration": 30,
-  "style": "cinematic",
-  "aspect_ratio": "16:9",
-  "resolution": "1080p",
-  "mood": "premium / energetic / dramatic / warm / cold / ...",
-  "music_style": "描述音乐风格",
-  "characters": [
-    {"name": "main", "description": "角色外观描述 (英文)"}
-  ],
-  "shots": [
-    {
-      "shot_id": 1,
-      "duration": 5,
-      "scene_description": "中文场景描述 (含叙事意图)",
-      "prompt_en": "完整英文 prompt (60-120词, 含6步公式+构图+真实感细节)",
-      "camera": {
-        "primary_movement": "slow dolly push-in",
-        "composition": "subject at left third, foreground debris",
-        "start_framing": "wide shot",
-        "end_framing": "close-up",
-        "speed": "slow"
-      },
-      "lighting": "soft golden hour, rim light",
-      "mood": "premium",
-      "negative_prompt": "avoid jitter, stable motion, no text artifacts",
-      "subtitle_text": "字幕/口播文案 (必须中文)",
-      "transition_to_next": "crossfade",
-      "generate_audio": true,
-      "characters": ["main"],
-      "extract_character_ref": false
-    }
-  ]
-}
-
-注意: shot 1 如果包含角色, 设置 "extract_character_ref": true (用于后续镜头的角色一致性)
-重要: `subtitle_text` 必须用中文 (面向观众); 仅 `prompt_en` 用英文 (给 Seedance 模型)
-禁止: 所有镜头居中构图 / "站-做-站"流水账 / 缺少真实感细节
+## 输出格式 (严格 JSON, 参考 storyboard_system.md)
+注意: shot 1 含角色时设 extract_character_ref: true
+subtitle_text 必须中文; prompt_en 必须英文
 """
+
+
+def _validate_storyboard_richness(storyboard: dict) -> None:
+    """分镜丰富度校验 - 非阻断, 仅输出预警日志
+
+    检测维度:
+    1. 场景多样性 (scene_description 中的场景名称)
+    2. 景别跳跃 (start_framing 连续相同)
+    3. 情绪弧线 (mood 连续相同)
+    4. Insert shot 缺失 (全部镜头都有角色)
+    """
+    shots = storyboard.get("shots", [])
+    if len(shots) < 2:
+        return
+
+    warnings: list[str] = []
+
+    # --- 1. 场景多样性 ---
+    scene_names = []
+    for s in shots:
+        desc = s.get("scene_description", "")
+        # 尝试提取【】中的场景名
+        m = re.search(r'[\u3010\[][^\u3011\]]+[\u3011\]]', desc)
+        if m:
+            scene_names.append(m.group(0))
+        else:
+            scene_names.append(desc[:20])
+
+    unique_scenes = set(scene_names)
+    if len(unique_scenes) == 1 and len(shots) >= 3:
+        warnings.append(
+            f"\u26a0 \u573a\u666f\u5355\u4e00: \u6240\u6709 {len(shots)} \u4e2a\u955c\u5934\u90fd\u5728\u540c\u4e00\u573a\u666f "
+            f"'{scene_names[0]}', \u5efa\u8bae\u589e\u52a0\u573a\u666f\u5207\u6362"
+        )
+
+    # 检测连续相同场景
+    for i in range(1, len(scene_names)):
+        if scene_names[i] == scene_names[i - 1]:
+            warnings.append(
+                f"\u26a0 \u8fde\u7eed\u76f8\u540c\u573a\u666f: Shot {i} \u548c Shot {i + 1} "
+                f"\u90fd\u5728 '{scene_names[i]}'"
+            )
+
+    # --- 2. 景别跳跃 ---
+    framings = [
+        s.get("camera", {}).get("start_framing", "unknown")
+        for s in shots
+    ]
+    for i in range(1, len(framings)):
+        if framings[i] == framings[i - 1] and framings[i] != "unknown":
+            warnings.append(
+                f"\u26a0 \u666f\u522b\u91cd\u590d: Shot {i} \u548c Shot {i + 1} "
+                f"\u90fd\u662f '{framings[i]}', \u5efa\u8bae\u666f\u522b\u8df3\u8dc3"
+            )
+
+    # --- 3. 情绪弧线 ---
+    moods = [s.get("mood", "unknown") for s in shots]
+    unique_moods = set(moods)
+    if len(unique_moods) == 1 and len(shots) >= 2:
+        warnings.append(
+            f"\u26a0 \u60c5\u7eea\u6241\u5e73: \u6240\u6709\u955c\u5934\u60c5\u7eea\u90fd\u662f '{moods[0]}', "
+            f"\u7f3a\u4e4f\u5f27\u7ebf\u53d8\u5316"
+        )
+    for i in range(1, len(moods)):
+        if moods[i] == moods[i - 1] and moods[i] != "unknown":
+            warnings.append(
+                f"\u26a0 \u8fde\u7eed\u76f8\u540c\u60c5\u7eea: Shot {i} \u548c Shot {i + 1} "
+                f"\u90fd\u662f '{moods[i]}'"
+            )
+
+    # --- 4. Insert shot 缺失 ---
+    has_insert = any(not s.get("characters") for s in shots)
+    if not has_insert and len(shots) >= 3:
+        warnings.append(
+            "\u26a0 \u7f3a\u5c11 insert shot: \u6240\u6709\u955c\u5934\u90fd\u5305\u542b\u89d2\u8272, "
+            "\u5efa\u8bae\u52a0\u5165\u7eaf\u4ea7\u54c1/\u7eaf\u73af\u5883\u955c\u5934\u63d0\u5347\u9ad8\u7aef\u611f"
+        )
+
+    # --- 输出 ---
+    if warnings:
+        print("\n   [\u4e30\u5bcc\u5ea6\u6821\u9a8c]")
+        for w in warnings:
+            print(f"   {w}")
+        print()
