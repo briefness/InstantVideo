@@ -90,10 +90,18 @@ class SeedanceAPI:
         generate_audio: bool = True,
         return_last_frame: bool = True,
         image_urls: list[str] | None = None,
+        image_role: str | None = None,
         timeout: int = 300,
     ) -> dict:
         """
         生成视频 — 通过火山引擎 Ark
+
+        Args:
+            image_urls: 参考图 URL 列表 (远程 URL 或本地文件路径)
+            image_role: 参考图角色, 由调用方指定:
+                - "first_frame": I2V 强衔接 (只能 1 张)
+                - "reference_image": 主体/角色参考 (可多张)
+                - None: 自动推断 (1张=first_frame, 多张=reference_image)
 
         Returns:
             {"status": "succeeded", "video_url": "...", "last_frame_url": "...", ...}
@@ -108,6 +116,7 @@ class SeedanceAPI:
             generate_audio=generate_audio,
             return_last_frame=return_last_frame,
             image_urls=image_urls,
+            image_role=image_role,
             timeout=timeout,
         )
 
@@ -115,7 +124,7 @@ class SeedanceAPI:
 
     async def _generate_ark(
         self, prompt, duration, ratio, resolution, model,
-        generate_audio, return_last_frame, image_urls, timeout
+        generate_audio, return_last_frame, image_urls, image_role, timeout
     ) -> dict:
         """通过火山引擎 Ark 官方 API 生成"""
 
@@ -123,10 +132,15 @@ class SeedanceAPI:
 
         # 添加参考图
         if image_urls:
-            # Seedance 2.0 约束: first_frame(首帧) 不能与 reference_image(参考图) 混用,
-            # 否则报 400 "first/last frame content cannot be mixed with reference media content"。
-            # 单图 → first_frame (I2V, 强衔接); 多图 → 全部 reference_image (主体参考, 规避混用)。
-            role = "first_frame" if len(image_urls) == 1 else "reference_image"
+            # role 优先用调用方指定的, 否则自动推断:
+            # - 1 张图 → first_frame (I2V 强衔接)
+            # - 多张图 → reference_image (角色/主体参考)
+            # 注意: first_frame 和 reference_image 不能混用 (API 限制)
+            if image_role:
+                role = image_role
+            else:
+                role = "first_frame" if len(image_urls) == 1 else "reference_image"
+
             for url in image_urls:
                 # 本地文件路径转为 base64 data URI, 远程 URL 直接使用
                 actual_url = (

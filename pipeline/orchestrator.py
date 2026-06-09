@@ -52,15 +52,16 @@ class VideoPipeline:
 
         # ─── Stage 1: 分镜生成 ───
         console.print("\n[bold cyan]📋 Stage 1: 生成分镜脚本...[/bold cyan]")
+        target_dur = self._parse_duration(user_request)
         storyboard = generate_storyboard(
             user_request=user_request,
-            target_duration=30,
+            target_duration=target_dur,
             aspect_ratio=self.aspect_ratio,
             resolution=self.resolution,
             style=self.style,
         )
         self._save_json("storyboard.json", storyboard)
-        console.print(f"   ✓ {len(storyboard['shots'])} 个镜头, 风格: {storyboard['mood']}")
+        console.print(f"   ✓ {len(storyboard['shots'])} 个镜头, 风格: {storyboard['mood']}, 目标时长: {target_dur}s")
 
         # ─── Stage 1.5: 音乐卡点 (可选) ───
         music_analysis = None
@@ -318,3 +319,24 @@ class VideoPipeline:
                 return full_path
 
         return None
+
+    @staticmethod
+    def _parse_duration(user_request: str) -> int:
+        """从用户请求中解析目标时长 (秒)
+
+        支持: "15秒", "15s", "30秒的", "1分钟", "2min" 等
+        无法解析时默认 30 秒
+        """
+        import re
+
+        # 秒: "15秒", "15s", "15 秒"
+        m = re.search(r'(\d+)\s*(?:秒|s(?:ec(?:ond)?s?)?)', user_request, re.IGNORECASE)
+        if m:
+            return max(5, min(int(m.group(1)), 120))
+
+        # 分钟: "1分钟", "2min"
+        m = re.search(r'(\d+)\s*(?:分钟|min(?:ute)?s?)', user_request, re.IGNORECASE)
+        if m:
+            return max(5, min(int(m.group(1)) * 60, 120))
+
+        return 30  # 默认

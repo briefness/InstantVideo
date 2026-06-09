@@ -28,7 +28,7 @@ class ShotResult:
 
 
 class VideoGenerator:
-    """视频生成引擎 — 带角色一致性和降级链"""
+    """视频生成引擎 — 角色一致性优先 + 画面衔接"""
 
     def __init__(self, output_dir: str):
         self.api = SeedanceAPI()
@@ -36,22 +36,26 @@ class VideoGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         (self.output_dir / "shots").mkdir(exist_ok=True)
         (self.output_dir / "character_refs").mkdir(exist_ok=True)
-        self.character_refs: dict[str, str] = {}  # name → image_url or local_path
+        self.character_refs: dict[str, str] = {}  # name → 本地图片路径
 
     async def generate_all(self, storyboard: dict) -> list[ShotResult]:
         """
-        按顺序生成所有镜头 (保持角色一致性)
+        按顺序生成所有镜头
 
-        策略:
-        - 角色锚点: 首个成功且含角色的镜头, 缓存其 last_frame_url 作为
-          跨镜头稳定参考。后续所有含角色镜头都额外参考该锚点, 避免链式漂移。
-        - 链式衔接: 同时用上一镜尾帧保证相邻镜头过渡平滑。
-        - 断链兜底: 某镜失败时保留最近一张成功尾帧, 不清空 (避免后续全退化 T2V)。
-        - 每个镜头生成后立即下载, 失败走降级链。
+        角色一致性策略:
+        ┌─────────────────────────────────────────────────────────────────┐
+        │ Shot 1 (含角色): T2V 纯文本 → 提取角色参考帧到本地              │
+        │ Shot 2+ (含角色): reference_image (角色参考帧 + 上一帧尾帧)     │
+        │ Shot N  (无角色): first_frame (上一帧尾帧, I2V 强衔接)          │
+        │                                                                 │
+        │ 核心原则:                                                       │
+        │ - 角色镜头用 reference_image 保证角色外观一致                    │
+        │ - 非角色镜头用 first_frame 保证画面衔接                         │
+        │ - 两种 role 不在同一镜头混用 (API 限制)                         │
+        └─────────────────────────────────────────────────────────────────┘
         """
         results = []
         prev_last_frame: Optional[str] = None
-        character_anchor_url: Optional[str] = None  # 跨镜头角色锚点
 
         for shot in storyboard["shots"]:
             print(f"\n  🎬 生成 Shot {shot['shot_id']}...")
@@ -59,7 +63,6 @@ class VideoGenerator:
             result = await self._generate_single_shot(
                 shot=shot,
                 prev_last_frame=prev_last_frame,
-                character_anchor_url=character_anchor_url,
                 storyboard=storyboard,
             )
             results.append(result)
@@ -67,15 +70,9 @@ class VideoGenerator:
             if result.status == "success":
                 prev_last_frame = result.last_frame_url
 
-                # 设定角色锚点: 首个含角色且成功的镜头
-                if character_anchor_url is None and self._shot_has_character(shot):
-                    if result.last_frame_url:
-                        character_anchor_url = result.last_frame_url
-                        print(f"     🔒 角色锚点已锁定: Shot {shot['shot_id']}")
-
                 print(f"     ✓ 完成 (质量: {result.quality_score}, 模型: {result.model_used})")
                 print(f"     [DEBUG] last_frame_url = {prev_last_frame}")
-                print(f"     [DEBUG] anchor = {character_anchor_url}")
+                print(f"     [DEBUG] character_refs = {list(self.character_refs.keys())}")
             else:
                 # 断链兜底: 保留上一张成功尾帧, 让后续镜头仍能衔接
                 print(f"     ✗ 失败: {result.errors[-1] if result.errors else 'unknown'}")
@@ -94,7 +91,7 @@ class VideoGenerator:
 
     async def _generate_single_shot(
         self, shot: dict, prev_last_frame: Optional[str],
-        character_anchor_url: Optional[str], storyboard: dict
+        storyboard: dict
     ) -> ShotResult:
         """生成单个镜头 (含缓存 + 降级链 + 429 限流退避)"""
 
@@ -111,38 +108,42 @@ class VideoGenerator:
                 result.local_path = cached_path
                 result.quality_score = qa["quality_score"]
                 result.model_used = "cached"
-                # last_frame_url 无法恢复 (远程 URL 会过期), 但 generate_all
-                # 的断链兜底会保留上一个成功镜头的值
                 result.last_frame_url = None
                 print(f"     ♻️ 缓存命中: {cached_path} (质量: {qa['quality_score']})")
+
+                # 缓存命中时也要提取角色参考 (否则后续镜头没有角色锚点)
+                if shot.get("extract_character_ref") and not self.character_refs:
+                    await self._extract_character_ref(shot, cached_path)
+
                 return result
             else:
                 print(f"     ⚠ 缓存文件 QA 不通过 ({qa['issues']}), 重新生成")
 
-        rate_limit_backoff = 0  # 429 连续退避计数器 (跨降级级别)
-        max_rate_limit_retries = 3  # 429 最多重试 3 次
+        rate_limit_backoff = 0
+        max_rate_limit_retries = 3
 
         use_refs = True  # 是否使用参考图 (失败后会关闭)
         for level, deg_config in enumerate(config.DEGRADATION_CHAIN):
-            # 如果已触发 429 限流, 跳过降级 (降分辨率对配额无效)
             if rate_limit_backoff >= max_rate_limit_retries:
                 break
 
-            for attempt in range(3):  # 每级尝试 3 次 (含参考图失败后的无图重试)
+            for attempt in range(3):
                 result.attempts += 1
                 result.model_used = deg_config["model"]
                 result.resolution_used = deg_config["resolution"]
 
                 try:
-                    # 构建 prompt
-                    prompt = shot["prompt_en"]
+                    # 构建 prompt (注入角色描述, 双重保障)
+                    prompt = self._inject_character_description(
+                        shot["prompt_en"], shot, storyboard
+                    )
                     if shot.get("negative_prompt"):
                         prompt += f". {shot['negative_prompt']}"
 
-                    # 构建参考图列表
-                    image_urls = self._build_image_refs(
-                        shot, prev_last_frame, character_anchor_url
-                    ) if use_refs else []
+                    # 构建参考图列表 + 确定 role
+                    image_urls, role = self._build_image_refs(
+                        shot, prev_last_frame
+                    ) if use_refs else ([], None)
 
                     # 调用 API
                     gen_result = await self.api.generate(
@@ -154,6 +155,7 @@ class VideoGenerator:
                         generate_audio=shot.get("generate_audio", True),
                         return_last_frame=self.api.supports_last_frame,
                         image_urls=image_urls if image_urls else None,
+                        image_role=role,
                         timeout=config.GENERATION_TIMEOUT,
                     )
 
@@ -173,9 +175,9 @@ class VideoGenerator:
                         if not qa["pass"]:
                             result.errors.append(f"QA 不通过: {qa['issues']}")
                             print(f"     ⚠ QA 不通过: {qa['issues']}, 重试...")
-                            continue  # 重试
+                            continue
 
-                        # 提取角色参考帧 (如果标记了)
+                        # 提取角色参考帧 (Shot 1 标记了 extract_character_ref)
                         if shot.get("extract_character_ref"):
                             await self._extract_character_ref(shot, local_path)
 
@@ -184,31 +186,28 @@ class VideoGenerator:
 
                     elif gen_result.get("error_type") == "moderation":
                         result.errors.append(f"L{level}: 审核失败")
-                        break  # 审核失败不重试
+                        break
 
                     elif gen_result.get("error_type") == "rate_limit":
-                        # ─── 429 限流: 指数退避, 不降级 ───
                         rate_limit_backoff += 1
                         if rate_limit_backoff >= max_rate_limit_retries:
                             result.errors.append(
                                 f"L{level}: 配额耗尽, 已退避 {rate_limit_backoff} 次仍失败"
                             )
-                            break  # 跳出当前级别, 外层也会因计数器跳出
-                        wait_secs = 30 * (2 ** (rate_limit_backoff - 1))  # 30s, 60s, 120s
+                            break
+                        wait_secs = 30 * (2 ** (rate_limit_backoff - 1))
                         result.errors.append(
                             f"L{level}: 429 限流, 第 {rate_limit_backoff} 次退避 {wait_secs}s..."
                         )
                         print(f"     ⏳ 429 限流, 等待 {wait_secs}s 后重试...")
                         await asyncio.sleep(wait_secs)
-                        continue  # 在当前级别重试, 不降级
+                        continue
 
                     else:
                         err_msg = gen_result.get("error", "unknown")
                         result.errors.append(f"L{level}: {err_msg}")
                         print(f"     ⚠ L{level} 错误: {err_msg[:200]}")
 
-                        # 精确判断是否为参考图相关错误 (而非泛匹配 "image")
-                        # 真实参考图错误: 图片下载失败/格式不支持/尺寸超限等
                         err_low = err_msg.lower()
                         is_ref_error = use_refs and any(
                             kw in err_low for kw in [
@@ -219,7 +218,6 @@ class VideoGenerator:
                             ]
                         )
                         if is_ref_error:
-                            # 参考图本身有问题 → 关闭参考图, 当前级别无图重试
                             result.errors.append(f"L{level}: 参考图异常, 改为无图重试")
                             print(f"     ⚠ 参考图异常, 改为无图重试")
                             use_refs = False
@@ -233,46 +231,91 @@ class VideoGenerator:
                     result.errors.append(f"L{level}: {str(e)}")
                     print(f"     ⚠ L{level} 异常: {str(e)[:200]}")
 
-                # 重试前等待
                 await asyncio.sleep(5 * (attempt + 1))
 
-        # 全部失败
         result.status = "failed"
         return result
 
     def _build_image_refs(
         self, shot: dict, prev_last_frame: Optional[str],
-        character_anchor_url: Optional[str] = None,
-    ) -> list[str]:
-        """构建参考图列表 — 双锚策略
+    ) -> tuple[list[str], Optional[str]]:
+        """构建参考图列表 — 角色一致性优先策略
 
-        1. prev_last_frame: 上一镜尾帧 → 保证相邻镜头过渡平滑
-        2. character_anchor_url: 角色锚点 → 保证跨镜头角色一致性
-
-        API 层根据返回图片数量自动决定 role:
-        - 单图 → first_frame (I2V 强衔接)
-        - 多图 → 全部 reference_image (规避首帧/参考图混用限制)
+        返回 (image_urls, role):
+        ┌───────────────────────────────────────────────────────────┐
+        │ 有角色参考帧:                                             │
+        │   → [角色参考帧, 上一帧尾帧] + "reference_image"          │
+        │   角色参考帧是本地文件 (API 层自动转 base64)              │
+        │   上一帧尾帧是远程 URL                                    │
+        │   统一用 reference_image, 保证角色外观一致                │
+        │                                                           │
+        │ 无角色参考帧:                                             │
+        │   → [上一帧尾帧] + "first_frame"                         │
+        │   单图用 first_frame, I2V 强衔接                         │
+        │                                                           │
+        │ 什么都没有:                                               │
+        │   → [] + None                                             │
+        │   T2V 纯文本生成                                         │
+        └───────────────────────────────────────────────────────────┘
         """
-        refs = []
+        # 收集本镜头涉及的角色参考帧 (本地文件路径)
+        shot_chars = shot.get("characters", [])
+        char_ref_paths = []
+        for char_name in shot_chars:
+            if char_name in self.character_refs:
+                path = self.character_refs[char_name]
+                if os.path.isfile(path):
+                    char_ref_paths.append(path)
 
-        # 上一镜尾帧 (远程 URL, 不是本地文件路径)
+        if char_ref_paths:
+            # ─── 角色模式: reference_image ───
+            refs = list(char_ref_paths)  # 角色参考帧 (本地, 后续转 base64)
+            # 追加上一帧尾帧用于场景连贯 (远程 URL)
+            if prev_last_frame and not os.path.isfile(prev_last_frame):
+                refs.append(prev_last_frame)
+            print(f"     [REF] 角色模式: {len(refs)} 张 reference_image "
+                  f"(角色: {len(char_ref_paths)}, 尾帧: {1 if prev_last_frame else 0})")
+            return refs, "reference_image"
+
+        # ─── 非角色模式: first_frame (I2V 强衔接) ───
         if prev_last_frame and not os.path.isfile(prev_last_frame):
-            refs.append(prev_last_frame)
+            print(f"     [REF] 衔接模式: 1 张 first_frame")
+            return [prev_last_frame], "first_frame"
 
-        # 角色锚点 (和上一帧不同时才加, 避免传重复图)
-        if character_anchor_url and character_anchor_url != prev_last_frame:
-            if not os.path.isfile(character_anchor_url):
-                refs.append(character_anchor_url)
+        # ─── 无参考图: T2V ───
+        print(f"     [REF] T2V 模式: 无参考图")
+        return [], None
 
-        return refs
+    def _inject_character_description(
+        self, prompt: str, shot: dict, storyboard: dict
+    ) -> str:
+        """将角色外观描述注入 prompt (文字层面的双重保障)。
+
+        即使有角色参考图, prompt 中也要包含角色描述,
+        强化模型对角色特征的理解。
+        """
+        characters = storyboard.get("characters", [])
+        shot_chars = shot.get("characters", [])
+        if not characters or not shot_chars:
+            return prompt
+
+        char_descs = []
+        for char in characters:
+            if char.get("name") in shot_chars and char.get("description"):
+                char_descs.append(f'{char["name"]}: {char["description"]}')
+
+        if char_descs:
+            desc_block = "; ".join(char_descs)
+            prompt = f"[Character reference — {desc_block}] {prompt}"
+
+        return prompt
 
     async def _extract_character_ref(self, shot: dict, video_path: str):
-        """从生成的视频中提取角色参考帧"""
+        """从生成的视频中提取角色参考帧, 存储到本地供后续镜头使用"""
         for char_name in shot.get("characters", ["main"]):
             ref_path = str(
                 self.output_dir / "character_refs" / f"{char_name}.jpg"
             )
             extract_frame(video_path, ref_path)
-            # TODO: 上传到 CDN 获取 URL (目前用本地路径)
             self.character_refs[char_name] = ref_path
-            print(f"     📸 提取角色参考: {char_name} → {ref_path}")
+            print(f"     📸 角色参考帧已提取: {char_name} → {ref_path}")
