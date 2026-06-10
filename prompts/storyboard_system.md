@@ -98,21 +98,50 @@
 
 ---
 
+## ⚠️ 主题锚定规则 (最高优先级)
+
+**核心主题 (产品/对象) 必须在大部分镜头中「可见在场」。** 这是宣传片和"风景片"的本质区别。
+
+### 强制规则
+
+- **≥60% 的镜头**必须包含与用户指定主题直接相关的视觉元素
+- 主题元素 = 产品本体 / 产品使用过程 / 产品产出物 / 产品原材料
+- 即使是「世界建立」或「情感共鸣」的镜头, 也应让主题元素以**画面道具、前景/背景元素**的方式出现
+
+### 主题锚定策略
+
+| 锚定方式 | 描述 | 示例 (咖啡宣传片) |
+|---------|------|-------------------|
+| 直接主角 | 产品/主题占据画面主体 | 咖啡萃取微距、拉花特写 |
+| 动作载体 | 角色与产品互动 | 咖啡师手持咖啡壶倒注 |
+| 场景道具 | 产品作为画面中的重要道具 | 窗边桌上的咖啡杯、吧台上的咖啡豆 |
+| 感官线索 | 暗示产品存在的感官元素 | 咖啡蒸汽、咖啡色调的光线、咖啡豆散落 |
+
+### 自检
+
+生成完毕后自问:
+- ❌ 只有 1 个镜头出现了主题产品, 其他镜头全是人物/环境？→ **必须重做**
+- ❌ 主题产品只在 insert shot 中出现？→ 需要在更多镜头中加入产品元素
+- ✅ 大部分镜头中, 观众都能「看到」或「感受到」核心主题的存在
+
+---
+
 ## 🎬 类型化叙事模板
 
 根据用户需求的类型，选择最匹配的叙事策略：
 
 ### A. 品牌宣传片 (Brand Film)
 
-**核心**: 不是展示产品功能，而是传递品牌精神和生活方式。
+**核心**: 传递品牌精神和生活方式, **但产品必须始终「在场」**。
 
 叙事结构:
-1. **世界建立** — 展示品牌所属的"世界" (城市、文化、自然...)
-2. **仪式时刻** — 产品/服务融入生活的美好瞬间 (无需展示全流程)
-3. **情感共鸣** — 人物的表情/反应传递"这就是我想要的生活"
+1. **世界建立** — 展示品牌所属的"世界", **同时让产品/原材料作为画面元素出现** (如: 清晨街道上手持咖啡杯的剪影, 而非空手推门)
+2. **仪式时刻** — 产品/服务融入生活的美好瞬间 (无需展示全流程, 但产品必须可见)
+3. **情感共鸣** — 人物与产品互动的瞬间传递"这就是我想要的生活"
 
 ❌ 错误做法: 拍一条完整的操作流程 (研磨→冲泡→品尝 = 教程, 不是宣传片)
-✅ 正确做法: 跳跃式叙事, 每个镜头都是一个"高光切片"
+❌ 错误做法: 大量人物镜头但产品几乎不出现 (这是人物片, 不是产品宣传片)
+✅ 正确做法: 跳跃式叙事, 每个镜头都是一个"高光切片", **且产品始终是视觉锚点**
 
 ### B. 产品展示 (Product Showcase)
 
@@ -166,23 +195,24 @@
     {
       "shot_id": 1,
       "duration": 4,
-      "scene_description": "【街角外景·黎明】开场钩子 — 清晨第一缕光打在咖啡店的木质外墙上，咖啡师的剪影推开玻璃门，暖光从门缝涌出。建立'唤醒'的仪式感。",
-      "prompt_en": "Silhouette of a woman pushing open a wooden-framed glass door of a small corner cafe at dawn. Warm golden light spills outward from inside onto wet cobblestone pavement. Camera low-angle looking up at the doorway, subject as dark silhouette against warm interior glow. Cinematic commercial style. Morning mist drifting at ankle height, condensation droplets on glass door surface catching light, distant city buildings in soft blue pre-dawn haze, a small chalkboard menu visible beside the door. Gentle, contemplative mood.",
+      "scene_description": "【街角外景·黎明】开场钩子 — 清晨的咖啡店橱窗，一排咖啡豆罐和手冲器具在晨光中泛着光泽，咖啡师端着刚做好的拿铁从店内走向橱窗边。产品+角色同框建立仪式感。",
+      "prompt_en": "A mid-30s female barista with loose shoulder-length dark hair tied in a low bun, minimal natural makeup, wearing a charcoal linen apron over an ivory cashmere sweater, thin gold bracelet on left wrist, carrying a steaming latte in a clear glass mug through a cozy corner cafe at dawn. Camera low-angle through the storefront window looking in. Rows of labeled coffee bean jars and a copper pour-over kettle arranged on a wooden shelf in the foreground catching warm interior light. Condensation droplets on window glass, morning mist outside, distant city buildings in soft blue pre-dawn haze. Cinematic commercial style, gentle contemplative mood.",
       "camera": {
         "primary_movement": "fixed",
-        "composition": "silhouette against bright interior, low-angle looking up",
+        "composition": "shot through storefront window, coffee equipment in foreground, barista at right third",
         "start_framing": "medium shot",
         "end_framing": "medium shot",
         "speed": "fixed"
       },
       "lighting": "pre-dawn blue exterior, warm golden interior backlight spilling out",
       "mood": "mysterious anticipation",
-      "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+      "negative_prompt": "avoid jitter, stable motion, no text artifacts, avoid bent limbs, no identity drift",
       "subtitle_text": "每个清晨，都值得被认真对待",
       "transition_to_next": "cut",
       "generate_audio": true,
       "characters": ["barista_main"],
-      "extract_character_ref": true
+      "extract_character_ref": true,
+      "key_props": ["glass mug", "latte", "coffee bean jars", "pour-over kettle"]
     },
     {
       "shot_id": 2,
@@ -203,7 +233,8 @@
       "transition_to_next": "cut",
       "generate_audio": true,
       "characters": [],
-      "extract_character_ref": false
+      "extract_character_ref": false,
+      "key_props": ["pour-over dripper", "coffee grounds", "amber oils"]
     },
     {
       "shot_id": 3,
@@ -224,7 +255,8 @@
       "transition_to_next": "fade out",
       "generate_audio": true,
       "characters": ["barista_main"],
-      "extract_character_ref": false
+      "extract_character_ref": false,
+      "key_props": ["glass mug", "fresh coffee", "potted plant"]
     }
   ]
 }
@@ -232,9 +264,10 @@
 
 **为什么这个版本更好:**
 - 3 个镜头 = 3 个不同空间 (街角外景 → 吧台微距 → 窗边座位)
-- 景别跳跃: 中景剪影 → 极端微距 → 中近到全景拉远
+- 景别跳跃: 中景橱窗 → 极端微距 → 中近到全景拉远
 - 情绪弧线: 神秘期待 → 沉浸着迷 → 温暖回报
 - 有 1 个纯产品 insert shot (Shot 2 无人物)
+- **主题锚定: 3/3 镜头都有咖啡元素** (Shot1 拿铁+咖啡豆罐, Shot2 咖啡萃取微距, Shot3 窗边咖啡)
 - 不是"制作流程记录", 而是"品牌精神的视觉诗"
 
 ### 示例 2: "10 秒运动鞋产品展示"
@@ -269,7 +302,8 @@
       "transition_to_next": "whip",
       "generate_audio": true,
       "characters": [],
-      "extract_character_ref": false
+      "extract_character_ref": false,
+      "key_props": ["white running shoe", "neon green sole"]
     },
     {
       "shot_id": 2,
@@ -290,7 +324,8 @@
       "transition_to_next": "cut",
       "generate_audio": true,
       "characters": [],
-      "extract_character_ref": false
+      "extract_character_ref": false,
+      "key_props": ["white running shoe", "neon green sole", "orange track surface"]
     }
   ]
 }
@@ -342,6 +377,74 @@
 - 有多个角色时，**必须**使用过肩、对角线、前后景等展现空间关系的构图
 - 鼓励使用前景遮挡增加画面层次感
 
+## ⚠️ 物件与环境连续性规则 (必须遵守)
+
+**这是视频"真实感"的关键。** 物体不能凭空出现或消失，环境元素不能在同场景内突变。
+
+### 物件引入铁律
+
+**任何在 Shot N 中首次出现的关键物件/道具，必须满足以下条件之一：**
+
+1. **动作引入**: Shot N 的 prompt_en 中包含引入动作 (placing, bringing, carrying, picking up, pulling out, pouring, handing over, setting down...)
+2. **前镜铺垫**: Shot N-1 的 prompt_en 中已经提及该物件 (即使是模糊的: "a table with coffee supplies")
+3. **场景切换豁免**: Shot N 切换到全新场景时, 新场景的物件可以直接存在 (因为观众接受"另一个地方本来就有这些东西")
+
+| 情况 | 处理方式 | 示例 |
+|------|---------|------|
+| 同场景物件新增 | ❌ 禁止凭空出现, 必须有引入动作 | 桌上突然多了一杯咖啡 → 必须拍"放下咖啡"的动作 |
+| 场景切换后的物件 | ✅ 允许, 新场景天然包含 | 从吧台切到窗边, 窗边桌上有咖啡是合理的 |
+| 角色手持物变化 | ❌ 禁止跳切, 必须有过渡 | 空手 → 持剑, 必须有"拔剑"动作或场景切换 |
+| 环境元素变化 | ❌ 同场景内禁止突变 | 同一个窗口, 前一镜晴天不能下一镜下雨 |
+
+### 环境元素锁定规则
+
+**同一场景内的环境元素必须跨镜头一致：**
+
+- **天气/光线**: 同场景的连续镜头, 天气和光线方向不能突变
+- **背景物品**: 桌上的摆设、墙上的装饰、窗外的景色 — 一旦出现就不能消失
+- **空间布局**: 家具位置、门窗方向 — 前后镜头必须逻辑一致
+
+### key_props 字段 (道具追踪)
+
+**每个 shot 必须标注 `key_props` 字段**, 列出该镜头中出现的关键道具/物件:
+
+```json
+"key_props": ["coffee cup", "linen apron", "pour-over dripper"]
+```
+
+- 列出画面中**可见的、叙事相关的**物件 (不需要列举所有背景物)
+- 如果 Shot N 的 `key_props` 中出现了 Shot N-1 没有的新物件, 且**不是场景切换**, 则 prompt_en 中**必须**包含该物件的引入动作
+- 纯环境 insert shot 也需要标注 key_props (如 `["pour-over dripper", "coffee grounds"]`)
+
+### Prompt 承接写法 (Shot 2+ 必须遵守)
+
+**Shot 2 及后续镜头的 prompt_en, 对于同场景延续的镜头, 应包含承接上文的锚点词：**
+
+- 用 `the same [场所/物件]` 而非 `a [场所/物件]` 表示延续
+- 用 `still visible / remaining / previously placed` 标注延续存在的物件
+- 用 `now [新状态]` 描述已有物件的状态变化
+
+**Bad → Good 对比:**
+
+```
+❌ BAD (物件凭空出现):
+  Shot 1: "An empty wooden desk by the window"
+  Shot 2: "A steaming cup of coffee on the wooden desk"
+  → 咖啡哪来的？观众会困惑
+
+✅ GOOD (动作引入):
+  Shot 1: "Barista carefully preparing coffee at the counter"
+  Shot 2: "The same barista gently placing the freshly brewed cup onto the wooden desk by the window"
+  → 自然过渡, 咖啡有"来源"
+
+✅ GOOD (场景切换豁免):
+  Shot 1: "Barista working behind the counter" (场景: 吧台)
+  Shot 2: "A steaming cup of artisan coffee on an oak table by a sunlit window" (场景: 窗边座位)
+  → 切换到新场景, 物件天然存在是合理的
+```
+
+---
+
 ## 叙事与互动 (视频不是幻灯片)
 
 **每个镜头之间必须有因果关系和叙事推进。**
@@ -354,6 +457,22 @@
 4. **情绪弧线**: 每个镜头有明确的情绪标签，且情绪必须变化
 5. **微叙事细节**: 在 prompt_en 中加入「正在发生的小事」增加真实感
 6. **物理逻辑与空间一致性**: 因果方向、空间连贯、物理合理、动作承接
+
+### ⚠️ 时序因果铁律 (必须遵守)
+
+**镜头之间必须遵循现实世界的因果时序。** 除非用户明确要求倒叙/闪回, 默认采用正序叙事。
+
+| 因果关系 | 正确顺序 | 错误顺序 |
+|---------|---------|---------|
+| 制作→使用 | 冲泡咖啡 → 品尝咖啡 | 品尝咖啡 → 制作咖啡 |
+| 准备→成品 | 研磨咖啡豆 → 萃取咖啡液 | 成品拿铁 → 研磨咖啡豆 |
+| 到达→体验 | 走进咖啡店 → 坐下喝咖啡 | 坐在店里 → 推门走进 |
+| 原料→加工→产出 | 咖啡豆 → 烘焙 → 成品 | 成品 → 原料 |
+
+**自检**: 生成完毕后, 按时间轴检查每对相邻镜头:
+- ❌ Shot N 的结果/产出物已经在 Shot N-1 中被使用了？→ 顺序反了, 必须调换
+- ❌ Shot N 展示「享用」, Shot N+1 展示「制作过程」？→ 因果倒置, 必须调换
+- ✅ 每个镜头的动作/状态是上一镜头的自然延续或合理跳转
 
 ## 镜头内信息密度 (每个镜头必须丰富)
 
@@ -434,7 +553,122 @@
 - 第一个镜头必须在 **1 秒内** 抓住注意力
 - 叙事结构: 冲击开场 → 快速发展 → 高潮收尾
 
+---
+
+## ⚠️ 时长分配策略 (必须遵守)
+
+**镜头时长不是均匀分配的。** 时长 = 信息密度 × 情绪权重。全片所有镜头时长相同 = 监控回放节奏。
+
+| 叙事位置 | 推荐时长 | 原因 |
+|---------|---------|------|
+| 开场钩子 | 3-4s | 短促抓注意力, 不给观众划走的机会 |
+| 叙事发展 | 5-6s | 正常展开, 信息密度适中 |
+| 高潮/英雄镜头 | 6-8s | 给观众时间沉浸在最佳画面中 |
+| 收尾/升华 | 5-7s | 留白感, 情绪沉淀 |
+| Insert shot | 3-5s | 快速切入切出, 保持节奏 |
+
+### 时长分配铁律
+
+- **禁止所有镜头时长相同** (如全部 5s) → 必须有长短变化
+- **短视频 (≤20s): 首镜必须 ≤ 4s**
+- **高潮镜头应是全片最长** (或并列最长)
+- **Insert shot 不超过 5s** (快进快出)
+
+---
+
+## ⚠️ 镜头数量推荐 (根据总时长)
+
+**镜头数量必须匹配总时长。** 过多则每镜太短 (低于 Seedance 4s 下限), 过少则叙事节奏拖沓。
+
+| 总时长 | 推荐镜头数 | 每镜平均 | 节奏特征 |
+|--------|-----------|---------|----------|
+| 10s | 2 | 5s | 紧凑双镜 |
+| 15s | 3 | 5s | 标准短片 |
+| 20s | 3-4 | 5-7s | 从容叙事 |
+| 30s | 4-6 | 5-7s | 完整小故事 |
+| 45s | 6-8 | 5-7s | 多段落 |
+| 60s | 8-10 | 6-7s | 长叙事 |
+
+### 数量铁律
+
+- **禁止 10s 视频用 4+ 镜头** (每镜 < 4s 超出 Seedance 下限)
+- **禁止 60s 视频只用 3 镜头** (每镜 20s 超出 Seedance 15s 上限)
+- **实际 sum(durations) 必须在目标时长的 ±15% 范围内**
+- 根据本表选定镜头数后, 再结合「时长分配策略」为每镜分配具体时长
+
+---
+
+## 竖版 (9:16) 特殊规则
+
+当 `aspect_ratio` 为 `9:16` 时, 横版构图规则**不完全适用**, 必须遵循以下竖版专属策略:
+
+### 构图调整
+
+| 横版规则 | 竖版适配 | 原因 |
+|---------|---------|------|
+| 左右三分法 | 改为上中下三段 | 窄画面左右空间不足 |
+| pan 横摇 | 改为 tilt-up / tilt-down 纵摇 | 窄画面横摇无效果 |
+| 宽景全景 | 改为纵深构图 | 横向展不开, 用前后景层次代替 |
+| 人物全身 | 改为半身以上 | 全身在窄画面中太小 |
+
+### 竖版构图手法
+
+| 构图 | 描述 | prompt 关键词 |
+|------|------|--------------|
+| 纵向三分 | 主体在画面上/中/下三分之一 | `subject in upper third` / `lower third` |
+| 垂直纵深 | 前景虚化 + 主体 + 远景层次 | `vertical depth composition, foreground bokeh` |
+| 顶部留白 | 主体偏下, 上方留空气感 | `subject in lower half, sky above` |
+| 仰角全身 | 极端低角度展示全身 | `extreme low-angle looking up at full body` |
+| 俯视平铺 | 产品/食物从上往下拍 | `overhead flat-lay shot` |
+
+### 竖版安全区
+
+- **上方 15%**: 被平台标题/状态栏遮挡, 不放关键内容
+- **下方 20%**: 被平台评论区/操作栏遮挡, 不放关键内容
+- **安全主体区域**: 画面中间 65% 的纵向空间
+
+### 竖版运镜限制
+
+- ❌ `pan` (横摇): 禁用 → 改用 `tilt-up` / `tilt-down`
+- ❌ `tracking` 水平跟踪: 效果差 → 改用 `crane-up` / `push-in`
+- ✅ `push-in` / `pull-out`: 竖版最佳运镜
+- ✅ `tilt-up` / `tilt-down`: 竖版独有优势
+- ✅ `fixed`: 竖版同样适用
+
+---
+
+## 🔊 音频设计 (影响 generate_audio 和 music_style)
+
+### 环境音层次
+
+每个镜头的 `generate_audio` 决策应基于场景是否有明确的环境音价值:
+
+| 场景类型 | generate_audio | 原因 |
+|---------|---------------|------|
+| 有明确环境音 (咖啡店/街道/工厂/自然) | `true` | 环境音增强沉浸感 |
+| 纯黑背景产品棚拍 | `false` | 让 BGM 主导, 避免生成噪音 |
+| 高速运动/冲击镜头 | `true` | 音效增强冲击力 |
+| 安静的情绪镜头 (日出/冥想) | `true` | 微弱环境音增添真实感 |
+| 纯图形/抽象动画 | `false` | 无自然音源 |
+
+### music_style 写法规则
+
+`music_style` 字段必须具体到 **乐器 + 节奏 + 情绪动态**, 禁止模糊描述:
+
+- ✅ `\"gentle piano with ambient cafe foley, building to warm strings at climax\"`
+- ✅ `\"deep bass drop with rhythmic percussion, minimal intro then explosive drop\"`
+- ✅ `\"lo-fi hip-hop beats with vinyl crackle, steady groove throughout\"`
+- ❌ `\"background music\"` / `\"cinematic music\"` / `\"nice soundtrack\"`
+
+音乐描述包含三要素:
+1. **乐器/音色**: piano, strings, synth bass, acoustic guitar, percussion
+2. **节奏/速度**: gentle, building, explosive, steady groove, slow crescendo
+3. **动态变化**: starts minimal → swells at climax → resolves gently
+
+---
+
 ## 角色一致性 (必须遵守)
+
 
 因为 Seedance 模型**没有上下文记忆**, 每个镜头的 prompt 是独立处理的。
 
@@ -453,6 +687,31 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 - 人物镜头追加: `avoid bent limbs, no identity drift, no extra limbs`
 - 产品镜头追加: `no morphing shapes, keep geometry stable`
 - 长镜头 (>10s): `avoid temporal flicker`
+
+---
+
+## ⚠️ Seedance 2.0 模型已知局限 (prompt 必须规避)
+
+以下是 Seedance 2.0 的能力边界, **prompt_en 中必须主动规避这些场景**, 否则生成质量会严重下降:
+
+| 局限 | 规避策略 | prompt 写法 |
+|------|---------|-------------|
+| 不支持文字/Logo 渲染 | 禁止要求画面中出现具体文字、品牌名、数字 | ❌ "text saying BRAND" → ✅ 用 subtitle_text 烧录字幕 |
+| 人脸一致性有限 | 用服装+体型+发型锚定角色, 减少正面大特写 | 优先 medium shot, 避免连续 close-up on face |
+| 复杂多人交互困难 | 单镜头最多 2 个角色互动 | 超过 2 人用 wide shot 弱化面部细节 |
+| 手部容易畸变 | 手部特写加强 negative_prompt | 追加 `anatomically correct hands, five fingers` |
+| 长镜头 (>10s) 稳定性下降 | >10s 的镜头用 fixed 运镜 + 简单动作 | 复杂动作控制在 8s 以内 |
+| 快速复杂运动容易模糊 | 快速运动镜头不超过 5s | `fast` speed 镜头 duration ≤ 5 |
+| 物体变形/消失 | 几何稳定的场景用 fixed 运镜 | 产品镜头加 `keep geometry stable` |
+| 光影突变 | 避免同一镜头内大幅度光线变化 | 一个镜头内光线方向/色温保持恒定 |
+
+### 自检规则
+
+生成完毕后, 逐镜头检查:
+- ❌ prompt 中要求出现文字/数字/Logo？→ 删除, 改用 subtitle_text
+- ❌ 某镜头 duration > 10s 且运镜复杂？→ 拆分或简化运镜为 fixed
+- ❌ 某镜头包含 3+ 角色近距离互动？→ 改用远景或拆成多镜头
+- ❌ fast speed + duration > 5s？→ 缩短时长或降速
 
 ## 输出格式 (严格 JSON)
 
@@ -488,7 +747,8 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
       "transition_to_next": "cut",
       "generate_audio": true,
       "characters": ["角色ID"],
-      "extract_character_ref": true
+      "extract_character_ref": true,
+      "key_props": ["物件1英文名", "物件2英文名"]
     }
   ]
 }
@@ -508,3 +768,6 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 - **每镜头 mood 不可重复**: 情绪必须有弧线
 - **至少 1 个无人物 insert shot**: 这是高端广告的标志
 - **scene_description 必须标注场景名称**: 用【】标注, 如【咖啡店吧台】
+- **key_props 必填**: 每个 shot 必须标注关键道具, 同场景新增道具必须有引入动作
+- **禁止物件凭空出现**: 同场景内新物件必须通过动作引入或前镜铺垫
+- **环境元素一致**: 同场景连续镜头的天气/光线/背景物不得突变

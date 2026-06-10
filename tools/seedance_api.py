@@ -176,10 +176,16 @@ class SeedanceAPI:
 
         except Exception as e:
             error_str = str(e)
-            if "content" in error_str.lower() and "moderation" in error_str.lower():
+            err_low = error_str.lower()
+            # 隐私/真实人物检测 — 上层需据此放弃角色参考帧重试
+            if any(kw in err_low for kw in [
+                "real person", "privacy", "sensitive",
+                "privacyinformation", "人脸", "真人", "肖像",
+            ]):
+                return {"status": "failed", "error": error_str, "error_type": "privacy"}
+            if "content" in err_low and "moderation" in err_low:
                 return {"status": "failed", "error": error_str, "error_type": "moderation"}
             # 识别 429 限流错误 — 上层需据此做长时间退避
-            err_low = error_str.lower()
             if "429" in error_str or "quotaexceeded" in err_low or "toomanyrequests" in err_low:
                 return {"status": "failed", "error": error_str, "error_type": "rate_limit"}
             return {"status": "failed", "error": error_str, "error_type": "unknown"}
@@ -202,7 +208,16 @@ class SeedanceAPI:
                     }
                 elif status in ("failed", "expired", "cancelled"):
                     error_msg = getattr(result, "error", status)
-                    error_type = "moderation" if "content" in str(error_msg).lower() else "unknown"
+                    msg_low = str(error_msg).lower()
+                    if any(kw in msg_low for kw in [
+                        "real person", "privacy", "sensitive",
+                        "privacyinformation", "人脸", "真人", "肖像",
+                    ]):
+                        error_type = "privacy"
+                    elif "content" in msg_low:
+                        error_type = "moderation"
+                    else:
+                        error_type = "unknown"
                     return {"status": "failed", "error": str(error_msg), "error_type": error_type}
 
             except Exception as e:

@@ -18,7 +18,9 @@ def test_fast_motion_uses_cut():
         {"camera": {"primary_movement": "tracking", "speed": "fast"}},
         {"camera": {"primary_movement": "pan", "speed": "slow"}},
     ]
-    assert infer_transitions(shots) == ["cut"]
+    result = infer_transitions(shots)
+    assert result[0][0] == "cut"
+    assert result[0][1] == 0.0
 
 
 def test_crane_up_uses_fade_black():
@@ -26,7 +28,9 @@ def test_crane_up_uses_fade_black():
         {"camera": {"primary_movement": "crane-up", "speed": "slow"}},
         {"camera": {"primary_movement": "fixed", "speed": "slow"}},
     ]
-    assert infer_transitions(shots) == ["fade_to_black"]
+    result = infer_transitions(shots)
+    assert result[0][0] == "fade_to_black"
+    assert result[0][1] == 0.8
 
 
 def test_same_direction_uses_dissolve():
@@ -34,8 +38,8 @@ def test_same_direction_uses_dissolve():
         {"camera": {"primary_movement": "slow push-in", "speed": "slow"}},
         {"camera": {"primary_movement": "fast push-in", "speed": "slow"}},
     ]
-    # 注: 第二个含 'fast' 不影响, 因为判断的是 speed_cur (第一个镜头)
-    assert infer_transitions(shots) == ["dissolve"]
+    result = infer_transitions(shots)
+    assert result[0][0] == "dissolve"
 
 
 def test_direction_change_uses_crossfade():
@@ -43,7 +47,8 @@ def test_direction_change_uses_crossfade():
         {"camera": {"primary_movement": "push-in", "speed": "slow"}},
         {"camera": {"primary_movement": "orbit", "speed": "slow"}},
     ]
-    assert infer_transitions(shots) == ["crossfade"]
+    result = infer_transitions(shots)
+    assert result[0][0] == "crossfade"
 
 
 def test_explicit_transition_respected():
@@ -51,7 +56,8 @@ def test_explicit_transition_respected():
         {"camera": {"primary_movement": "push-in"}, "transition_to_next": "wipe_left"},
         {"camera": {"primary_movement": "pan"}},
     ]
-    assert infer_transitions(shots) == ["wipe_left"]
+    result = infer_transitions(shots)
+    assert result[0][0] == "wipe_left"
 
 
 def test_extract_direction():

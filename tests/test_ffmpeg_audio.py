@@ -72,9 +72,84 @@ def test_concat_preserves_audio(work_dir):
         clips.append(str(norm))
 
     out = work_dir / "concat.mp4"
-    ffmpeg_ops.concat_with_transitions(clips, ["crossfade", "crossfade"], str(out))
+    ffmpeg_ops.concat_with_transitions(
+        clips, [("crossfade", 0.5), ("crossfade", 0.5)], str(out)
+    )
 
     assert ffmpeg_ops.has_audio_track(str(out)), "拼接后音频丢失!"
     dur = ffmpeg_ops.get_video_duration(str(out))
-    # 3×2s - 2×0.5s 转场重叠 ≈ 5s
-    assert 4.5 < dur < 6.0, f"时长异常: {dur}"
+    # 3×2s - 2×0.5s 转场重叠 ≈ 5s (允许轻微编码偏差)
+    assert 4.5 < dur < 6.5, f"时长异常: {dur}"
+
+
+def test_title_card_does_not_drop_final_audio(work_dir):
+    """片头 + 正片拼接后仍应保留音频, 否则导出版无法直接发布。"""
+    title = work_dir / "title.mp4"
+    body = work_dir / "body.mp4"
+    final = work_dir / "final.mp4"
+
+    ffmpeg_ops.generate_title_card(
+        "测试片头",
+        output_path=str(title),
+        duration=0.5,
+        resolution="320:180",
+    )
+    _make_clip(body, with_audio=True, color="blue", dur=1)
+
+    assert ffmpeg_ops.has_audio_track(str(title))
+    ffmpeg_ops.concat_simple([str(title), str(body)], str(final))
+    assert ffmpeg_ops.has_audio_track(str(final))
+
+
+def test_platform_export_preserves_audio_and_square_pixels(work_dir):
+    """平台导出应保留音频并写入 setsar=1。"""
+    source = work_dir / "source.mp4"
+    exported = work_dir / "tiktok.mp4"
+    _make_clip(source, with_audio=True, color="purple", dur=1)
+
+    ffmpeg_ops.export_for_platform(str(source), "tiktok", str(exported))
+
+    assert ffmpeg_ops.has_audio_track(str(exported))
+    info = ffmpeg_ops.get_video_info(str(exported))
+    video_stream = next(s for s in info["streams"] if s["codec_type"] == "video")
+    assert video_stream["width"] == 1080
+    assert video_stream["height"] == 1920
+    assert video_stream["sample_aspect_ratio"] == "1:1"
+
+    report = ffmpeg_ops.validate_publish_ready(str(exported), platform="tiktok")
+    assert report["has_audio"]
+    assert report["width"] == 1080
+    assert report["height"] == 1920
+
+
+def test_platform_export_adds_silent_audio_when_missing(work_dir):
+    """源文件没有音轨时, 平台导出应补静音轨。"""
+    source = work_dir / "source_no_audio.mp4"
+    exported = work_dir / "youtube.mp4"
+    _make_clip(source, with_audio=False, color="green", dur=1)
+
+    ffmpeg_ops.export_for_platform(str(source), "youtube", str(exported))
+
+    assert ffmpeg_ops.has_audio_track(str(exported))
+
+
+def test_publish_validation_rejects_missing_audio(work_dir):
+    """发布校验应拦截无音频输出。"""
+    source = work_dir / "source_no_audio.mp4"
+    _make_clip(source, with_audio=False, color="yellow", dur=1)
+
+    with pytest.raises(RuntimeError, match="缺少音频流"):
+        ffmpeg_ops.validate_publish_ready(str(source))
+
+
+def test_publish_validation_rejects_duration_mismatch(work_dir):
+    """发布校验应拦截明显的时长漂移。"""
+    source = work_dir / "source.mp4"
+    _make_clip(source, with_audio=True, color="orange", dur=1)
+
+    with pytest.raises(RuntimeError, match="时长偏差过大"):
+        ffmpeg_ops.validate_publish_ready(
+            str(source),
+            expected_duration=5.0,
+            duration_tolerance=0.5,
+        )

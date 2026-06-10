@@ -11,6 +11,7 @@ from typing import Optional
 import config
 from tools.seedance_api import SeedanceAPI, GenerationResult, GenerationStatus
 from tools.frame_extractor import extract_frame, check_video_quality
+from pipeline.storyboard import _extract_scene_name
 
 
 @dataclass
@@ -40,7 +41,7 @@ class VideoGenerator:
 
     async def generate_all(self, storyboard: dict) -> list[ShotResult]:
         """
-        按顺序生成所有镜头
+        生成所有镜头 — 顺序执行 + 独立镜头预生成优化
 
         角色一致性策略:
         ┌─────────────────────────────────────────────────────────────────┐
@@ -48,24 +49,36 @@ class VideoGenerator:
         │ Shot 2+ (含角色): reference_image (角色参考帧 + 上一帧尾帧)     │
         │ Shot N  (无角色): first_frame (上一帧尾帧, I2V 强衔接)          │
         │                                                                 │
-        │ 核心原则:                                                       │
-        │ - 角色镜头用 reference_image 保证角色外观一致                    │
-        │ - 非角色镜头用 first_frame 保证画面衔接                         │
-        │ - 两种 role 不在同一镜头混用 (API 限制)                         │
+        │ 并行优化:                                                       │
+        │ - 扫描后续镜头, 识别「独立镜头」(无角色+场景切换 = 纯 T2V)     │
+        │ - 独立镜头提前提交 API, 当流水线轮到时直接取结果               │
+        │ - 保守策略: 只预生成确定无依赖的镜头, 保证正确性               │
         └─────────────────────────────────────────────────────────────────┘
         """
-        results = []
+        shots = storyboard["shots"]
+        results: list[ShotResult] = [None] * len(shots)  # type: ignore
         prev_last_frame: Optional[str] = None
+        prev_shot: Optional[dict] = None
 
-        for shot in storyboard["shots"]:
+        # 识别可预生成的独立镜头 (无角色 + 与前一镜头不同场景)
+        independent_indices = self._find_independent_shots(shots)
+        prefetch_tasks: dict[int, asyncio.Task] = {}
+
+        for idx, shot in enumerate(shots):
             print(f"\n  🎬 生成 Shot {shot['shot_id']}...")
 
-            result = await self._generate_single_shot(
-                shot=shot,
-                prev_last_frame=prev_last_frame,
-                storyboard=storyboard,
-            )
-            results.append(result)
+            # 如果当前镜头有预生成任务, 等待其结果
+            if idx in prefetch_tasks:
+                print(f"     ⚡ 预生成命中, 等待结果...")
+                result = await prefetch_tasks.pop(idx)
+            else:
+                result = await self._generate_single_shot(
+                    shot=shot,
+                    prev_last_frame=prev_last_frame,
+                    prev_shot=prev_shot,
+                    storyboard=storyboard,
+                )
+            results[idx] = result
 
             if result.status == "success":
                 prev_last_frame = result.last_frame_url
@@ -73,12 +86,63 @@ class VideoGenerator:
                 print(f"     ✓ 完成 (质量: {result.quality_score}, 模型: {result.model_used})")
                 print(f"     [DEBUG] last_frame_url = {prev_last_frame}")
                 print(f"     [DEBUG] character_refs = {list(self.character_refs.keys())}")
+
+                # 提取角色参考帧
+                if shot.get("extract_character_ref"):
+                    await self._extract_character_ref(shot, result.local_path)
+
+                # 预提交后续独立镜头 (利用当前镜头下载/处理的空闲时间)
+                for future_idx in independent_indices:
+                    if future_idx > idx and future_idx not in prefetch_tasks:
+                        future_shot = shots[future_idx]
+                        print(f"     ⚡ 预提交独立镜头 Shot {future_shot['shot_id']} (T2V)")
+                        prefetch_tasks[future_idx] = asyncio.create_task(
+                            self._generate_single_shot(
+                                shot=future_shot,
+                                prev_last_frame=None,  # 独立镜头不依赖前帧
+                                prev_shot=None,
+                                storyboard=storyboard,
+                            )
+                        )
+                        break  # 一次只预提交一个, 控制并发
             else:
                 # 断链兜底: 保留上一张成功尾帧, 让后续镜头仍能衔接
                 print(f"     ✗ 失败: {result.errors[-1] if result.errors else 'unknown'}")
                 print(f"     ↪ 保留上一成功尾帧续接 (不退化为纯文本)")
 
+            prev_shot = shot
+
+        # 清理未消费的预生成任务
+        for task in prefetch_tasks.values():
+            task.cancel()
+
         return results
+
+    def _find_independent_shots(self, shots: list[dict]) -> set[int]:
+        """识别可独立生成的镜头 (无角色 + 场景切换 = 纯 T2V, 不依赖前帧)
+
+        保守策略: 只在确定无依赖时才标记为独立, 避免影响画面一致性。
+        """
+        independent = set()
+        for i in range(1, len(shots)):
+            shot = shots[i]
+            prev = shots[i - 1]
+
+            # 条件 1: 无角色 (insert shot)
+            if shot.get("characters"):
+                continue
+            # 条件 2: 场景切换 (不需要上一镜头的尾帧衔接)
+            curr_scene = _extract_scene_name(shot.get("scene_description", ""))
+            prev_scene = _extract_scene_name(prev.get("scene_description", ""))
+            if curr_scene == prev_scene:
+                continue
+            # 条件 3: 非首镜 (首镜不需要预生成, 本来就是 T2V)
+            independent.add(i)
+
+        if independent:
+            ids = [shots[i]["shot_id"] for i in sorted(independent)]
+            print(f"  [OPT] 识别到 {len(independent)} 个独立镜头可预生成: Shot {ids}")
+        return independent
 
     @staticmethod
     def _shot_has_character(shot: dict) -> bool:
@@ -91,7 +155,7 @@ class VideoGenerator:
 
     async def _generate_single_shot(
         self, shot: dict, prev_last_frame: Optional[str],
-        storyboard: dict
+        prev_shot: Optional[dict], storyboard: dict
     ) -> ShotResult:
         """生成单个镜头 (含缓存 + 降级链 + 429 限流退避)"""
 
@@ -108,7 +172,19 @@ class VideoGenerator:
                 result.local_path = cached_path
                 result.quality_score = qa["quality_score"]
                 result.model_used = "cached"
-                result.last_frame_url = None
+
+                # 从缓存视频提取尾帧, 供后续镜头衔接 (否则 last_frame_url=None 断链)
+                lastframe_path = str(
+                    self.output_dir / "shots" / f"shot_{shot['shot_id']:03d}_lastframe.jpg"
+                )
+                try:
+                    from tools.ffmpeg_ops import get_video_duration
+                    dur = get_video_duration(cached_path)
+                    extract_frame(cached_path, lastframe_path, timestamp=max(0, dur - 0.1))
+                    result.last_frame_url = lastframe_path
+                except Exception:
+                    result.last_frame_url = None
+
                 print(f"     ♻️ 缓存命中: {cached_path} (质量: {qa['quality_score']})")
 
                 # 缓存命中时也要提取角色参考 (否则后续镜头没有角色锚点)
@@ -123,6 +199,7 @@ class VideoGenerator:
         max_rate_limit_retries = 3
 
         use_refs = True  # 是否使用参考图 (失败后会关闭)
+        skip_char_refs = False  # 隐私审核失败后, 丢弃角色参考帧但保留尾帧衔接
         for level, deg_config in enumerate(config.DEGRADATION_CHAIN):
             if rate_limit_backoff >= max_rate_limit_retries:
                 break
@@ -133,17 +210,31 @@ class VideoGenerator:
                 result.resolution_used = deg_config["resolution"]
 
                 try:
-                    # 构建 prompt (注入角色描述, 双重保障)
+                    # 构建 prompt (注入角色描述 + 环境承接, 双重保障)
                     prompt = self._inject_character_description(
                         shot["prompt_en"], shot, storyboard
+                    )
+                    prompt = self._inject_scene_continuity(
+                        prompt, shot, prev_shot
                     )
                     if shot.get("negative_prompt"):
                         prompt += f". {shot['negative_prompt']}"
 
                     # 构建参考图列表 + 确定 role
-                    image_urls, role = self._build_image_refs(
-                        shot, prev_last_frame
-                    ) if use_refs else ([], None)
+                    if not use_refs:
+                        image_urls, role = [], None
+                    elif skip_char_refs:
+                        # 隐私降级: 不传角色参考帧, 仅保留尾帧做画面衔接
+                        if prev_last_frame and not os.path.isfile(prev_last_frame):
+                            image_urls, role = [prev_last_frame], "first_frame"
+                            print(f"     [REF] 隐私降级: 仅尾帧 first_frame (角色靠 prompt 描述)")
+                        else:
+                            image_urls, role = [], None
+                            print(f"     [REF] 隐私降级: 无可用尾帧, T2V 模式")
+                    else:
+                        image_urls, role = self._build_image_refs(
+                            shot, prev_last_frame
+                        )
 
                     # 调用 API
                     gen_result = await self.api.generate(
@@ -177,12 +268,29 @@ class VideoGenerator:
                             print(f"     ⚠ QA 不通过: {qa['issues']}, 重试...")
                             continue
 
-                        # 提取角色参考帧 (Shot 1 标记了 extract_character_ref)
-                        if shot.get("extract_character_ref"):
-                            await self._extract_character_ref(shot, local_path)
-
                         result.status = "success"
                         return result
+
+                    elif gen_result.get("error_type") == "privacy":
+                        # 隐私审核: 角色参考帧被判定为含真实人物
+                        # 降级策略: 丢弃角色参考帧, 仅保留尾帧做画面衔接
+                        if not skip_char_refs:
+                            skip_char_refs = True
+                            result.errors.append(
+                                f"L{level}: 隐私审核拒绝角色参考帧, 降级为尾帧衔接 + 文字描述"
+                            )
+                            print(f"     ⚠ 隐私审核: 角色参考帧含类真实人物, 改为尾帧衔接模式")
+                            await asyncio.sleep(3)
+                            continue
+                        else:
+                            # 尾帧也被拒绝 → 纯文本 T2V
+                            use_refs = False
+                            result.errors.append(
+                                f"L{level}: 隐私审核再次拒绝, 退化为纯文本 T2V"
+                            )
+                            print(f"     ⚠ 隐私审核: 尾帧也被拒绝, 退化为纯文本 T2V")
+                            await asyncio.sleep(3)
+                            continue
 
                     elif gen_result.get("error_type") == "moderation":
                         result.errors.append(f"L{level}: 审核失败")
@@ -209,6 +317,31 @@ class VideoGenerator:
                         print(f"     ⚠ L{level} 错误: {err_msg[:200]}")
 
                         err_low = err_msg.lower()
+                        # 隐私类错误走专用降级路径
+                        is_privacy = any(
+                            kw in err_low for kw in [
+                                "real person", "privacy", "sensitive",
+                                "privacyinformation", "人脸", "真人", "肖像",
+                            ]
+                        )
+                        if is_privacy and use_refs:
+                            if not skip_char_refs:
+                                skip_char_refs = True
+                                result.errors.append(
+                                    f"L{level}: 隐私审核 (错误消息), 降级为尾帧衔接"
+                                )
+                                print(f"     ⚠ 隐私审核 (错误消息): 降级为尾帧衔接模式")
+                                await asyncio.sleep(3)
+                                continue
+                            else:
+                                use_refs = False
+                                result.errors.append(
+                                    f"L{level}: 隐私审核再次拒绝, 退化为纯文本 T2V"
+                                )
+                                print(f"     ⚠ 隐私审核: 退化为纯文本 T2V")
+                                await asyncio.sleep(3)
+                                continue
+
                         is_ref_error = use_refs and any(
                             kw in err_low for kw in [
                                 "download image", "image format", "image size",
@@ -270,15 +403,15 @@ class VideoGenerator:
         if char_ref_paths:
             # ─── 角色模式: reference_image ───
             refs = list(char_ref_paths)  # 角色参考帧 (本地, 后续转 base64)
-            # 追加上一帧尾帧用于场景连贯 (远程 URL)
-            if prev_last_frame and not os.path.isfile(prev_last_frame):
+            # 追加上一帧尾帧用于场景连贯 (本地路径或远程 URL, API 层均支持)
+            if prev_last_frame:
                 refs.append(prev_last_frame)
             print(f"     [REF] 角色模式: {len(refs)} 张 reference_image "
                   f"(角色: {len(char_ref_paths)}, 尾帧: {1 if prev_last_frame else 0})")
             return refs, "reference_image"
 
         # ─── 非角色模式: first_frame (I2V 强衔接) ───
-        if prev_last_frame and not os.path.isfile(prev_last_frame):
+        if prev_last_frame:
             print(f"     [REF] 衔接模式: 1 张 first_frame")
             return [prev_last_frame], "first_frame"
 
@@ -319,3 +452,54 @@ class VideoGenerator:
             extract_frame(video_path, ref_path)
             self.character_refs[char_name] = ref_path
             print(f"     📸 角色参考帧已提取: {char_name} → {ref_path}")
+
+    @staticmethod
+    def _inject_scene_continuity(
+        prompt: str, current_shot: dict, prev_shot: Optional[dict]
+    ) -> str:
+        """注入上一镜头的环境承接信息, 帮助 Seedance 生成视觉一致的画面。
+
+        策略 (保守, 避免 prompt 超长):
+        - 仅在同场景连续镜头时注入
+        - 仅注入: 光线条件 + 关键道具名称
+        - 承接描述控制在 20 词以内
+        - 不同场景的镜头不注入 (新场景有自己的世界)
+        """
+        if prev_shot is None:
+            return prompt
+
+        prev_scene = _extract_scene_name(prev_shot.get("scene_description", ""))
+        curr_scene = _extract_scene_name(current_shot.get("scene_description", ""))
+
+        # 不同场景 → 不注入 (新场景有自己的环境)
+        if prev_scene != curr_scene:
+            return prompt
+
+        # 构建承接描述片段
+        continuity_parts: list[str] = []
+
+        # 1. 光线条件延续
+        prev_lighting = prev_shot.get("lighting", "")
+        if prev_lighting:
+            # 取前 5 个词作为简洁的光线描述
+            light_brief = " ".join(prev_lighting.split()[:5])
+            continuity_parts.append(f"maintaining {light_brief}")
+
+        # 2. 关键道具延续 (上一镜头的 key_props 中与当前镜头共有的)
+        prev_props = set(
+            p.lower().strip() for p in prev_shot.get("key_props", [])
+        )
+        curr_props = set(
+            p.lower().strip() for p in current_shot.get("key_props", [])
+        )
+        shared_props = prev_props & curr_props
+        if shared_props:
+            # 只取前 3 个, 避免过长
+            props_str = ", ".join(list(shared_props)[:3])
+            continuity_parts.append(f"{props_str} still present")
+
+        if not continuity_parts:
+            return prompt
+
+        continuity_hint = "; ".join(continuity_parts)
+        return f"[Scene continuity — {continuity_hint}] {prompt}"

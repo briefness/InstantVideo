@@ -108,37 +108,19 @@ class VideoPipeline:
 
         # ─── Stage 3: 拼接 + 转场 ───
         console.print("\n[bold cyan]🔗 Stage 3: 拼接 & 转场...[/bold cyan]")
-        # 根据相邻镜头运动方向智能推导转场 (覆盖 LLM 无脑 crossfade)
+        # 根据相邻镜头运动方向智能推导转场类型 + 时长
         used_shots = storyboard["shots"][:len(video_files)]
         transitions = ffmpeg_ops.infer_transitions(used_shots)
+        self._transitions = transitions  # 保存供后续口播时间计算使用
+        t_info = ", ".join(f"{t[0]}({t[1]:.1f}s)" for t in transitions)
+        console.print(f"   转场: {t_info}")
         concat_path = str(self.workspace / "concat.mp4")
         ffmpeg_ops.concat_with_transitions(video_files, transitions, concat_path)
         console.print(f"   ✓ 拼接完成 ({ffmpeg_ops.get_video_duration(concat_path):.1f}s)")
 
-        # ─── Stage 4: 调色 ───
-        console.print("\n[bold cyan]🎨 Stage 4: 调色...[/bold cyan]")
-        graded_path = str(self.workspace / "graded.mp4")
-        
-        # mood 可能是多个词 (如 "warm premium inviting"), 逐词匹配
-        mood_str = storyboard.get("mood", "cinematic").lower()
-        lut_name = None
-        for key, value in config.MOOD_LUT_MAP.items():
-            if key in mood_str:
-                lut_name = value
-                break
-        lut_name = lut_name or "IWLTBAP Coronado - Standard.cube"
-        
-        lut_path = str(config.LUTS_DIR / lut_name)
-
-        if Path(lut_path).exists():
-            ffmpeg_ops.apply_lut(concat_path, lut_path, graded_path)
-            console.print(f"   ✓ 已应用 LUT: {lut_name}")
-        else:
-            graded_path = concat_path
-            console.print(f"   ⚠ LUT 文件不存在 ({lut_name}), 跳过调色")
-
-        # ─── Stage 5: 音频 ───
-        console.print("\n[bold cyan]🔊 Stage 5: 音频处理...[/bold cyan]")
+        # ─── Stage 4: 音频处理 (BGM + 口播) ───
+        # 音频处理前置: 全程 -c:v copy, 不损耗视频画质
+        console.print("\n[bold cyan]🔊 Stage 4: 音频处理...[/bold cyan]")
         audio_path = str(self.workspace / "with_audio.mp4")
         music_file = self.music_path
 
@@ -147,14 +129,14 @@ class VideoPipeline:
             music_file = self._auto_select_music(storyboard)
 
         if music_file and Path(music_file).exists():
-            ffmpeg_ops.add_background_music(graded_path, music_file, audio_path)
+            ffmpeg_ops.add_background_music(concat_path, music_file, audio_path)
             console.print(f"   ✓ 背景音乐已添加: {Path(music_file).name}")
         else:
-            audio_path = graded_path
+            audio_path = concat_path
             console.print("   - 无外部音乐, 保留 Seedance 原生音频")
 
-        # ─── Stage 5.5: 口播合成 + ducking ───
-        console.print("\n[bold cyan]🎙️ Stage 5.5: 口播合成...[/bold cyan]")
+        # 口播合成 + ducking
+        console.print("\n[bold cyan]🎙️ Stage 4.5: 口播合成...[/bold cyan]")
         vo_segments: list[TTSSegment] = []
         try:
             vo_segments = await synthesize_voiceover(storyboard, str(self.workspace))
@@ -165,8 +147,10 @@ class VideoPipeline:
         if vo_segments:
             console.print(f"   ✓ 合成 {len(vo_segments)} 段口播")
 
-            # 计算每段口播在成片中的起始时间 (累加镜头时长)
-            shot_start_times = self._calc_shot_start_times(storyboard)
+            # 计算每段口播在成片中的起始时间 (累加镜头时长 - 转场重叠)
+            shot_start_times = self._calc_shot_start_times(
+                storyboard, transitions=self._transitions
+            )
             vo_mix_input = []
             for seg in vo_segments:
                 start = shot_start_times.get(seg.shot_id, 0.0) + 0.5  # 延迟 0.5s 开口
@@ -182,20 +166,38 @@ class VideoPipeline:
         else:
             console.print("   - 无口播内容")
 
-        # ─── Stage 6: 字幕 ───
-        console.print("\n[bold cyan]💬 Stage 6: 字幕...[/bold cyan]")
-        srt_path = str(self.workspace / "subtitles.srt")
-        subtitled_path = str(self.workspace / "subtitled.mp4")
+        # ─── Stage 5: 调色 + 字幕 (合并为单次编码, 减少画质损失) ───
+        console.print("\n[bold cyan]🎨 Stage 5: 调色 & 字幕...[/bold cyan]")
 
-        # 优先用 TTS 真实时长对齐字幕; 无口播时退回镜头时长
+        # 准备 LUT 路径
+        mood_str = storyboard.get("mood", "cinematic").lower()
+        lut_name = None
+        for key, value in config.MOOD_LUT_MAP.items():
+            if key in mood_str:
+                lut_name = value
+                break
+        lut_name = lut_name or "IWLTBAP Coronado - Standard.cube"
+        lut_path = str(config.LUTS_DIR / lut_name)
+        if not Path(lut_path).exists():
+            lut_path = None
+            console.print(f"   ⚠ LUT 文件不存在 ({lut_name}), 跳过调色")
+
+        # 准备 SRT 字幕
+        srt_path = str(self.workspace / "subtitles.srt")
         self._generate_srt(storyboard, srt_path, vo_segments=vo_segments)
 
-        if Path(srt_path).stat().st_size > 10:
-            ffmpeg_ops.burn_subtitles(vo_path, srt_path, subtitled_path)
+        # 合并 LUT + 字幕为单次编码 (原来分两步: LUT→字幕, 现在合并)
+        visual_path = str(self.workspace / "visual_final.mp4")
+        ffmpeg_ops.apply_visual_filters(
+            vo_path, visual_path,
+            lut_path=lut_path,
+            srt_path=srt_path,
+        )
+        if lut_path:
+            console.print(f"   ✓ LUT 调色: {lut_name}")
+        if Path(srt_path).exists() and Path(srt_path).stat().st_size > 10:
             console.print("   ✓ 字幕已烧录")
-        else:
-            subtitled_path = vo_path
-            console.print("   - 无字幕内容")
+        console.print("   ✓ 视觉滤镜合并完成 (单次编码)")
 
         # ─── Stage 7: 片头片尾 + 多平台导出 ───
         console.print("\n[bold cyan]📦 Stage 7: 包装 & 导出...[/bold cyan]")
@@ -209,7 +211,13 @@ class VideoPipeline:
 
         # 最终合成
         final_path = str(self.workspace / "final.mp4")
-        ffmpeg_ops.concat_simple([title_path, subtitled_path], final_path)
+        ffmpeg_ops.concat_simple([title_path, visual_path], final_path)
+        validation_reports = {
+            "final": ffmpeg_ops.validate_publish_ready(final_path),
+            "exports": {},
+        }
+        final_duration = validation_reports["final"]["duration"]
+        console.print("   ✓ final.mp4 发布校验通过")
 
         # 多平台导出
         exports_dir = self.workspace / "exports"
@@ -217,10 +225,18 @@ class VideoPipeline:
         for platform in self.platforms:
             export_path = str(exports_dir / f"{platform}.mp4")
             ffmpeg_ops.export_for_platform(final_path, platform, export_path)
+            validation_reports["exports"][platform] = ffmpeg_ops.validate_publish_ready(
+                export_path,
+                platform=platform,
+                expected_duration=final_duration,
+            )
             console.print(f"   📤 {platform}: {export_path}")
+            console.print("      ✓ 发布校验通过")
+
+        self._save_json("publish_validation.json", validation_reports)
 
         # ─── 完成 ───
-        duration = ffmpeg_ops.get_video_duration(final_path)
+        duration = final_duration
         console.print(Panel(
             f"[bold green]✅ 成片输出[/bold green]\n\n"
             f"  路径: {final_path}\n"
@@ -249,7 +265,9 @@ class VideoPipeline:
             for seg in vo_segments:
                 vo_dur_map[seg.shot_id] = seg.duration
 
-        shot_starts = self._calc_shot_start_times(storyboard)
+        shot_starts = self._calc_shot_start_times(
+            storyboard, transitions=getattr(self, '_transitions', None)
+        )
         lines = []
         idx = 1
 
@@ -277,13 +295,23 @@ class VideoPipeline:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
-    def _calc_shot_start_times(self, storyboard: dict) -> dict[int, float]:
-        """计算每个镜头在成片中的起始时间"""
+    def _calc_shot_start_times(
+        self, storyboard: dict, transitions: list[tuple[str, float]] | None = None,
+    ) -> dict[int, float]:
+        """计算每个镜头在成片中的起始时间
+
+        考虑 xfade 转场的时间重叠: 转场会让相邻镜头重叠 transition_duration,
+        所以实际起始时间 = sum(prev_durations) - sum(prev_transition_overlaps)
+        """
         result = {}
         t = 0.0
-        for shot in storyboard["shots"]:
+        shots = storyboard["shots"]
+        for i, shot in enumerate(shots):
             result[shot["shot_id"]] = t
             t += shot["duration"]
+            # 减去与下一镜头的转场重叠时长
+            if transitions and i < len(transitions):
+                t -= transitions[i][1]  # transitions[i] = (type, duration)
         return result
 
     @staticmethod
