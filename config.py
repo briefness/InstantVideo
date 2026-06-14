@@ -15,7 +15,9 @@ PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
 # ─── 火山引擎 Ark (统一平台) ───
 ARK_API_KEY = os.getenv("ARK_API_KEY")                    # 唯一 Key, 同时调用 LLM 和视频生成
-ARK_BASE_URL = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/plan/v3")
+ARK_API_KEY_SEEDANCE = os.getenv("ARK_API_KEY_SEEDANCE", ARK_API_KEY)  # 视频生成专用 Key (优先级高)
+ARK_BASE_URL = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/plan/v3")  # LLM
+ARK_BASE_URL_SEEDANCE = os.getenv("ARK_BASE_URL_SEEDANCE", "https://ark.cn-beijing.volces.com/api/v3")  # 视频生成
 
 # 视频生成模型
 SEEDANCE_MODEL = os.getenv("SEEDANCE_MODEL", "doubao-seedance-2.0-fast")

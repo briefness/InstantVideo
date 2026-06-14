@@ -53,15 +53,15 @@ class SeedanceAPI:
         self._init_clients()
 
     def _init_clients(self):
-        """初始化火山引擎 Ark 客户端"""
+        """初始化火山引擎 Ark 客户端 (视频生成使用独立的 base URL)"""
         if config.ARK_API_KEY:
             try:
                 from volcenginesdkarkruntime import Ark
                 self.ark_client = Ark(
-                    api_key=config.ARK_API_KEY,
-                    base_url=config.ARK_BASE_URL,
+                    api_key=config.ARK_API_KEY_SEEDANCE,
+                    base_url=config.ARK_BASE_URL_SEEDANCE,
                 )
-                print("  ✓ Volcengine Ark 连接就绪 (1080p+)")
+                print(f"  ✓ Volcengine Ark 连接就绪 (视频生成: {config.ARK_BASE_URL_SEEDANCE})")
             except ImportError:
                 print("  ⚠ volcengine SDK 未安装: pip install 'volcengine-python-sdk[ark]'")
                 raise
