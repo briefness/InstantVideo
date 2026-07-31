@@ -6,10 +6,16 @@ import asyncio
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
+from collections.abc import Callable, Mapping
 from typing import Optional
 
 import config
-from tools.seedance_api import SeedanceAPI, GenerationResult, GenerationStatus
+from tools.seedance_api import (
+    SeedanceAPI,
+    GenerationResult,
+    GenerationStatus,
+    SubmittedTaskCheckpointError,
+)
 from tools.frame_extractor import extract_frame, check_video_quality
 from pipeline.storyboard import _extract_scene_name
 
@@ -26,18 +32,39 @@ class ShotResult:
     resolution_used: str = ""
     attempts: int = 0
     errors: list = field(default_factory=list)
+    provider_task_id: Optional[str] = None
+
+
+class ProgressPersistenceError(RuntimeError):
+    """Run state could not be persisted; continuing could duplicate paid work."""
 
 
 class VideoGenerator:
     """视频生成引擎 — 角色一致性优先 + 画面衔接"""
 
-    def __init__(self, output_dir: str):
+    def __init__(
+        self,
+        output_dir: str,
+        on_progress: Callable[[ShotResult], None] | None = None,
+        resume_task_ids: Mapping[int, str] | None = None,
+    ):
         self.api = SeedanceAPI()
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         (self.output_dir / "shots").mkdir(exist_ok=True)
         (self.output_dir / "character_refs").mkdir(exist_ok=True)
         self.character_refs: dict[str, str] = {}  # name → 本地图片路径
+        self.on_progress = on_progress
+        self.resume_task_ids = dict(resume_task_ids or {})
+
+    def _notify_progress(self, result: ShotResult) -> None:
+        if self.on_progress:
+            try:
+                self.on_progress(result)
+            except Exception as exc:
+                raise ProgressPersistenceError(
+                    f"Shot {result.shot_id} 状态保存失败，已停止以避免重复生成: {exc}"
+                ) from exc
 
     async def generate_all(self, storyboard: dict) -> list[ShotResult]:
         """
@@ -159,7 +186,13 @@ class VideoGenerator:
     ) -> ShotResult:
         """生成单个镜头 (含缓存 + 降级链 + 429 限流退避)"""
 
-        result = ShotResult(shot_id=shot["shot_id"])
+        resume_task_id = self.resume_task_ids.pop(shot["shot_id"], None)
+        result = ShotResult(
+            shot_id=shot["shot_id"],
+            status="running",
+            provider_task_id=resume_task_id,
+        )
+        self._notify_progress(result)
 
         # ─── 缓存检查: 已有本地文件则跳过 API (断点续传核心逻辑) ───
         cached_path = str(
@@ -191,6 +224,7 @@ class VideoGenerator:
                 if shot.get("extract_character_ref") and not self.character_refs:
                     await self._extract_character_ref(shot, cached_path)
 
+                self._notify_progress(result)
                 return result
             else:
                 print(f"     ⚠ 缓存文件 QA 不通过 ({qa['issues']}), 重新生成")
@@ -200,7 +234,10 @@ class VideoGenerator:
 
         use_refs = True  # 是否使用参考图 (失败后会关闭)
         skip_char_refs = False  # 隐私审核失败后, 丢弃角色参考帧但保留尾帧衔接
-        for level, deg_config in enumerate(config.DEGRADATION_CHAIN):
+        requested_resolution = storyboard.get("resolution", config.DEFAULT_RESOLUTION)
+        for level, deg_config in enumerate(
+            config.GENERATION_CHAINS[requested_resolution]
+        ):
             if rate_limit_backoff >= max_rate_limit_retries:
                 break
 
@@ -237,6 +274,10 @@ class VideoGenerator:
                         )
 
                     # 调用 API
+                    def remember_submission(task_id: str) -> None:
+                        result.provider_task_id = task_id
+                        self._notify_progress(result)
+
                     gen_result = await self.api.generate(
                         prompt=prompt,
                         duration=min(shot["duration"], deg_config["max_duration"]),
@@ -248,7 +289,10 @@ class VideoGenerator:
                         image_urls=image_urls if image_urls else None,
                         image_role=role,
                         timeout=config.GENERATION_TIMEOUT,
+                        task_id=resume_task_id,
+                        on_submitted=remember_submission,
                     )
+                    resume_task_id = None
 
                     if gen_result["status"] == "succeeded":
                         # ⚡ 立即下载
@@ -269,6 +313,16 @@ class VideoGenerator:
                             continue
 
                         result.status = "success"
+                        self._notify_progress(result)
+                        return result
+
+                    elif gen_result.get("error_type") in {"poll_error", "poll_timeout"}:
+                        result.errors.append(
+                            f"远端任务 {result.provider_task_id} 状态暂不可确认: "
+                            f"{gen_result.get('error', 'unknown')}"
+                        )
+                        result.status = "running"
+                        self._notify_progress(result)
                         return result
 
                     elif gen_result.get("error_type") == "privacy":
@@ -357,6 +411,8 @@ class VideoGenerator:
                             await asyncio.sleep(3)
                             continue
 
+                except (ProgressPersistenceError, SubmittedTaskCheckpointError):
+                    raise
                 except asyncio.TimeoutError:
                     result.errors.append(f"L{level}: 超时")
                     print(f"     ⚠ L{level} 超时")
@@ -367,6 +423,7 @@ class VideoGenerator:
                 await asyncio.sleep(5 * (attempt + 1))
 
         result.status = "failed"
+        self._notify_progress(result)
         return result
 
     def _build_image_refs(

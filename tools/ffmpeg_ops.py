@@ -10,6 +10,8 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+import config
+
 
 def get_video_duration(filepath: str) -> float:
     """获取视频时长 (秒)"""
@@ -279,40 +281,94 @@ def concat_with_transitions(
 
 
 def concat_simple(video_files: list[str], output_path: str):
-    """简单拼接 (无转场, 使用 concat demuxer)
-
-    优先尝试 -c copy 零损耗拼接 (当所有片段编码一致时);
-    如果 copy 失败 (编码不一致), 回退到 re-encode。
-    """
-    list_file = str(Path(output_path).parent / "concat_list.txt")
-    with open(list_file, "w") as f:
-        for vf in video_files:
-            f.write(f"file '{os.path.abspath(vf)}'\n")
-
-    # 先尝试 -c copy (零损耗, 快速)
-    cmd_copy = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-        "-i", list_file,
-        "-c", "copy",
-        "-movflags", "+faststart",
-        output_path,
-    ]
-    result = subprocess.run(cmd_copy, capture_output=True, text=True)
-    if result.returncode == 0:
-        os.remove(list_file)
+    """拼接无转场片段，并在时间基不兼容时重建时间戳。"""
+    if not video_files:
+        raise ValueError("没有视频文件")
+    if len(video_files) == 1:
+        subprocess.run(["cp", video_files[0], output_path], check=True)
         return
 
-    # copy 失败 → re-encode (编码不一致时的兜底)
-    cmd_reencode = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0",
-        "-i", list_file,
-        "-c:v", "libx264", "-crf", "18",
+    if _stream_copy_compatible(video_files):
+        list_file = str(Path(output_path).parent / "concat_list.txt")
+        try:
+            with open(list_file, "w") as f:
+                for video_file in video_files:
+                    f.write(f"file '{os.path.abspath(video_file)}'\n")
+            result = subprocess.run(
+                [
+                    "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                    "-i", list_file,
+                    "-c", "copy",
+                    "-movflags", "+faststart",
+                    output_path,
+                ],
+                capture_output=True,
+            )
+            if result.returncode == 0:
+                return
+        finally:
+            Path(list_file).unlink(missing_ok=True)
+
+    cmd = ["ffmpeg", "-y"]
+    for video_file in video_files:
+        cmd += ["-i", video_file]
+
+    filters = []
+    concat_inputs = []
+    for index in range(len(video_files)):
+        filters.extend([
+            (
+                f"[{index}:v]settb=AVTB,setpts=PTS-STARTPTS,"
+                f"fps={config.DEFAULT_FPS},setsar=1,format=yuv420p[v{index}]"
+            ),
+            (
+                f"[{index}:a]aresample=48000,"
+                "aformat=sample_fmts=fltp:sample_rates=48000:"
+                f"channel_layouts=stereo,asetpts=PTS-STARTPTS[a{index}]"
+            ),
+        ])
+        concat_inputs.append(f"[v{index}][a{index}]")
+    filters.append(
+        "".join(concat_inputs)
+        + f"concat=n={len(video_files)}:v=1:a=1[vout][aout]"
+    )
+
+    cmd += [
+        "-filter_complex", ";".join(filters),
+        "-map", "[vout]", "-map", "[aout]",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
         output_path,
     ]
-    subprocess.run(cmd_reencode, check=True, capture_output=True)
-    os.remove(list_file)
+    subprocess.run(cmd, check=True, capture_output=True)
+
+
+def _stream_copy_compatible(video_files: list[str]) -> bool:
+    """Only copy streams when concat demuxer can preserve their timestamps."""
+    signatures = []
+    for video_file in video_files:
+        streams = get_video_info(video_file).get("streams", [])
+        video = next((s for s in streams if s.get("codec_type") == "video"), None)
+        audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+        if not video or not audio:
+            return False
+        signatures.append((
+            video.get("codec_name"),
+            video.get("profile"),
+            video.get("pix_fmt"),
+            video.get("width"),
+            video.get("height"),
+            video.get("time_base"),
+            video.get("r_frame_rate"),
+            audio.get("codec_name"),
+            audio.get("sample_rate"),
+            audio.get("channels"),
+            audio.get("channel_layout"),
+            audio.get("time_base"),
+        ))
+    return all(signature == signatures[0] for signature in signatures[1:])
 
 
 # ─── 帧提取工具 ───
@@ -747,12 +803,26 @@ def generate_title_card(
 # ─── 多平台导出 ───
 
 PLATFORM_SPECS = {
-    "youtube": {"resolution": "1920:1080", "ratio": "16:9"},
-    "tiktok": {"resolution": "1080:1920", "ratio": "9:16"},
-    "bilibili": {"resolution": "1920:1080", "ratio": "16:9"},
-    "xiaohongshu": {"resolution": "1080:1440", "ratio": "3:4"},
-    "instagram_reels": {"resolution": "1080:1920", "ratio": "9:16"},
-    "instagram_feed": {"resolution": "1080:1080", "ratio": "1:1"},
+    "youtube": {
+        "resolution": config.SEEDANCE_OUTPUT_DIMENSIONS["480p"]["16:9"],
+        "ratio": "16:9",
+    },
+    "tiktok": {
+        "resolution": config.SEEDANCE_OUTPUT_DIMENSIONS["480p"]["9:16"],
+        "ratio": "9:16",
+    },
+    "bilibili": {
+        "resolution": config.SEEDANCE_OUTPUT_DIMENSIONS["480p"]["16:9"],
+        "ratio": "16:9",
+    },
+    "instagram_reels": {
+        "resolution": config.SEEDANCE_OUTPUT_DIMENSIONS["480p"]["9:16"],
+        "ratio": "9:16",
+    },
+    "instagram_feed": {
+        "resolution": config.SEEDANCE_OUTPUT_DIMENSIONS["480p"]["1:1"],
+        "ratio": "1:1",
+    },
 }
 
 
@@ -872,6 +942,8 @@ def export_for_platform(
     crop: str = "center",
 ):
     """导出指定平台规格的视频"""
+    if platform not in PLATFORM_SPECS:
+        raise ValueError(f"不支持的导出平台: {platform}")
     spec = PLATFORM_SPECS[platform]
     res = spec["resolution"]
 

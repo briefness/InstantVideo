@@ -9,13 +9,14 @@ from pathlib import Path
 from openai import OpenAI
 
 import config
+from pipeline.models import validate_storyboard
 
 
 def generate_storyboard(
     user_request: str,
     target_duration: int = 30,
-    aspect_ratio: str = "16:9",
-    resolution: str = "1080p",
+    aspect_ratio: str = config.DEFAULT_RATIO,
+    resolution: str = config.DEFAULT_RESOLUTION,
     style: str = "cinematic",
 ) -> dict:
     """
@@ -45,6 +46,7 @@ def generate_storyboard(
 
     # 补充默认值
     _apply_defaults(storyboard, aspect_ratio, resolution, style)
+    storyboard = validate_storyboard(storyboard)
 
     # 丰富度校验 + 自动修正 (严重问题触发 LLM 重跑)
     warnings, is_critical = _validate_storyboard_richness(storyboard)
@@ -58,6 +60,7 @@ def generate_storyboard(
         correction_prompt = _build_correction_prompt(user_prompt, storyboard, warnings)
         storyboard = _call_llm_for_storyboard(client, system_prompt, correction_prompt)
         _apply_defaults(storyboard, aspect_ratio, resolution, style)
+        storyboard = validate_storyboard(storyboard)
 
         # 二次校验 (仅打印, 不再重试)
         warnings_2, _ = _validate_storyboard_richness(storyboard)
@@ -96,17 +99,17 @@ def _call_llm_for_storyboard(client: OpenAI, system_prompt: str, user_prompt: st
         print(f"   [DEBUG] model={config.LLM_MODEL}, base_url={config.ARK_BASE_URL}")
         raise
 
-    # 验证必要字段
-    assert "shots" in storyboard, "分镜缺少 shots 字段"
-    assert len(storyboard["shots"]) > 0, "分镜 shots 为空"
+    if not isinstance(storyboard, dict):
+        raise ValueError("LLM 分镜响应必须是 JSON 对象")
     return storyboard
 
 
 def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style: str):
     """补充默认值"""
-    storyboard.setdefault("aspect_ratio", aspect_ratio)
-    storyboard.setdefault("resolution", resolution)
-    storyboard.setdefault("style", style)
+    # CLI parameters are authoritative; the LLM cannot silently override them.
+    storyboard["aspect_ratio"] = aspect_ratio
+    storyboard["resolution"] = resolution
+    storyboard["style"] = style
     storyboard.setdefault("mood", "cinematic")
     storyboard.setdefault("music_style", "cinematic orchestral")
 
@@ -188,7 +191,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 7. 每个镜头时长 4-15 秒 (整数)
 8. 物件连续性: 同场景内新物件必须有引入动作(placing/bringing等)或前镜铺垫, 场景切换时豁免
 9. 环境一致性: 同场景连续镜头的天气/光线/背景物不得突变
-10. 时长分配: 禁止所有镜头时长相同, 开场 3-4s, 高潮最长 6-8s, insert 3-5s
+10. 时长分配: 禁止所有镜头时长相同, 开场 4s, 高潮最长 6-8s, insert 4-5s
 11. 镜头数量: 10s=2镜, 15s=3镜, 20s=3-4镜, 30s=4-6镜, 60s=8-10镜
 
 ## Seedance 模型局限 (必须规避)

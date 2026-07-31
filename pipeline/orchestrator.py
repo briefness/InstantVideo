@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
@@ -14,6 +13,8 @@ from rich.panel import Panel
 import config
 from pipeline.storyboard import generate_storyboard
 from pipeline.generator import VideoGenerator, ShotResult
+from pipeline.models import RunOptions, RunStatus
+from pipeline.run_state import RunWorkspace
 from tools import ffmpeg_ops, beat_analyzer
 from tools.tts import synthesize_voiceover, TTSSegment
 
@@ -25,25 +26,75 @@ class VideoPipeline:
 
     def __init__(
         self,
-        resolution: str = "1080p",
-        aspect_ratio: str = "16:9",
+        resolution: str = config.DEFAULT_RESOLUTION,
+        aspect_ratio: str = config.DEFAULT_RATIO,
         style: str = "cinematic",
         music_path: str | None = None,
         platforms: list[str] | None = None,
+        run_workspace: RunWorkspace | None = None,
     ):
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
         self.style = style
         self.music_path = music_path
         self.platforms = platforms or ["youtube", "tiktok"]
+        self.run_workspace = run_workspace
+        self.workspace = run_workspace.path if run_workspace else None
+        self._resuming = run_workspace is not None
 
-        # 工作目录
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.workspace = Path(config.OUTPUT_DIR) / timestamp
-        self.workspace.mkdir(parents=True, exist_ok=True)
+    @classmethod
+    def from_workspace(cls, workspace: str | Path) -> "VideoPipeline":
+        run_workspace = RunWorkspace.resume(workspace)
+        options = run_workspace.options
+        return cls(
+            resolution=options.resolution,
+            aspect_ratio=options.aspect_ratio,
+            style=options.style,
+            music_path=options.music_path,
+            platforms=options.platforms,
+            run_workspace=run_workspace,
+        )
 
-    async def run(self, user_request: str) -> str:
-        """执行完整流水线, 返回最终视频路径"""
+    async def run(self, user_request: str | None = None) -> str:
+        """Execute a new or resumed one-click run and return the final video."""
+        if self.run_workspace:
+            stored_request = self.run_workspace.options.request
+            if user_request and user_request.strip() != stored_request:
+                raise ValueError("恢复运行不能修改原始视频需求")
+            user_request = stored_request
+        else:
+            if not user_request or not user_request.strip():
+                raise ValueError("视频需求不能为空")
+            options = RunOptions(
+                request=user_request.strip(),
+                resolution=self.resolution,
+                aspect_ratio=self.aspect_ratio,
+                style=self.style,
+                music_path=self.music_path,
+                platforms=self.platforms,
+            )
+            self.run_workspace = RunWorkspace.create(config.OUTPUT_DIR, options)
+            self.workspace = self.run_workspace.path
+            user_request = options.request
+
+        completed = self.run_workspace.completed_output()
+        if completed:
+            console.print(f"[green]✓ 运行已完成，复用现有成片: {completed}[/green]")
+            return completed
+
+        try:
+            return await self._run(user_request)
+        except asyncio.CancelledError:
+            self.run_workspace.mark_interrupted()
+            raise
+        except Exception as exc:
+            self.run_workspace.mark_failed(str(exc))
+            raise
+
+    async def _run(self, user_request: str) -> str:
+        """Run pipeline stages after workspace identity has been established."""
+        if self.workspace is None or self.run_workspace is None:
+            raise RuntimeError("运行工作区尚未初始化")
 
         console.print(Panel(
             f"[bold]🎬 Seedance 电影级视频流水线[/bold]\n\n{user_request}",
@@ -51,36 +102,58 @@ class VideoPipeline:
         ))
 
         # ─── Stage 1: 分镜生成 ───
-        console.print("\n[bold cyan]📋 Stage 1: 生成分镜脚本...[/bold cyan]")
         target_dur = self._parse_duration(user_request)
-        storyboard = generate_storyboard(
-            user_request=user_request,
-            target_duration=target_dur,
-            aspect_ratio=self.aspect_ratio,
-            resolution=self.resolution,
-            style=self.style,
-        )
-        self._save_json("storyboard.json", storyboard)
-        console.print(f"   ✓ {len(storyboard['shots'])} 个镜头, 风格: {storyboard['mood']}, 目标时长: {target_dur}s")
-
-        # ─── Stage 1.5: 音乐卡点 (可选) ───
-        music_analysis = None
-        if self.music_path:
-            console.print("\n[bold cyan]🎵 Stage 1.5: 音乐节拍分析...[/bold cyan]")
-            music_analysis = beat_analyzer.analyze_beats(self.music_path)
-            console.print(f"   ✓ BPM: {music_analysis['bpm']:.0f}, 节拍数: {len(music_analysis['beat_times'])}")
-
-            # 对齐镜头时长到节拍
-            aligned = beat_analyzer.align_durations_to_beats(
-                music_analysis, len(storyboard["shots"])
+        if self._resuming:
+            console.print("\n[bold cyan]📋 Stage 1: 恢复已确认分镜...[/bold cyan]")
+            storyboard = self.run_workspace.load_storyboard()
+        else:
+            console.print("\n[bold cyan]📋 Stage 1: 生成分镜脚本...[/bold cyan]")
+            storyboard = generate_storyboard(
+                user_request=user_request,
+                target_duration=target_dur,
+                aspect_ratio=self.aspect_ratio,
+                resolution=self.resolution,
+                style=self.style,
             )
-            for i, shot in enumerate(storyboard["shots"]):
-                shot["duration"] = aligned[i]
-            self._save_json("storyboard_aligned.json", storyboard)
+            self._save_json("storyboard_draft.json", storyboard)
+
+            # ─── Stage 1.5: 音乐卡点 (可选) ───
+            if self.music_path:
+                console.print("\n[bold cyan]🎵 Stage 1.5: 音乐节拍分析...[/bold cyan]")
+                music_analysis = beat_analyzer.analyze_beats(self.music_path)
+                console.print(f"   ✓ BPM: {music_analysis['bpm']:.0f}, 节拍数: {len(music_analysis['beat_times'])}")
+                aligned = beat_analyzer.align_durations_to_beats(
+                    music_analysis, len(storyboard["shots"])
+                )
+                for i, shot in enumerate(storyboard["shots"]):
+                    shot["duration"] = aligned[i]
+                self._save_json("storyboard_aligned.json", storyboard)
+
+            storyboard = self.run_workspace.save_storyboard(storyboard)
+
+        console.print(f"   ✓ {len(storyboard['shots'])} 个镜头, 风格: {storyboard['mood']}, 目标时长: {target_dur}s")
 
         # ─── Stage 2: 视频生成 ───
         console.print("\n[bold cyan]🎥 Stage 2: 生成视频片段...[/bold cyan]")
-        generator = VideoGenerator(str(self.workspace))
+        def record_progress(result: ShotResult) -> None:
+            self.run_workspace.record_shot(
+                shot_id=result.shot_id,
+                status=result.status,
+                provider_task_id=result.provider_task_id,
+                local_path=result.local_path,
+                last_frame_url=result.last_frame_url,
+                quality_score=result.quality_score,
+                model_used=result.model_used,
+                resolution_used=result.resolution_used,
+                attempts=result.attempts,
+                errors=result.errors,
+            )
+
+        generator = VideoGenerator(
+            str(self.workspace),
+            on_progress=record_progress,
+            resume_task_ids=self.run_workspace.resumable_provider_tasks(),
+        )
         results = await generator.generate_all(storyboard)
         self._save_json("generation_results.json", [r.__dict__ for r in results])
 
@@ -88,8 +161,13 @@ class VideoPipeline:
         console.print(
             f"   ✓ 成功 {len(success_results)}/{len(results)} 个镜头"
         )
-        if not success_results:
-            raise RuntimeError("所有镜头生成失败!")
+        if len(success_results) != len(results):
+            failed_ids = [str(r.shot_id) for r in results if r.status != "success"]
+            raise RuntimeError(
+                f"镜头 {', '.join(failed_ids)} 生成失败；运行状态已保存，可使用 --resume 继续"
+            )
+
+        self.run_workspace.checkpoint("postprocessing", RunStatus.running)
 
         # ─── Stage 2.5: 规格统一 ───
         console.print("\n[bold cyan]🎞️ Stage 2.5: 统一视频规格...[/bold cyan]")
@@ -97,8 +175,9 @@ class VideoPipeline:
         norm_dir.mkdir(exist_ok=True)
 
         video_files = []
-        res_map = {"1080p": "1920:1080", "720p": "1280:720", "480p": "854:480"}
-        target_res = res_map.get(self.resolution, "1920:1080")
+        target_res = config.SEEDANCE_OUTPUT_DIMENSIONS[self.resolution][
+            self.aspect_ratio
+        ]
 
         for r in success_results:
             norm_path = str(norm_dir / Path(r.local_path).name)
@@ -109,8 +188,7 @@ class VideoPipeline:
         # ─── Stage 3: 拼接 + 转场 ───
         console.print("\n[bold cyan]🔗 Stage 3: 拼接 & 转场...[/bold cyan]")
         # 根据相邻镜头运动方向智能推导转场类型 + 时长
-        used_shots = storyboard["shots"][:len(video_files)]
-        transitions = ffmpeg_ops.infer_transitions(used_shots)
+        transitions = ffmpeg_ops.infer_transitions(storyboard["shots"])
         self._transitions = transitions  # 保存供后续口播时间计算使用
         t_info = ", ".join(f"{t[0]}({t[1]:.1f}s)" for t in transitions)
         console.print(f"   转场: {t_info}")
@@ -207,13 +285,21 @@ class VideoPipeline:
         ffmpeg_ops.generate_title_card(
             title=storyboard.get("title", ""),
             output_path=title_path,
+            resolution=target_res,
         )
 
         # 最终合成
         final_path = str(self.workspace / "final.mp4")
         ffmpeg_ops.concat_simple([title_path, visual_path], final_path)
+        expected_final_duration = (
+            ffmpeg_ops.get_video_duration(title_path)
+            + ffmpeg_ops.get_video_duration(visual_path)
+        )
         validation_reports = {
-            "final": ffmpeg_ops.validate_publish_ready(final_path),
+            "final": ffmpeg_ops.validate_publish_ready(
+                final_path,
+                expected_duration=expected_final_duration,
+            ),
             "exports": {},
         }
         final_duration = validation_reports["final"]["duration"]
@@ -246,6 +332,7 @@ class VideoPipeline:
             title="完成", border_style="green",
         ))
 
+        self.run_workspace.mark_succeeded(final_path)
         return final_path
 
     def _generate_srt(

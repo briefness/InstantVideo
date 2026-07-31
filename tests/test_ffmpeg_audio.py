@@ -101,6 +101,43 @@ def test_title_card_does_not_drop_final_audio(work_dir):
     assert ffmpeg_ops.has_audio_track(str(final))
 
 
+def test_concat_simple_resets_incompatible_video_time_bases(work_dir):
+    """不同视频 time base 不能经 concat demuxer 误放大时间戳。"""
+    title = work_dir / "title.mp4"
+    body = work_dir / "body.mp4"
+    final = work_dir / "final.mp4"
+
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-v", "error",
+            "-f", "lavfi", "-i", "color=c=black:s=320x180:r=25:d=0.5",
+            "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+            "-t", "0.5",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-video_track_timescale", "12800",
+            "-c:a", "aac", "-shortest", str(title),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-v", "error",
+            "-f", "lavfi", "-i", "color=c=blue:s=320x180:r=24:d=1",
+            "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000:duration=1",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-video_track_timescale", "4460544",
+            "-c:a", "aac", "-shortest", str(body),
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+    ffmpeg_ops.concat_simple([str(title), str(body)], str(final))
+
+    assert ffmpeg_ops.get_video_duration(str(final)) == pytest.approx(1.5, abs=0.1)
+
+
 def test_platform_export_preserves_audio_and_square_pixels(work_dir):
     """平台导出应保留音频并写入 setsar=1。"""
     source = work_dir / "source.mp4"
@@ -112,14 +149,14 @@ def test_platform_export_preserves_audio_and_square_pixels(work_dir):
     assert ffmpeg_ops.has_audio_track(str(exported))
     info = ffmpeg_ops.get_video_info(str(exported))
     video_stream = next(s for s in info["streams"] if s["codec_type"] == "video")
-    assert video_stream["width"] == 1080
-    assert video_stream["height"] == 1920
+    assert video_stream["width"] == 496
+    assert video_stream["height"] == 864
     assert video_stream["sample_aspect_ratio"] == "1:1"
 
     report = ffmpeg_ops.validate_publish_ready(str(exported), platform="tiktok")
     assert report["has_audio"]
-    assert report["width"] == 1080
-    assert report["height"] == 1920
+    assert report["width"] == 496
+    assert report["height"] == 864
 
 
 def test_platform_export_adds_silent_audio_when_missing(work_dir):

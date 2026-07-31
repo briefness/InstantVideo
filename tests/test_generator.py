@@ -87,12 +87,12 @@ class TestBuildImageRefs:
         assert urls == ["http://a/last.jpg"]
         assert role == "first_frame"
 
-    def test_local_prev_frame_ignored(self, generator):
-        """本地文件路径的 prev_last_frame 不应被传给 API"""
+    def test_local_prev_frame_supported(self, generator):
+        """恢复时提取的本地尾帧可由 API 转成 data URI 继续衔接"""
         local_file = str(Path(__file__).resolve())
         urls, role = generator._build_image_refs({"shot_id": 2}, local_file)
-        assert urls == []
-        assert role is None
+        assert urls == [local_file]
+        assert role == "first_frame"
 
 
 class TestInjectCharacterDescription:

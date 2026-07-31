@@ -185,7 +185,7 @@
   "total_duration": 15,
   "style": "cinematic",
   "aspect_ratio": "16:9",
-  "resolution": "1080p",
+  "resolution": "480p",
   "mood": "warm premium",
   "music_style": "gentle piano with ambient cafe foley, soft crescendo",
   "characters": [
@@ -278,7 +278,7 @@
   "total_duration": 10,
   "style": "cinematic",
   "aspect_ratio": "16:9",
-  "resolution": "1080p",
+  "resolution": "480p",
   "mood": "bold energetic",
   "music_style": "deep bass drop with rhythmic percussion, building tension",
   "characters": [],
@@ -561,11 +561,11 @@
 
 | 叙事位置 | 推荐时长 | 原因 |
 |---------|---------|------|
-| 开场钩子 | 3-4s | 短促抓注意力, 不给观众划走的机会 |
+| 开场钩子 | 4s | 短促抓注意力, 不给观众划走的机会 |
 | 叙事发展 | 5-6s | 正常展开, 信息密度适中 |
 | 高潮/英雄镜头 | 6-8s | 给观众时间沉浸在最佳画面中 |
 | 收尾/升华 | 5-7s | 留白感, 情绪沉淀 |
-| Insert shot | 3-5s | 快速切入切出, 保持节奏 |
+| Insert shot | 4-5s | 快速切入切出, 保持节奏 |
 
 ### 时长分配铁律
 
@@ -721,7 +721,7 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
   "total_duration": 30,
   "style": "cinematic",
   "aspect_ratio": "16:9",
-  "resolution": "1080p",
+  "resolution": "480p",
   "mood": "整体氛围关键词",
   "music_style": "描述音乐风格 (具体到乐器和节奏)",
   "characters": [

@@ -20,24 +20,60 @@ ARK_BASE_URL = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/
 ARK_BASE_URL_SEEDANCE = os.getenv("ARK_BASE_URL_SEEDANCE", "https://ark.cn-beijing.volces.com/api/v3")  # 视频生成
 
 # 视频生成模型
-SEEDANCE_MODEL = os.getenv("SEEDANCE_MODEL", "doubao-seedance-2.0-fast")
+SEEDANCE_MODEL = os.getenv(
+    "SEEDANCE_MODEL", "doubao-seedance-2-0-mini-260615"
+)
 
 # LLM 文本模型 (分镜生成)
 LLM_MODEL = os.getenv("LLM_MODEL", "doubao-seed-2.0-lite")
 
 # ─── 默认生成参数 ───
-DEFAULT_RESOLUTION = "1080p"
+DEFAULT_RESOLUTION = "480p"
 DEFAULT_RATIO = "16:9"
 DEFAULT_DURATION = 5          # 秒 (每镜头)
 DEFAULT_FPS = 24
 DEFAULT_GENERATE_AUDIO = True
 
-# ─── 降级策略 ───
-# 注意: doubao-seedance-2.0-fast 不支持 1080p, 最高支持 720p
-DEGRADATION_CHAIN = [
-    {"model": SEEDANCE_MODEL, "resolution": "720p", "max_duration": 15},
-    {"model": "doubao-seedance-2.0-fast", "resolution": "480p", "max_duration": 10},
-]
+# ─── Seedance 2.0 Mini 官方输出规格 ───
+SUPPORTED_RESOLUTIONS = ("480p", "720p")
+SUPPORTED_ASPECT_RATIOS = ("16:9", "9:16", "4:3", "1:1", "3:4", "21:9")
+SUPPORTED_PLATFORMS = (
+    "youtube",
+    "tiktok",
+    "bilibili",
+    "instagram_reels",
+    "instagram_feed",
+)
+
+SEEDANCE_OUTPUT_DIMENSIONS = {
+    "480p": {
+        "16:9": "864:496",
+        "4:3": "752:560",
+        "1:1": "640:640",
+        "3:4": "560:752",
+        "9:16": "496:864",
+        "21:9": "992:432",
+    },
+    "720p": {
+        "16:9": "1280:720",
+        "4:3": "1112:834",
+        "1:1": "960:960",
+        "3:4": "834:1112",
+        "9:16": "720:1280",
+        "21:9": "1470:630",
+    },
+}
+
+# 默认只生成 480p；显式选择 720p 时才允许同模型降级到 480p。
+GENERATION_CHAINS = {
+    "480p": [
+        {"model": SEEDANCE_MODEL, "resolution": "480p", "max_duration": 15},
+    ],
+    "720p": [
+        {"model": SEEDANCE_MODEL, "resolution": "720p", "max_duration": 15},
+        {"model": SEEDANCE_MODEL, "resolution": "480p", "max_duration": 15},
+    ],
+}
 
 # ─── 调色 LUT 映射 ───
 MOOD_LUT_MAP = {
