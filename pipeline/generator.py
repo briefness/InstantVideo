@@ -17,7 +17,7 @@ from tools.seedance_api import (
     SubmittedTaskCheckpointError,
 )
 from tools.frame_extractor import extract_frame, check_video_quality
-from pipeline.storyboard import _extract_scene_name
+from pipeline.storyboard import _scene_id
 
 
 @dataclass
@@ -159,9 +159,10 @@ class VideoGenerator:
             if shot.get("characters"):
                 continue
             # 条件 2: 场景切换 (不需要上一镜头的尾帧衔接)
-            curr_scene = _extract_scene_name(shot.get("scene_description", ""))
-            prev_scene = _extract_scene_name(prev.get("scene_description", ""))
-            if curr_scene == prev_scene:
+            continuity = shot.get("continuity_from_previous")
+            if continuity == "seamless":
+                continue
+            if continuity in {None, "none"} and _scene_id(shot) == _scene_id(prev):
                 continue
             # 条件 3: 非首镜 (首镜不需要预生成, 本来就是 T2V)
             independent.add(i)
@@ -254,6 +255,7 @@ class VideoGenerator:
                     prompt = self._inject_scene_continuity(
                         prompt, shot, prev_shot
                     )
+                    prompt = self._inject_shot_contract(prompt, shot)
                     if shot.get("negative_prompt"):
                         prompt += f". {shot['negative_prompt']}"
 
@@ -429,25 +431,20 @@ class VideoGenerator:
     def _build_image_refs(
         self, shot: dict, prev_last_frame: Optional[str],
     ) -> tuple[list[str], Optional[str]]:
-        """构建参考图列表 — 角色一致性优先策略
+        """按单一职责选择参考图，避免身份与起始状态共用一个 role。
 
         返回 (image_urls, role):
         ┌───────────────────────────────────────────────────────────┐
-        │ 有角色参考帧:                                             │
-        │   → [角色参考帧, 上一帧尾帧] + "reference_image"          │
-        │   角色参考帧是本地文件 (API 层自动转 base64)              │
-        │   上一帧尾帧是远程 URL                                    │
-        │   统一用 reference_image, 保证角色外观一致                │
-        │                                                           │
-        │ 无角色参考帧:                                             │
-        │   → [上一帧尾帧] + "first_frame"                         │
-        │   单图用 first_frame, I2V 强衔接                         │
-        │                                                           │
-        │ 什么都没有:                                               │
-        │   → [] + None                                             │
-        │   T2V 纯文本生成                                         │
+        │ seamless: 尾帧 + first_frame，锁定真实起始状态            │
+        │ intentional_cut: 角色图 + reference_image，锁定身份       │
+        │ 无可用职责资产: [] + None                                 │
         └───────────────────────────────────────────────────────────┘
         """
+        continuity = shot.get("continuity_from_previous")
+        if continuity == "seamless" and prev_last_frame:
+            print("     [REF] 无缝续接: 尾帧 first_frame")
+            return [prev_last_frame], "first_frame"
+
         # 收集本镜头涉及的角色参考帧 (本地文件路径)
         shot_chars = shot.get("characters", [])
         char_ref_paths = []
@@ -457,23 +454,25 @@ class VideoGenerator:
                 if os.path.isfile(path):
                     char_ref_paths.append(path)
 
-        if char_ref_paths:
-            # ─── 角色模式: reference_image ───
-            refs = list(char_ref_paths)  # 角色参考帧 (本地, 后续转 base64)
-            # 追加上一帧尾帧用于场景连贯 (本地路径或远程 URL, API 层均支持)
-            if prev_last_frame:
-                refs.append(prev_last_frame)
-            print(f"     [REF] 角色模式: {len(refs)} 张 reference_image "
-                  f"(角色: {len(char_ref_paths)}, 尾帧: {1 if prev_last_frame else 0})")
-            return refs, "reference_image"
+        if continuity == "intentional_cut":
+            if char_ref_paths:
+                print(
+                    f"     [REF] 有意切镜: {len(char_ref_paths)} 张角色 reference_image"
+                )
+                return char_ref_paths, "reference_image"
+            print("     [REF] 有意切镜: 无角色锚点，T2V 模式")
+            return [], None
 
-        # ─── 非角色模式: first_frame (I2V 强衔接) ───
+        # 旧分镜没有显式契约时，尾帧优先承担连续性职责。
         if prev_last_frame:
-            print(f"     [REF] 衔接模式: 1 张 first_frame")
+            print("     [REF] 兼容续接: 尾帧 first_frame")
             return [prev_last_frame], "first_frame"
 
-        # ─── 无参考图: T2V ───
-        print(f"     [REF] T2V 模式: 无参考图")
+        if char_ref_paths:
+            print(f"     [REF] 角色锚定: {len(char_ref_paths)} 张 reference_image")
+            return char_ref_paths, "reference_image"
+
+        print("     [REF] T2V 模式: 无参考图")
         return [], None
 
     def _inject_character_description(
@@ -500,6 +499,41 @@ class VideoGenerator:
 
         return prompt
 
+    @staticmethod
+    def _inject_shot_contract(prompt: str, shot: dict) -> str:
+        """把一个主动作和明确起止状态编译为紧凑自然语言约束。"""
+        primary_action = str(shot.get("primary_action", "")).strip()
+        start = VideoGenerator._state_summary(shot.get("start_state"))
+        end = VideoGenerator._state_summary(shot.get("end_state"))
+        parts = []
+        if shot.get("continuity_from_previous") == "seamless":
+            parts.append(
+                "start exactly from the supplied first frame and preserve its visible state"
+            )
+        elif start:
+            parts.append(f"start exactly with {start}")
+        if primary_action:
+            parts.append(f"perform only this primary action: {primary_action}")
+        if end:
+            parts.append(f"finish with {end}")
+        if not parts:
+            return prompt
+        return (
+            f"[Shot contract — {'; '.join(parts)}; "
+            "do not introduce another major action] "
+            f"{prompt}"
+        )
+
+    @staticmethod
+    def _state_summary(state: object) -> str:
+        if not isinstance(state, dict):
+            return ""
+        values = [
+            str(state.get(key, "")).strip()
+            for key in ("location", "subject", "action_phase", "camera")
+        ]
+        return ", ".join(value for value in values if value)
+
     async def _extract_character_ref(self, shot: dict, video_path: str):
         """从生成的视频中提取角色参考帧, 存储到本地供后续镜头使用"""
         for char_name in shot.get("characters", ["main"]):
@@ -525,11 +559,14 @@ class VideoGenerator:
         if prev_shot is None:
             return prompt
 
-        prev_scene = _extract_scene_name(prev_shot.get("scene_description", ""))
-        curr_scene = _extract_scene_name(current_shot.get("scene_description", ""))
+        prev_scene = _scene_id(prev_shot)
+        curr_scene = _scene_id(current_shot)
 
         # 不同场景 → 不注入 (新场景有自己的环境)
-        if prev_scene != curr_scene:
+        if (
+            prev_scene != curr_scene
+            or current_shot.get("continuity_from_previous") == "intentional_cut"
+        ):
             return prompt
 
         # 构建承接描述片段

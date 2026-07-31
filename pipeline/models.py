@@ -27,13 +27,31 @@ class CharacterSpec(BaseModel):
     description: str = ""
 
 
+class ContinuityStateSpec(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    location: str = ""
+    subject: str = ""
+    action_phase: str = ""
+    camera: str = ""
+
+
 class ShotSpec(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     shot_id: int = Field(gt=0)
     duration: int = Field(default=5, ge=4, le=15)
+    # Empty keeps persisted pre-contract storyboards resumable; new storyboards
+    # receive a stable ID at the LLM boundary in _apply_defaults.
+    scene_id: str = ""
     scene_description: str = Field(min_length=1)
     prompt_en: str = Field(min_length=1)
+    continuity_from_previous: Literal[
+        "none", "seamless", "intentional_cut"
+    ] = "none"
+    primary_action: str = ""
+    start_state: ContinuityStateSpec = Field(default_factory=ContinuityStateSpec)
+    end_state: ContinuityStateSpec = Field(default_factory=ContinuityStateSpec)
     camera: CameraSpec = Field(default_factory=CameraSpec)
     lighting: str = ""
     mood: str = "cinematic"

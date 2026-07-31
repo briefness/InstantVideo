@@ -7,11 +7,12 @@
 ## 核心能力
 
 - **分镜自动生成** — LLM 理解需求 → 拆解为电影级分镜（含运镜 / 光线 / 角色 / 情绪）
-- **分镜丰富度校验 + 自动修正** — 9 维度检测（场景多样性、景别跳跃、情绪弧线、insert shot、物件连续性、时序因果、主题锚定、prompt 词数、时长均匀性），严重问题自动触发 LLM 重跑修正
+- **分镜契约校验 + 自动修正** — 检查稳定场景 ID、景别、情绪、物件/时序、主题、prompt、时长、单镜动作契约和快动作预算，严重问题只触发一次 LLM 修正
 - **Seedance 模型局限规避** — prompt 生成时自动规避文字渲染、多人互动、手部畸变、长镜头不稳定等 8 项已知局限
 - **智能时长/数量分配** — 根据叙事位置自动分配镜头时长，根据总时长推荐镜头数量
 - **竖版 (9:16) 专属策略** — 构图、运镜、安全区自动适配 TikTok 等竖屏平台
-- **角色一致性** — 首镜提取参考帧 + 显式 `image_role` + 文本描述注入 + 场景连贯性注入，图文双保障
+- **镜头连续性** — `scene_id` 区分物理地点，`start_state` / `end_state` 描述动作交接，同场景不会因景别或叙事标签变化被误判为换场
+- **参考职责分离** — 无缝续接只用真实尾帧作为 `first_frame`；有意切镜只用角色锚点作为 `reference_image`，避免身份与起始状态相互污染
 - **智能转场** — 基于运镜方向和速度自动推导转场类型（cut / dissolve / fade_to_black / crossfade / wipe）
 - **电影级运镜** — 8 类运镜 × 6 步公式，自动组装 Prompt
 - **LUT 调色** — 根据分镜 mood 自动匹配 LUT，调色 + 字幕合并为单次编码减少画质损失
@@ -138,7 +139,7 @@ python main.py "运动品牌宣传" --music music/upbeat_electronic.mp3
 
 ```
 用户输入
-  → Stage 1:   LLM 分镜 (9 维丰富度校验 + 严重问题自动修正)
+  → Stage 1:   LLM 分镜 (连续性/动作契约校验 + 严重问题有限修正)
   → Stage 1.5: 音乐匹配 + BPM 卡点 (可选, 指定 --music 时启用)
   → Stage 2:   Seedance 2.0 Mini 生成 (角色一致 + 降级链 + 断点续传 + 独立镜头并行预生成)
   → Stage 2.5: 规格统一 (帧率 / 分辨率 / 编码 / 补静音轨)
@@ -161,7 +162,7 @@ seedance/
 ├── .env                     ← 你的 Key (不提交到 git)
 ├── pipeline/                ← 核心流水线
 │   ├── orchestrator.py      ← 主编排 (7 Stage, 口播时间减去转场重叠)
-│   ├── storyboard.py        ← Stage 1: LLM 分镜 + 9 维校验 + 自动修正
+│   ├── storyboard.py        ← Stage 1: LLM 分镜 + 连续性/动作契约校验 + 自动修正
 │   ├── generator.py         ← Stage 2: 视频生成 + 角色一致性 + 降级策略 + 并行预生成
 │   ├── models.py            ← 分镜、运行与镜头任务的强类型契约
 │   └── run_state.py         ← 原子 manifest + 工作区恢复
@@ -177,6 +178,7 @@ seedance/
 ├── music/                   ← 背景音乐库
 ├── tests/                   ← 测试
 │   ├── test_generator.py    ← 视频生成测试
+│   ├── test_storyboard_contract.py ← 分镜连续性与动作预算测试
 │   ├── test_transitions.py  ← 转场逻辑测试
 │   ├── test_ffmpeg_audio.py ← 音频处理测试
 │   ├── test_seedance_config.py     ← 官方参数约束测试
@@ -225,11 +227,11 @@ python setup_assets.py
 ## 降级策略
 
 ```
-角色参考帧正常  →  reference_image (角色 + 尾帧)
-       ↓ 隐私审核拒绝
-尾帧衔接模式    →  first_frame (仅尾帧, 角色靠 prompt 描述)
-       ↓ 再次拒绝
-纯文本 T2V      →  无参考图, 仅 prompt 驱动
+seamless         →  first_frame (仅真实尾帧，锁定起始画面)
+intentional_cut  →  reference_image (仅角色参考帧，锁定身份)
+无职责参考素材   →  纯文本 T2V
+
+参考图被审核拒绝时按 尾帧衔接 → 纯文本 T2V 有限降级，不混用 image role。
 
 分辨率策略: 默认 480p；显式选择 720p 时可降级到 480p
 限流退避: 30s → 60s → 120s (指数退避, 最多 3 次)

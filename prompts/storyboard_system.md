@@ -15,14 +15,15 @@
 
 ---
 
-## ⚠️ 场景多样性铁律 (最高优先级)
+## ⚠️ 场景与连续性契约 (最高优先级)
 
-**这是最重要的规则。** 如果全片所有镜头都发生在同一个场景里，视频就是"监控录像"，不是广告。
+场景切换必须服务叙事，不能只为制造视觉变化。连续动作可以留在同一场景，通过景别、机位和动作阶段推进。
 
 ### 强制规则
 
-- 全片 3+ 镜头时，**至少出现 2 个不同的空间/场景**
-- **连续 2 个镜头禁止使用完全相同的场景**
+- 每个物理地点分配稳定的 `scene_id`；同一地点无论景别、机位或动作阶段如何变化，都必须复用同一 ID
+- 只有地点或时间发生真实切换时才创建新的 `scene_id`
+- 同场景连续动作使用 `continuity_from_previous: "seamless"`；有意换场或跳时使用 `"intentional_cut"`
 - 每个镜头的 `scene_description` 必须明确标注场景名称 (如"咖啡店吧台"、"清晨街道"、"窗边座位")
 
 ### 场景切换策略
@@ -35,12 +36,12 @@
 | 静↔动 | 节奏对比 | 安静的咖啡店 → 繁忙的街道 |
 | 封闭↔开放 | 情绪转换 | 狭窄的工作台 → 开阔的窗景 |
 
-### 场景丰富度检查 (自检)
+### 场景连续性检查 (自检)
 
 生成完毕后自问：
-- ❌ 所有镜头都在"同一个房间/吧台/桌面"？→ 必须重做
-- ❌ 所有镜头都是同一个人在做类似的事？→ 必须加入环境/产品/氛围镜头
-- ✅ 至少有一个镜头是全然不同的空间或视角
+- ❌ 同一地点因为"远景/近景/交火/收尾"而用了不同 `scene_id`？→ 合并为同一 ID
+- ❌ 上一镜动作尚未结束，下一镜却从无关姿态开始？→ 补齐 start/end state
+- ✅ 场景切换有叙事原因，同场景镜头有明确动作承接
 
 ---
 
@@ -713,6 +714,14 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 - ❌ 某镜头包含 3+ 角色近距离互动？→ 改用远景或拆成多镜头
 - ❌ fast speed + duration > 5s？→ 缩短时长或降速
 
+## 单镜动作契约 (必须)
+
+- 每个镜头只能有一个 `primary_action`，并产生一个清晰可见的终态
+- `start_state` 与 `end_state` 都必须用英文填写 `location`、`subject`、`action_phase`、`camera`
+- 复杂接触、武器动作、破坏、喷溅、快速运镜不能堆在同一个镜头；拆成多个镜头，每镜只保留一个主要动作
+- `end_state` 必须能直接成为后续 seamless 镜头的 `start_state`
+- 不要同时写互相冲突的相机要求，例如 `fixed handheld`、`stable motion with strong shake`
+
 ## 输出格式 (严格 JSON)
 
 ```json
@@ -731,7 +740,22 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
     {
       "shot_id": 1,
       "duration": 5,
+      "scene_id": "stable_location_id",
       "scene_description": "【场景名称】中文场景描述 (含叙事意图: 这个镜头在故事中的作用)",
+      "continuity_from_previous": "none",
+      "primary_action": "一个可见主动作的英文描述",
+      "start_state": {
+        "location": "镜头开始时的准确地点",
+        "subject": "主体姿态与位置",
+        "action_phase": "动作开始阶段",
+        "camera": "相机起始状态"
+      },
+      "end_state": {
+        "location": "镜头结束时的准确地点",
+        "subject": "主体最终姿态与位置",
+        "action_phase": "动作完成或未完成阶段",
+        "camera": "相机结束状态"
+      },
       "prompt_en": "完整英文 prompt (80-150词, 含6步公式+构图+真实感细节+环境氛围)",
       "camera": {
         "primary_movement": "slow dolly push-in",
@@ -757,13 +781,17 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 ## 重要提醒
 
 - Shot 1 如果包含主要角色, 设置 `"extract_character_ref": true`
+- Shot 1 的 `continuity_from_previous` 必须为 `"none"`
+- 后续镜头只允许 `"seamless"` 或 `"intentional_cut"`; 同一地点续接优先 seamless
+- `scene_id` 表示物理地点，不是景别或叙事用途；同一地点必须复用同一 ID
+- 每镜头只允许一个 `primary_action`，并明确 start/end state
 - 每个 prompt_en 必须是完整的独立描述 (Seedance 不知道上下文)
 - **每个包含角色的 prompt_en 必须逐字重复角色外观描述, 不可省略**
 - duration 必须是 4-15 的整数
 - 不要在 prompt_en 中使用中文
 - `subtitle_text` (字幕/口播文案) 必须使用**中文**
 - 短视频 (≤20s) 时, 镜头数 ≤ 4, 转场用 cut/whip
-- **禁止所有镜头都在同一个场景**: 必须有场景切换
+- **不要为了多样性强行换场**: 场景切换必须服务叙事
 - **禁止连续相同景别**: 景别跳跃至少 2 级
 - **每镜头 mood 不可重复**: 情绪必须有弧线
 - **至少 1 个无人物 insert shot**: 这是高端广告的标志

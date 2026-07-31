@@ -142,12 +142,36 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
     storyboard.setdefault("mood", "cinematic")
     storyboard.setdefault("music_style", "cinematic orchestral")
 
-    for shot in storyboard["shots"]:
+    previous_scene_id = None
+    for index, shot in enumerate(storyboard["shots"]):
         shot.setdefault("duration", config.DEFAULT_DURATION)
         shot.setdefault("generate_audio", config.DEFAULT_GENERATE_AUDIO)
         shot.setdefault("transition_to_next", "crossfade")
         shot.setdefault("negative_prompt", "avoid jitter, stable motion, no text artifacts")
         shot.setdefault("key_props", [])
+        shot["scene_id"] = _scene_id(shot) or f"scene_{index + 1:03d}"
+
+        inferred_continuity = (
+            "none"
+            if index == 0
+            else (
+                "seamless"
+                if shot["scene_id"] == previous_scene_id
+                else "intentional_cut"
+            )
+        )
+        continuity = shot.get("continuity_from_previous", inferred_continuity)
+        if index == 0:
+            continuity = "none"
+        elif continuity not in {"seamless", "intentional_cut"}:
+            continuity = inferred_continuity
+        elif continuity == "seamless" and shot["scene_id"] != previous_scene_id:
+            continuity = "intentional_cut"
+        shot["continuity_from_previous"] = continuity
+        shot.setdefault("primary_action", "")
+        shot.setdefault("start_state", {})
+        shot.setdefault("end_state", {})
+        previous_scene_id = shot["scene_id"]
 
 
 def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: list[str]) -> str:
@@ -212,7 +236,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 ## 最高优先级规则
 
 1. 主题锚定: ≥ 60% 的镜头必须包含与用户指定主题直接相关的视觉元素 (产品本体/使用过程/产出物/原材料), 产品不能只在 insert shot 出现
-2. 场景多样性: 3+ 镜头时至少 2 个不同空间, 连续 2 镜头禁止相同场景
+2. 场景连续性: 每个物理地点使用稳定 scene_id; 同一地点续接复用 ID, 不为多样性强行换场
 3. 景别跳跃: 连续镜头景别至少跳 2 级 (特写→全景 OK, 特写→中近景 NG)
 4. 情绪弧线: 每镜头 mood 不得与相邻镜头重复
 5. Insert Shot: 全片至少 1 个无人物的纯产品/纯环境镜头
@@ -222,6 +246,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 9. 环境一致性: 同场景连续镜头的天气/光线/背景物不得突变
 10. 时长分配: 禁止所有镜头时长相同, 开场 4s, 高潮最长 6-8s, insert 4-5s
 11. 镜头数量: 10s=2镜, 15s=3镜, 20s=3-4镜, 30s=4-6镜, 60s=8-10镜
+12. 动作契约: 每镜只有一个 primary_action, 并填写 start_state/end_state; 快速复杂动作不得超过 5s
 
 ## Seedance 模型局限 (必须规避)
 
@@ -241,6 +266,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 ## 输出格式 (严格 JSON, 参考 storyboard_system.md)
 注意: shot 1 含角色时设 extract_character_ref: true
 subtitle_text 必须中文; prompt_en 必须英文
+每个 shot 必须包含 scene_id, continuity_from_previous, primary_action, start_state, end_state
 """
 
 
@@ -248,6 +274,14 @@ def _extract_scene_name(scene_description: str) -> str:
     """从 scene_description 中提取【】包裹的场景名称"""
     m = re.search(r'[\u3010\[][^\u3011\]]+[\u3011\]]', scene_description)
     return m.group(0) if m else scene_description[:20]
+
+
+def _scene_id(shot: dict) -> str:
+    """返回稳定场景 ID；旧分镜才回退到展示名称。"""
+    explicit = shot.get("scene_id")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
+    return _extract_scene_name(shot.get("scene_description", ""))
 
 
 # 用于检测 prompt 中是否包含物件引入动作的关键词
@@ -373,8 +407,8 @@ def _check_prop_continuity(shots: list[dict]) -> list[str]:
         curr_shot = shots[i]
 
         # 提取场景名
-        prev_scene = _extract_scene_name(prev_shot.get("scene_description", ""))
-        curr_scene = _extract_scene_name(curr_shot.get("scene_description", ""))
+        prev_scene = _scene_id(prev_shot)
+        curr_scene = _scene_id(curr_shot)
 
         # 场景切换豁免: 不同场景的物件可以直接存在
         if prev_scene != curr_scene:
@@ -432,27 +466,18 @@ def _validate_storyboard_richness(storyboard: dict) -> tuple[list[str], bool]:
     warnings: list[str] = []
     critical_count = 0  # 严重问题计数
 
-    # --- 1. 场景多样性 ---
+    # --- 1. 场景连续性 ---
     scene_names = [
-        _extract_scene_name(s.get("scene_description", ""))
+        _scene_id(s)
         for s in shots
     ]
 
     unique_scenes = set(scene_names)
     if len(unique_scenes) == 1 and len(shots) >= 3:
         warnings.append(
-            f"🚨 场景单一: 所有 {len(shots)} 个镜头都在同一场景 "
-            f"'{scene_names[0]}', 必须增加场景切换"
+            f"⚠ 场景集中: 所有 {len(shots)} 个镜头都在 '{scene_names[0]}', "
+            "请确认每镜头有不同动作或叙事推进"
         )
-        critical_count += 1
-
-    # 检测连续相同场景
-    for i in range(1, len(scene_names)):
-        if scene_names[i] == scene_names[i - 1]:
-            warnings.append(
-                f"⚠ 连续相同场景: Shot {i} 和 Shot {i + 1} "
-                f"都在 '{scene_names[i]}'"
-            )
 
     # --- 2. 景别跳跃 ---
     framings = [
@@ -544,7 +569,26 @@ def _validate_storyboard_richness(storyboard: dict) -> tuple[list[str], bool]:
                 f"(建议 80-150 词), 过长可能导致模型忽略部分描述"
             )
 
-    # --- 9. 时长均匀性检测 ---
+    # --- 9. 单镜动作契约 ---
+    state_keys = ("location", "subject", "action_phase", "camera")
+    for shot in shots:
+        missing = []
+        if not str(shot.get("primary_action", "")).strip():
+            missing.append("primary_action")
+        for state_name in ("start_state", "end_state"):
+            state = shot.get(state_name)
+            if not isinstance(state, dict) or any(
+                not str(state.get(key, "")).strip() for key in state_keys
+            ):
+                missing.append(state_name)
+        if missing:
+            warnings.append(
+                f"🚨 Shot {shot.get('shot_id', '?')} 动作契约不完整: "
+                f"{', '.join(missing)}, 必须明确一个主动作及完整起止状态"
+            )
+            critical_count += 1
+
+    # --- 10. 时长均匀性检测 ---
     durations = [s.get("duration", 5) for s in shots]
     if len(set(durations)) == 1 and len(shots) >= 3:
         warnings.append(
@@ -552,6 +596,22 @@ def _validate_storyboard_richness(storyboard: dict) -> tuple[list[str], bool]:
             f"缺乏节奏变化, 必须为不同叙事位置分配不同时长"
         )
         critical_count += 1
+
+    # --- 11. Seedance 快动作预算 ---
+    for shot in shots:
+        speed = str(shot.get("camera", {}).get("speed", "")).lower()
+        movement = str(
+            shot.get("camera", {}).get("primary_movement", "")
+        ).lower()
+        duration = shot.get("duration", config.DEFAULT_DURATION)
+        if duration > 5 and (
+            speed in {"fast", "quick", "rapid"} or "fast" in movement
+        ):
+            warnings.append(
+                f"🚨 Shot {shot.get('shot_id', '?')} fast 动作时长为 {duration}s, "
+                "超过 Seedance 稳定预算 5s, 必须缩短或降速"
+            )
+            critical_count += 1
 
     # 判定是否达到「严重」阈值 (≥1 个严重问题触发重试)
     is_critical = critical_count >= 1
