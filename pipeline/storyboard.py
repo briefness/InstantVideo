@@ -84,24 +84,53 @@ def _call_llm_for_storyboard(client: OpenAI, system_prompt: str, user_prompt: st
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.7,
+            response_format={"type": "json_object"},
         )
-
         raw_content = response.choices[0].message.content
-        print(f"   [DEBUG] LLM 原始响应前 200 字: {raw_content[:200]}")
-
-        storyboard = _parse_json_response(raw_content)
-
-    except json.JSONDecodeError as e:
-        print(f"   [ERROR] JSON 解析失败: {e}")
-        raise
     except Exception as e:
         print(f"   [ERROR] LLM 调用失败: {e}")
-        print(f"   [DEBUG] model={config.LLM_MODEL}, base_url={config.ARK_BASE_URL}")
         raise
+
+    try:
+        storyboard = _parse_json_response(raw_content)
+    except json.JSONDecodeError as parse_error:
+        print("   [格式修复] 分镜 JSON 语法异常，正在修复（最多 1 次）...")
+        repair_prompt = _build_json_repair_prompt(raw_content, parse_error)
+        try:
+            response = client.chat.completions.create(
+                model=config.LLM_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": repair_prompt},
+                ],
+                temperature=0,
+                response_format={"type": "json_object"},
+            )
+            storyboard = _parse_json_response(response.choices[0].message.content)
+        except json.JSONDecodeError as repair_error:
+            raise ValueError(
+                f"LLM 分镜 JSON 修复失败（已重试 1 次）: {repair_error}"
+            ) from repair_error
+        except Exception as e:
+            print(f"   [ERROR] LLM JSON 修复调用失败: {e}")
+            raise
 
     if not isinstance(storyboard, dict):
         raise ValueError("LLM 分镜响应必须是 JSON 对象")
     return storyboard
+
+
+def _build_json_repair_prompt(raw_content: str, error: json.JSONDecodeError) -> str:
+    """要求模型仅修复自身响应中的 JSON 语法，不重写分镜内容。"""
+    return f"""上一次响应不是合法 JSON。
+解析器错误 (JSONDecodeError): {error}
+
+请只修复 JSON 语法（例如缺失逗号、引号或转义），保留原有字段和值，不要改写分镜。
+只输出修复后的完整 JSON 对象，不要输出 Markdown 或解释。
+
+<invalid_json>
+{raw_content}
+</invalid_json>"""
 
 
 def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style: str):

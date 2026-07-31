@@ -2,7 +2,7 @@
 
 给一句中文描述，自动生成带分镜、转场、调色、配乐、口播和字幕的完整短视频。
 
-基于字节跳动 Seedance 2.0 Mini 视频生成模型，通过火山引擎 Ark API 统一调用。
+基于字节跳动 Seedance 2.0 Mini 视频生成模型，通过火山引擎 Ark API 统一调用。模型开通、API 参数和计费规则以[火山方舟官方文档](https://www.volcengine.com/docs/82379)为准。
 
 ## 核心能力
 
@@ -17,21 +17,27 @@
 - **LUT 调色** — 根据分镜 mood 自动匹配 LUT，调色 + 字幕合并为单次编码减少画质损失
 - **音频设计** — 智能决策 generate_audio（有环境音的场景自动开启），音乐风格具体到乐器+节奏+动态变化
 - **音乐自动匹配** — 根据视频情绪匹配 BGM + BPM 卡点对齐镜头时长
-- **TTS 口播** — 可插拔引擎（macOS say / 火山语音合成），逐镜头合成 + sidechain ducking 混音
+- **TTS 口播** — 支持 macOS `say` 和豆包语音合成模型 1.0；根据整份分镜自动选择统一旁白音色，通过 sidechain ducking 混音
 - **字幕烧录** — 字幕时长与 TTS 语音同步，无口播时退回镜头时长
 - **多平台导出** — 默认按 480p 输出 YouTube / TikTok / B站 / Instagram
 - **断点续传** — 已生成的镜头本地缓存（含尾帧提取），中断后重跑自动跳过已完成片段
 - **远端任务恢复** — 提交后立即持久化 Ark 任务 ID；轮询中断时继续同一任务，避免重复提交和重复计费
 - **并行预生成** — 识别无依赖的 Insert Shot，提前提交 API 节省等待时间
-- **零损耗拼接** — 编码一致时优先 `-c copy` 直拼，避免不必要的重编码
+- **安全拼接** — 编码、分辨率、帧率、时间基和音频规格全部兼容时使用 `-c copy`；否则统一时间戳和音视频规格后重新编码，避免成片时长异常或画面冻结
 - **三层容错** — 429 限流指数退避 / 参考图异常降级（隐私审核 → 尾帧衔接 → 纯文本 T2V）/ 断链尾帧兜底
 
 ## 快速开始
 
+运行要求：
+
+- Python 3.10 或更高版本
+- [FFmpeg](https://ffmpeg.org/download.html)（macOS 可执行 `brew install ffmpeg`，Ubuntu/Debian 可执行 `sudo apt install ffmpeg`）
+- 已开通 Seedance 2.0 Mini 的火山方舟 API Key
+- TTS 默认使用 macOS `say`；Windows 和 Linux 可配置豆包语音合成模型 1.0
+
 ```bash
 # 1. 安装依赖
-pip install -r requirements.txt
-brew install ffmpeg  # macOS
+python -m pip install -r requirements.txt
 
 # 2. 配置 .env
 cp .env.example .env
@@ -79,9 +85,15 @@ python main.py --resume output/20260730_153000_123456
 ## 环境变量 (.env)
 
 ```bash
-# 火山引擎 Ark — 一个 Key 搞定一切
+# 火山引擎 Ark — 默认统一 Key
 ARK_API_KEY=your_ark_api_key
-ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+
+# LLM 分镜接口
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/plan/v3
+
+# Seedance 视频生成接口；独立 Key 可选，未配置时复用 ARK_API_KEY
+# ARK_API_KEY_SEEDANCE=your_seedance_api_key
+ARK_BASE_URL_SEEDANCE=https://ark.cn-beijing.volces.com/api/v3
 
 # 视频生成模型
 SEEDANCE_MODEL=doubao-seedance-2-0-mini-260615
@@ -90,10 +102,18 @@ SEEDANCE_MODEL=doubao-seedance-2-0-mini-260615
 LLM_MODEL=doubao-1-5-pro-256k
 
 # TTS 引擎 (可选, 默认 macos)
-TTS_ENGINE=macos  # macos | volcano
+TTS_ENGINE=macos
+TTS_VOICE=Tingting
+
+# 使用豆包语音合成模型 1.0
+# TTS_ENGINE=volcano
+# VOLCANO_TTS_API_KEY=your_doubao_speech_api_key
 ```
 
 > **注意**: 视频生成默认使用官方模型 `doubao-seedance-2-0-mini-260615` 和 480p；Mini 仅支持 480p、720p，不支持 1080p。
+>
+> 调用 LLM、Seedance 视频生成和豆包语音合成接口会产生费用；断点恢复请使用 `--resume`，避免重复提交任务。
+> 豆包语音的 API Key 获取方式见[WebSocket 单向流式 V3 官方文档](https://docs.volcengine.com/docs/6561/1719100?lang=zh)。程序会根据整份分镜的主题、风格和情绪，从[官方 1.0 音色列表](https://docs.volcengine.com/docs/6561/1257544?lang=zh)自动选择统一旁白音色，无需配置音色 ID。
 
 ## 使用示例
 
@@ -122,7 +142,7 @@ python main.py "运动品牌宣传" --music music/upbeat_electronic.mp3
   → Stage 1.5: 音乐匹配 + BPM 卡点 (可选, 指定 --music 时启用)
   → Stage 2:   Seedance 2.0 Mini 生成 (角色一致 + 降级链 + 断点续传 + 独立镜头并行预生成)
   → Stage 2.5: 规格统一 (帧率 / 分辨率 / 编码 / 补静音轨)
-  → Stage 3:   拼接 + 智能转场 (xfade + acrossfade, 优先零损耗直拼)
+  → Stage 3:   拼接 + 智能转场 (xfade + acrossfade, 兼容时零损耗直拼，否则规范时间戳后重编码)
   → Stage 4:   BGM 混合 (自动匹配或用户指定)
   → Stage 4.5: TTS 口播合成 + sidechain ducking (时间计算减去转场重叠)
   → Stage 5:   LUT 调色 + 字幕烧录 (合并为单次编码, 减少画质损失)
@@ -148,7 +168,7 @@ seedance/
 ├── tools/                   ← 底层工具
 │   ├── seedance_api.py      ← Seedance API 封装 (显式 image_role + base64)
 │   ├── ffmpeg_ops.py        ← FFmpeg 操作 (转场 / 调色 / 混音 / 字幕 / 导出)
-│   ├── tts.py               ← TTS 引擎 (Protocol + macOS say + 火山占位)
+│   ├── tts.py               ← macOS say + 豆包语音合成模型 1.0
 │   ├── beat_analyzer.py     ← 音乐节拍分析 (BPM + 卡点)
 │   └── frame_extractor.py   ← 帧提取 + 质量检测
 ├── prompts/                 ← Prompt 模板
@@ -158,7 +178,12 @@ seedance/
 ├── tests/                   ← 测试
 │   ├── test_generator.py    ← 视频生成测试
 │   ├── test_transitions.py  ← 转场逻辑测试
-│   └── test_ffmpeg_audio.py ← 音频处理测试
+│   ├── test_ffmpeg_audio.py ← 音频处理测试
+│   ├── test_seedance_config.py     ← 官方参数约束测试
+│   ├── test_seedance_api_resume.py ← 远端任务恢复测试
+│   ├── test_tts.py                  ← 豆包语音 TTS 1.0 协议测试
+│   ├── test_run_state.py            ← 本地运行状态测试
+│   └── test_orchestrator_resume.py  ← 流水线恢复测试
 ├── docs/                    ← 设计文档
 │   └── design.md            ← 完整技术设计 (110KB)
 └── output/                  ← 生成产物
@@ -182,7 +207,7 @@ seedance/
 | 视频生成 | Seedance 2.0 Mini (火山引擎 Ark API) |
 | 分镜生成 | 豆包 LLM (OpenAI 兼容接口) |
 | 视频处理 | FFmpeg (xfade + acrossfade + sidechaincompress) |
-| TTS 口播 | macOS say (默认) / 火山语音合成 (可选) |
+| TTS 口播 | macOS say / 豆包语音合成模型 1.0（WebSocket V3） |
 | 音乐分析 | librosa |
 | 质量检测 | OpenCV |
 | CLI | argparse + rich |
@@ -227,15 +252,16 @@ python setup_assets.py
 
 ## 多平台导出规格
 
+所有平台导出固定使用 480p 规格；当前暂不支持小红书。
+
 | 平台 | 分辨率 | 比例 |
 |------|--------|------|
-| YouTube | 1920×1080 | 16:9 |
-| TikTok | 1080×1920 | 9:16 |
-| B站 | 1920×1080 | 16:9 |
-| 小红书 | 1080×1440 | 3:4 |
-| Instagram Reels | 1080×1920 | 9:16 |
-| Instagram Feed | 1080×1080 | 1:1 |
+| YouTube | 864×496 | 16:9 |
+| TikTok | 496×864 | 9:16 |
+| B站 | 864×496 | 16:9 |
+| Instagram Reels | 496×864 | 9:16 |
+| Instagram Feed | 640×640 | 1:1 |
 
 ## License
 
-MIT
+[MIT](LICENSE)

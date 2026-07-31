@@ -27,6 +27,13 @@ SEEDANCE_MODEL = os.getenv(
 # LLM 文本模型 (分镜生成)
 LLM_MODEL = os.getenv("LLM_MODEL", "doubao-seed-2.0-lite")
 
+# ─── TTS ───
+TTS_ENGINE = os.getenv("TTS_ENGINE", "macos").lower()
+TTS_VOICE = os.getenv("TTS_VOICE", "Tingting")
+VOLCANO_TTS_API_KEY = os.getenv("VOLCANO_TTS_API_KEY")
+VOLCANO_TTS_RESOURCE_ID = "seed-tts-1.0"
+VOLCANO_TTS_ENDPOINT = "wss://openspeech.bytedance.com/api/v3/tts/unidirectional/stream"
+
 # ─── 默认生成参数 ───
 DEFAULT_RESOLUTION = "480p"
 DEFAULT_RATIO = "16:9"
