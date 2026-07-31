@@ -17,7 +17,7 @@ from tools.seedance_api import (
     SubmittedTaskCheckpointError,
 )
 from tools.frame_extractor import extract_frame, check_video_quality
-from pipeline.storyboard import _scene_id
+from pipeline.storyboard import _normalize_continuity_contract, _scene_id
 
 
 @dataclass
@@ -72,22 +72,23 @@ class VideoGenerator:
 
         角色一致性策略:
         ┌─────────────────────────────────────────────────────────────────┐
-        │ Shot 1 (含角色): T2V 纯文本 → 提取角色参考帧到本地              │
-        │ Shot 2+ (含角色): reference_image (角色参考帧 + 上一帧尾帧)     │
-        │ Shot N  (无角色): first_frame (上一帧尾帧, I2V 强衔接)          │
+        │ 首个合格角色镜头: 生成后提取清晰角色参考帧到本地                │
+        │ seamless: first_frame (仅上一尾帧，锁定真实起始状态)            │
+        │ intentional_cut: reference_image (仅角色参考帧，锁定身份)       │
         │                                                                 │
         │ 并行优化:                                                       │
-        │ - 扫描后续镜头, 识别「独立镜头」(无角色+场景切换 = 纯 T2V)     │
+        │ - 扫描后续镜头, 识别「独立镜头」(无角色+有意切镜 = 纯 T2V)     │
         │ - 独立镜头提前提交 API, 当流水线轮到时直接取结果               │
         │ - 保守策略: 只预生成确定无依赖的镜头, 保证正确性               │
         └─────────────────────────────────────────────────────────────────┘
         """
         shots = storyboard["shots"]
+        self._normalize_continuity(shots)
         results: list[ShotResult] = [None] * len(shots)  # type: ignore
         prev_last_frame: Optional[str] = None
         prev_shot: Optional[dict] = None
 
-        # 识别可预生成的独立镜头 (无角色 + 与前一镜头不同场景)
+        # 识别可预生成的独立镜头 (无角色 + 不依赖上一尾帧)
         independent_indices = self._find_independent_shots(shots)
         prefetch_tasks: dict[int, asyncio.Task] = {}
 
@@ -145,8 +146,14 @@ class VideoGenerator:
 
         return results
 
+    @staticmethod
+    def _normalize_continuity(shots: list[dict]) -> None:
+        """生成入口再次收紧契约，覆盖旧工作区和外部分镜。"""
+        for correction in _normalize_continuity_contract(shots):
+            print(f"  [连续性校正] {correction}，改为 intentional_cut")
+
     def _find_independent_shots(self, shots: list[dict]) -> set[int]:
-        """识别可独立生成的镜头 (无角色 + 场景切换 = 纯 T2V, 不依赖前帧)
+        """识别可独立生成的镜头 (无角色 + 有意切镜 = 纯 T2V, 不依赖前帧)
 
         保守策略: 只在确定无依赖时才标记为独立, 避免影响画面一致性。
         """
@@ -158,7 +165,7 @@ class VideoGenerator:
             # 条件 1: 无角色 (insert shot)
             if shot.get("characters"):
                 continue
-            # 条件 2: 场景切换 (不需要上一镜头的尾帧衔接)
+            # 条件 2: 剪辑契约不依赖上一镜头的尾帧
             continuity = shot.get("continuity_from_previous")
             if continuity == "seamless":
                 continue

@@ -133,6 +133,110 @@ def _build_json_repair_prompt(raw_content: str, error: json.JSONDecodeError) -> 
 </invalid_json>"""
 
 
+_MAX_SEAMLESS_TRANSITIONS = 2
+_FRAMING_RANKS = (
+    ("extreme close-up", 0),
+    ("extreme close up", 0),
+    ("macro", 0),
+    ("medium close-up", 2),
+    ("medium close up", 2),
+    ("close-up", 1),
+    ("close up", 1),
+    ("medium shot", 3),
+    ("medium framing", 3),
+    ("waist-level", 3),
+    ("waist level", 3),
+    ("full-body", 4),
+    ("full body", 4),
+    ("full shot", 4),
+    ("extreme wide", 6),
+    ("establishing", 6),
+    ("wide shot", 5),
+    ("wide framing", 5),
+    ("long shot", 5),
+)
+
+
+def _framing_rank(value: object) -> int | None:
+    text = str(value or "").lower()
+    for phrase, rank in _FRAMING_RANKS:
+        if phrase in text:
+            return rank
+    return None
+
+
+def _boundary_framing(shot: dict, boundary: str) -> int | None:
+    camera = shot.get("camera")
+    camera = camera if isinstance(camera, dict) else {}
+    state = shot.get(f"{boundary}_state")
+    state = state if isinstance(state, dict) else {}
+    values = (
+        camera.get(f"{boundary}_framing"),
+        state.get("camera"),
+    )
+    for value in values:
+        rank = _framing_rank(value)
+        if rank is not None:
+            return rank
+    return None
+
+
+def _seamless_cut_reason(
+    previous: dict,
+    current: dict,
+    seamless_transitions: int,
+) -> str | None:
+    if _scene_id(previous) != _scene_id(current):
+        return "物理场景不同"
+
+    previous_end = _boundary_framing(previous, "end")
+    current_start = _boundary_framing(current, "start")
+    if (
+        previous_end is not None
+        and current_start is not None
+        and abs(previous_end - current_start) >= 2
+    ):
+        return "相邻镜头边界景别不兼容"
+
+    if seamless_transitions >= _MAX_SEAMLESS_TRANSITIONS:
+        return f"连续尾帧链已达到 {_MAX_SEAMLESS_TRANSITIONS} 次上限"
+
+    return None
+
+
+def _normalize_continuity_contract(shots: list[dict]) -> list[str]:
+    """归一化剪辑契约；scene_id 只表示地点，不推导摄影机连续性。"""
+    corrections: list[str] = []
+    seamless_transitions = 0
+
+    for index, shot in enumerate(shots):
+        if index == 0:
+            shot["continuity_from_previous"] = "none"
+            continue
+
+        continuity = shot.get("continuity_from_previous")
+        if continuity not in {"seamless", "intentional_cut"}:
+            continuity = "intentional_cut"
+
+        if continuity == "seamless":
+            reason = _seamless_cut_reason(
+                shots[index - 1], shot, seamless_transitions
+            )
+            if reason:
+                continuity = "intentional_cut"
+                corrections.append(
+                    f"Shot {shot.get('shot_id', index + 1)}: {reason}"
+                )
+
+        shot["continuity_from_previous"] = continuity
+        if continuity == "seamless":
+            seamless_transitions += 1
+        else:
+            seamless_transitions = 0
+
+    return corrections
+
+
 def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style: str):
     """补充默认值"""
     # CLI parameters are authoritative; the LLM cannot silently override them.
@@ -142,7 +246,6 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
     storyboard.setdefault("mood", "cinematic")
     storyboard.setdefault("music_style", "cinematic orchestral")
 
-    previous_scene_id = None
     for index, shot in enumerate(storyboard["shots"]):
         shot.setdefault("duration", config.DEFAULT_DURATION)
         shot.setdefault("generate_audio", config.DEFAULT_GENERATE_AUDIO)
@@ -150,28 +253,12 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
         shot.setdefault("negative_prompt", "avoid jitter, stable motion, no text artifacts")
         shot.setdefault("key_props", [])
         shot["scene_id"] = _scene_id(shot) or f"scene_{index + 1:03d}"
-
-        inferred_continuity = (
-            "none"
-            if index == 0
-            else (
-                "seamless"
-                if shot["scene_id"] == previous_scene_id
-                else "intentional_cut"
-            )
-        )
-        continuity = shot.get("continuity_from_previous", inferred_continuity)
-        if index == 0:
-            continuity = "none"
-        elif continuity not in {"seamless", "intentional_cut"}:
-            continuity = inferred_continuity
-        elif continuity == "seamless" and shot["scene_id"] != previous_scene_id:
-            continuity = "intentional_cut"
-        shot["continuity_from_previous"] = continuity
         shot.setdefault("primary_action", "")
         shot.setdefault("start_state", {})
         shot.setdefault("end_state", {})
-        previous_scene_id = shot["scene_id"]
+
+    for correction in _normalize_continuity_contract(storyboard["shots"]):
+        print(f"   [连续性校正] {correction}，改为 intentional_cut")
 
 
 def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: list[str]) -> str:
@@ -236,7 +323,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 ## 最高优先级规则
 
 1. 主题锚定: ≥ 60% 的镜头必须包含与用户指定主题直接相关的视觉元素 (产品本体/使用过程/产出物/原材料), 产品不能只在 insert shot 出现
-2. 场景连续性: 每个物理地点使用稳定 scene_id; 同一地点续接复用 ID, 不为多样性强行换场
+2. 场景连续性: scene_id 只表示物理地点; seamless 只表示无剪切续拍, 同一地点换机位/插入特写仍用 intentional_cut
 3. 景别跳跃: 连续镜头景别至少跳 2 级 (特写→全景 OK, 特写→中近景 NG)
 4. 情绪弧线: 每镜头 mood 不得与相邻镜头重复
 5. Insert Shot: 全片至少 1 个无人物的纯产品/纯环境镜头
@@ -264,9 +351,10 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个顶尖的电影广告导演兼分镜师�
 同场景新增道具必须在 prompt_en 中包含引入动作。
 
 ## 输出格式 (严格 JSON, 参考 storyboard_system.md)
-注意: shot 1 含角色时设 extract_character_ref: true
+注意: 主要角色首次出现必须使用清晰无遮挡的中景/全身镜头并设 extract_character_ref: true; 极端特写或遮挡镜头禁用
 subtitle_text 必须中文; prompt_en 必须英文
 每个 shot 必须包含 scene_id, continuity_from_previous, primary_action, start_state, end_state
+最多连续 2 次 seamless; 插入特写、换机位或大跨度景别变化必须 intentional_cut
 """
 
 
@@ -597,7 +685,34 @@ def _validate_storyboard_richness(storyboard: dict) -> tuple[list[str], bool]:
         )
         critical_count += 1
 
-    # --- 11. Seedance 快动作预算 ---
+    # --- 11. 角色参考镜头可用性 ---
+    first_character_shot = next(
+        (shot for shot in shots if shot.get("characters")),
+        None,
+    )
+    if first_character_shot and not first_character_shot.get("extract_character_ref"):
+        warnings.append(
+            f"🚨 Shot {first_character_shot.get('shot_id', '?')} 是角色首次出现，"
+            "必须建立角色参考图，不能推迟到后续镜头"
+        )
+        critical_count += 1
+
+    for shot in shots:
+        if not shot.get("extract_character_ref"):
+            continue
+        ranks = [
+            _boundary_framing(shot, "start"),
+            _boundary_framing(shot, "end"),
+        ]
+        known_ranks = [rank for rank in ranks if rank is not None]
+        if known_ranks and max(known_ranks) <= 1:
+            warnings.append(
+                f"🚨 Shot {shot.get('shot_id', '?')} 角色参考镜头只有特写，"
+                "无法稳定锚定完整外观；必须使用清晰无遮挡的中景、全身或全景"
+            )
+            critical_count += 1
+
+    # --- 12. Seedance 快动作预算 ---
     for shot in shots:
         speed = str(shot.get("camera", {}).get("speed", "")).lower()
         movement = str(

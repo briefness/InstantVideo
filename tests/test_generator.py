@@ -169,7 +169,33 @@ class TestInjectCharacterDescription:
 
 
 class TestContinuityContract:
-    def test_legacy_same_scene_insert_is_not_prefetched(self, generator):
+    def test_generation_boundary_normalizes_legacy_same_scene_shots(self, generator):
+        shots = [
+            {
+                "shot_id": 1,
+                "scene_id": "cafe",
+                "scene_description": "【咖啡店】建立镜头",
+                "camera": {"start_framing": "wide shot", "end_framing": "wide shot"},
+            },
+            {
+                "shot_id": 2,
+                "scene_id": "cafe",
+                "scene_description": "【咖啡店】杯子特写",
+                "camera": {
+                    "start_framing": "extreme close-up",
+                    "end_framing": "extreme close-up",
+                },
+            },
+        ]
+
+        generator._normalize_continuity(shots)
+
+        assert [shot["continuity_from_previous"] for shot in shots] == [
+            "none",
+            "intentional_cut",
+        ]
+
+    def test_normalized_same_scene_insert_can_be_prefetched(self, generator):
         shots = [
             {
                 "shot_id": 1,
@@ -184,7 +210,9 @@ class TestContinuityContract:
             },
         ]
 
-        assert generator._find_independent_shots(shots) == set()
+        generator._normalize_continuity(shots)
+
+        assert generator._find_independent_shots(shots) == {1}
 
     def test_same_scene_id_injects_continuity_when_labels_differ(self, generator):
         previous = {

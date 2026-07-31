@@ -23,7 +23,10 @@
 
 - 每个物理地点分配稳定的 `scene_id`；同一地点无论景别、机位或动作阶段如何变化，都必须复用同一 ID
 - 只有地点或时间发生真实切换时才创建新的 `scene_id`
-- 同场景连续动作使用 `continuity_from_previous: "seamless"`；有意换场或跳时使用 `"intentional_cut"`
+- `scene_id` 与剪辑方式正交：同一地点也可以有意切镜，绝不能仅因 `scene_id` 相同就使用 `seamless`
+- 只有摄影机没有剪切、上一镜 `end_state` 能原样成为下一镜起点、边界景别兼容时，才使用 `continuity_from_previous: "seamless"`
+- 插入特写、macro、换机位、跳时或大跨度景别变化必须使用 `"intentional_cut"`，即使仍在同一地点
+- 最多连续使用 2 次 `seamless`；之后安排一次有意切镜，用角色参考图重新锚定外观
 - 每个镜头的 `scene_description` 必须明确标注场景名称 (如"咖啡店吧台"、"清晨街道"、"窗边座位")
 
 ### 场景切换策略
@@ -40,8 +43,9 @@
 
 生成完毕后自问：
 - ❌ 同一地点因为"远景/近景/交火/收尾"而用了不同 `scene_id`？→ 合并为同一 ID
+- ❌ 同一地点的广角、插入特写和反打镜头全部标成 seamless？→ 保留同一 ID，但改为 intentional_cut
 - ❌ 上一镜动作尚未结束，下一镜却从无关姿态开始？→ 补齐 start/end state
-- ✅ 场景切换有叙事原因，同场景镜头有明确动作承接
+- ✅ scene_id 描述地点，continuity_from_previous 描述剪辑，两者分别判断
 
 ---
 
@@ -780,9 +784,11 @@ golden hour / rim light / soft natural light / neon-lit / backlit / overcast dif
 
 ## 重要提醒
 
-- Shot 1 如果包含主要角色, 设置 `"extract_character_ref": true`
+- 主要角色首次出现的镜头必须是清晰无遮挡的中景、全身或全景，并设置 `"extract_character_ref": true`
+- 极端特写、macro、背影、烟尘遮挡或失焦镜头不得作为角色参考镜头
 - Shot 1 的 `continuity_from_previous` 必须为 `"none"`
-- 后续镜头只允许 `"seamless"` 或 `"intentional_cut"`; 同一地点续接优先 seamless
+- 后续镜头只允许 `"seamless"` 或 `"intentional_cut"`；只有无剪切的直接续拍才能 seamless
+- 同一地点的插入镜头、换机位或大跨度景别变化必须 intentional_cut；连续 seamless 不得超过 2 次
 - `scene_id` 表示物理地点，不是景别或叙事用途；同一地点必须复用同一 ID
 - 每镜头只允许一个 `primary_action`，并明确 start/end state
 - 每个 prompt_en 必须是完整的独立描述 (Seedance 不知道上下文)
