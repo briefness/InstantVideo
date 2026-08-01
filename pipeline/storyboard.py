@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import json
+from copy import deepcopy
 from pathlib import Path
 
 from openai import OpenAI
@@ -22,6 +23,10 @@ _CORRECTION_SYSTEM_PROMPT = (
     "你是影视分镜契约校正器。输入包含一个已经结构化的分镜和明确问题列表。"
     "只修改导致问题的字段，保留其余叙事、角色、场景、时长和字段结构。"
     "只能使用输入中已有的字段以及分镜契约允许的枚举值；只输出完整 JSON 对象。"
+)
+_MISPLACED_SHOT_METADATA = (
+    "title", "total_duration", "aspect_ratio", "resolution", "style",
+    "music_style", "content_focus", "theme_elements",
 )
 _ACTION_FOCUS_TERMS = (
     "大战", "打斗", "战斗", "对决", "决斗", "格斗", "武打", "搏斗",
@@ -281,12 +286,14 @@ def generate_storyboard(
     if is_critical:
         print("\n   [自动修正] 检测到严重问题, 重新生成分镜...")
         correction_prompt = _build_correction_prompt(user_prompt, storyboard, warnings)
+        original_storyboard = deepcopy(storyboard)
         storyboard = _call_llm_for_storyboard(
             client,
             _CORRECTION_SYSTEM_PROMPT,
             correction_prompt,
             temperature=0.2,
         )
+        _preserve_correction_contract(original_storyboard, storyboard)
         storyboard["content_focus"] = content_focus
         _apply_defaults(storyboard, aspect_ratio, resolution, style)
         storyboard = validate_storyboard(storyboard)
@@ -447,6 +454,17 @@ def _framing_rank(value: object) -> int | None:
     return None
 
 
+def _framing_family(value: object) -> str | None:
+    rank = _framing_rank(value)
+    if rank is None:
+        return None
+    if rank <= 2:
+        return "close_detail"
+    if rank <= 4:
+        return "medium"
+    return "wide"
+
+
 def _boundary_framing(shot: dict, boundary: str) -> int | None:
     camera = shot.get("camera")
     camera = camera if isinstance(camera, dict) else {}
@@ -548,6 +566,23 @@ def _apply_coverage_defaults(shots: list[dict]) -> None:
                 _infer_composition_change(shots[index - 1], shot),
             )
 
+        camera = shot.get("camera")
+        camera = camera if isinstance(camera, dict) else {}
+        positions = camera.get("screen_positions")
+        positions = dict(positions) if isinstance(positions, dict) else {}
+        blocking = shot.get("blocking")
+        blocking = blocking if isinstance(blocking, dict) else {}
+        for name, intent in blocking.items():
+            frame_position = (
+                str(intent.get("frame_position", "")).strip()
+                if isinstance(intent, dict) else ""
+            )
+            if frame_position and name not in positions:
+                positions[name] = frame_position
+        if positions:
+            camera["screen_positions"] = positions
+        shot["camera"] = camera
+
         beats = [beat for beat in shot.get("action_beats", []) if isinstance(beat, dict)]
         actors = [str(beat.get("actor", "")).strip() for beat in beats]
         targets = [str(beat.get("target", "")).strip() for beat in beats]
@@ -613,6 +648,8 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
     character_names = list(character_modes)
 
     for index, shot in enumerate(storyboard["shots"]):
+        for field in _MISPLACED_SHOT_METADATA:
+            shot.pop(field, None)
         shot.setdefault("duration", config.DEFAULT_DURATION)
         normalized_duration = _normalize_positive_duration(shot["duration"])
         if normalized_duration != shot["duration"]:
@@ -706,6 +743,18 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 - 要求命中可见时，将 actor/target 都列入 required_visible_entities，使用中景或全景让双方同框并保持攻击线清晰
 - 武器细节必须使用独立 insert，目标受击使用独立 target_reaction；不得在极近景浅焦镜头同时要求远处目标清晰命中
 """
+    if any(
+        marker in warning
+        for warning in warnings
+        for marker in (
+            "动作结果视角缺失", "动作镜头职责集中", "动作景别层次不足",
+        )
+    ):
+        coverage_repair += """
+- 长动作段落只调整 coverage_role、景别和对应 prompt_en：保留角色、场景、空间轴、时长、动作因果与连续性字段
+- coverage 必须服务因果：在空间/交互、动作主体、目标反应或关键细节、结果收束中选择适合当前剧情的职责，不机械套模板
+- 至少用 wide、medium、close/detail 三类景别建立空间、看清交互并展示一次结果；近景/细节镜头不得承担远距离双方同框命中
+"""
 
     return f"""{original_prompt}
 
@@ -726,6 +775,111 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 ```
 
 请根据上述问题修正分镜, 输出修正后的完整 JSON。只输出 JSON, 不要解释。"""
+
+
+def _merge_missing_mapping(original: object, corrected: object) -> dict:
+    source = original if isinstance(original, dict) else {}
+    current = corrected if isinstance(corrected, dict) else {}
+    merged = deepcopy(source)
+    for key, value in current.items():
+        if value not in (None, "", [], {}):
+            merged[key] = deepcopy(value)
+    return merged
+
+
+def _preserve_correction_contract(original: dict, corrected: dict) -> None:
+    """Keep accepted spatial/continuity data when a surgical LLM correction omits it."""
+    if not isinstance(corrected, dict):
+        return
+
+    for key in ("characters", "theme_elements", "music_style"):
+        if key not in corrected or corrected[key] in (None, "", [], {}):
+            if key in original:
+                corrected[key] = deepcopy(original[key])
+
+    original_shots = {
+        shot.get("shot_id"): shot
+        for shot in original.get("shots", [])
+        if isinstance(shot, dict) and shot.get("shot_id") is not None
+    }
+    for shot in corrected.get("shots", []):
+        if not isinstance(shot, dict):
+            continue
+        source = original_shots.get(shot.get("shot_id"))
+        if not source:
+            continue
+
+        for key in ("shot_id", "duration", "scene_id", "continuity_from_previous"):
+            if key not in shot or shot[key] in (None, "", [], {}):
+                if key in source:
+                    shot[key] = deepcopy(source[key])
+
+        for key in ("start_state", "end_state"):
+            if isinstance(source.get(key), dict):
+                shot[key] = _merge_missing_mapping(source[key], shot.get(key, {}))
+
+        role = str(shot.get("coverage_role", "")).strip()
+        current_characters = shot.get("characters")
+        single_focus = (
+            role in {"target_reaction", "insert", "aftermath"}
+            and isinstance(current_characters, list)
+            and len(current_characters) == 1
+        )
+        if not single_focus:
+            if isinstance(source.get("characters"), list):
+                current_characters = current_characters if isinstance(current_characters, list) else []
+                shot["characters"] = list(dict.fromkeys([
+                    *source["characters"],
+                    *current_characters,
+                ]))
+            if isinstance(source.get("required_visible_entities"), list):
+                current_visible = shot.get("required_visible_entities")
+                current_visible = current_visible if isinstance(current_visible, list) else []
+                shot["required_visible_entities"] = list(dict.fromkeys([
+                    *source["required_visible_entities"],
+                    *current_visible,
+                ]))
+
+        source_camera = source.get("camera")
+        current_camera = shot.get("camera")
+        if not isinstance(current_camera, dict) or not current_camera:
+            shot["camera"] = deepcopy(source_camera) if isinstance(source_camera, dict) else {}
+            if single_focus:
+                shot["camera"].pop("screen_positions", None)
+            current_camera = shot["camera"]
+        elif isinstance(source_camera, dict):
+            if not single_focus:
+                source_positions = source_camera.get("screen_positions")
+                current_positions = current_camera.get("screen_positions")
+                if isinstance(source_positions, dict):
+                    current_camera["screen_positions"] = {
+                        **deepcopy(source_positions),
+                        **(deepcopy(current_positions) if isinstance(current_positions, dict) else {}),
+                    }
+            if not str(current_camera.get("axis_change", "")).strip():
+                current_camera["axis_change"] = source_camera.get("axis_change", "hold")
+
+        if not single_focus:
+            source_blocking = source.get("blocking")
+            current_blocking = shot.get("blocking")
+            if isinstance(source_blocking, dict):
+                current_blocking = current_blocking if isinstance(current_blocking, dict) else {}
+                shot["blocking"] = {
+                    name: _merge_missing_mapping(intent, current_blocking.get(name, {}))
+                    for name, intent in source_blocking.items()
+                }
+                shot["blocking"].update({
+                    name: value
+                    for name, value in current_blocking.items()
+                    if name not in shot["blocking"]
+                })
+
+            source_geometry = source.get("interaction_geometry")
+            if isinstance(source_geometry, dict):
+                shot["interaction_geometry"] = _merge_missing_mapping(
+                    source_geometry,
+                    shot.get("interaction_geometry", {}),
+                )
 
 
 def _parse_json_response(text: str) -> dict:
@@ -787,6 +941,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 17. 可拍摄性: 每镜填写 composition_change、coverage_role、required_visible_entities 和 interaction_geometry；必须展示命中时 actor/target 同框且攻击线可见，极近景/浅景深不能同时要求远处目标清晰受击
 18. 身份参考预算: 动作片不得为了提取身份单独占用静态镜头; 角色可以在多人冲突镜头首次出现且 extract_character_ref=false，只有自然的单一 identity 角色清晰镜头才可提取，其他镜头由生成阶段从顶层 characters 自动注入完整外观
 19. 结构化主题: 顶层 theme_elements 使用稳定英文ID; 不得用中文标题与英文 prompt 做字符串匹配
+20. 长动作 coverage: 24 秒以上且至少 4 镜时，根据剧情组合空间/交互、动作主体、目标反应或关键细节、结果收束，并覆盖 wide、medium、close/detail 三类景别；变化服务因果，不机械套固定顺序或运镜
 
 ## Seedance 模型局限 (必须规避)
 
@@ -1337,6 +1492,44 @@ def _validate_storyboard_richness(
                 f"当前判定: {assessment}"
             )
             critical_count += 1
+
+        if total_duration >= 24 and len(shots) >= 4:
+            coverage_roles = [
+                str(shot.get("coverage_role", "")).strip()
+                for shot in shots
+                if str(shot.get("coverage_role", "")).strip()
+            ]
+            result_roles = {"target_reaction", "insert"}
+            if not result_roles.intersection(coverage_roles):
+                warnings.append(
+                    "🚨 动作结果视角缺失: 24 秒以上动作段落必须至少用一个 "
+                    "target_reaction 或有叙事价值的 insert 展示受击、关键细节或局势变化"
+                )
+                critical_count += 1
+
+            if coverage_roles:
+                dominant_count = max(coverage_roles.count(role) for role in set(coverage_roles))
+                if dominant_count / len(coverage_roles) > 0.75:
+                    warnings.append(
+                        f"🚨 动作镜头职责集中: {dominant_count}/{len(coverage_roles)} 个镜头"
+                        "承担同一种 coverage_role；应按动作因果分配主体、交互、反应或结果视角"
+                    )
+                    critical_count += 1
+
+            framing_families = {
+                family
+                for shot in shots
+                if (family := _framing_family(
+                    shot.get("camera", {}).get("start_framing")
+                    if isinstance(shot.get("camera"), dict) else ""
+                ))
+            }
+            if len(framing_families) < 3:
+                warnings.append(
+                    "🚨 动作景别层次不足: 24 秒以上动作段落应按因果覆盖 "
+                    "wide、medium、close/detail 三类景别；近景只用于可读的反应或关键细节"
+                )
+                critical_count += 1
 
     # --- 12. 时长均匀性检测 ---
     durations = [s.get("duration", 5) for s in shots]

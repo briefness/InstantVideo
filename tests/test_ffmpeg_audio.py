@@ -121,6 +121,33 @@ def test_title_card_does_not_drop_final_audio(work_dir):
     assert ffmpeg_ops.has_audio_track(str(final))
 
 
+def test_title_card_renders_distinct_simplified_chinese_glyphs(work_dir):
+    import cv2
+
+    rendered = []
+    for character in ("扫", "丧"):
+        video = work_dir / f"title_{ord(character)}.mp4"
+        frame = work_dir / f"title_{ord(character)}.jpg"
+        ffmpeg_ops.generate_title_card(
+            character,
+            output_path=str(video),
+            duration=1.5,
+            resolution="320:180",
+        )
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-v", "error", "-ss", "1.2",
+                "-i", str(video), "-frames:v", "1", str(frame),
+            ],
+            check=True,
+            capture_output=True,
+        )
+        rendered.append(cv2.imread(str(frame), cv2.IMREAD_GRAYSCALE))
+
+    assert rendered[0] is not None and rendered[1] is not None
+    assert not (rendered[0] == rendered[1]).all()
+
+
 def test_concat_simple_resets_incompatible_video_time_bases(work_dir):
     """不同视频 time base 不能经 concat demuxer 误放大时间戳。"""
     title = work_dir / "title.mp4"

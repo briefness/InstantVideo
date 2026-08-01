@@ -173,6 +173,37 @@ def test_generate_storyboard_normalizes_positive_duration_before_validation(
     assert storyboard["shots"][0]["duration"] == 4
 
 
+def test_generate_storyboard_normalizes_misplaced_top_level_metadata(monkeypatch):
+    draft = {
+        "title": "robot cleanup",
+        "total_duration": 30,
+        "shots": [{
+            "shot_id": 1,
+            "duration": 6,
+            "total_duration": 30,
+            "scene_description": "ruined downtown street",
+            "prompt_en": "combat robot advances through a ruined downtown street",
+        }],
+    }
+    monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
+    monkeypatch.setattr(
+        "pipeline.storyboard._call_llm_for_storyboard",
+        lambda *_args, **_kwargs: deepcopy(draft),
+    )
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: ([], False),
+    )
+
+    storyboard = generate_storyboard(
+        "制作一个30秒的视频，机器人在末日城市清除丧尸",
+        target_duration=30,
+    )
+
+    assert storyboard["total_duration"] == 30
+    assert "total_duration" not in storyboard["shots"][0]
+
+
 def test_generate_storyboard_does_not_mask_non_positive_duration(monkeypatch):
     draft = {
         "title": "invalid duration",
@@ -267,6 +298,114 @@ def test_short_action_generation_recovers_with_one_surgical_correction(monkeypat
     assert "动作槽位契约" in calls[0][0]
     assert "冲突中建立" in calls[1][0]
     assert calls[1][1]["temperature"] == 0.2
+
+
+def test_contract_correction_preserves_accepted_spatial_fields(monkeypatch):
+    blocking = {
+        "robot": {
+            "frame_position": "screen-left foreground",
+            "body_orientation": "three-quarter toward screen-right",
+            "facing_target": "zombies",
+            "eyeline_target": "zombies",
+            "travel_direction": "left-to-right",
+            "action_target": "zombies",
+        },
+        "zombies": {
+            "frame_position": "screen-right midground",
+            "body_orientation": "three-quarter toward screen-left",
+            "facing_target": "robot",
+            "eyeline_target": "robot",
+            "travel_direction": "right-to-left",
+            "action_target": "robot",
+        },
+    }
+    original = {
+        "title": "robot cleanup",
+        "characters": [
+            {"name": "robot", "reference_mode": "identity"},
+            {"name": "zombies", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 6,
+            "scene_id": "ruined_city_street",
+            "scene_description": "Ruined city street firefight",
+            "prompt_en": "cinematic action detail " * 30,
+            "continuity_from_previous": "none",
+            "coverage_role": "action_subject",
+            "required_visible_entities": ["robot", "zombies"],
+            "primary_action": "robot aims at the approaching zombies",
+            "action_beats": [{
+                "phase": "trigger",
+                "actor": "robot",
+                "action": "aims its rifle",
+                "target": "zombies",
+                "visible_result": "zombies remain visible downrange",
+            }],
+            "start_state": {
+                "location": "ruined city street",
+                "subject": "robot faces zombies",
+                "action_phase": "aiming",
+                "camera": "wide shot",
+            },
+            "end_state": {
+                "location": "ruined city street",
+                "subject": "robot keeps zombies in sight",
+                "action_phase": "ready to fire",
+                "camera": "wide shot",
+            },
+            "camera": {
+                "speed": "fixed",
+                "start_framing": "wide shot",
+                "end_framing": "wide shot",
+                "screen_positions": {
+                    "robot": "screen-left foreground",
+                    "zombies": "screen-right midground",
+                },
+                "axis_change": "establish",
+            },
+            "blocking": blocking,
+            "characters": ["robot", "zombies"],
+        }],
+    }
+    corrected = deepcopy(original)
+    corrected["shots"][0].update({
+        "coverage_role": "interaction",
+        "required_visible_entities": ["robot"],
+        "primary_action": "robot fires one burst at the zombies",
+        "camera": {
+            "speed": "fixed",
+            "start_framing": "medium shot",
+            "end_framing": "medium shot",
+        },
+    })
+    corrected["shots"][0].pop("blocking")
+    responses = iter((original, corrected))
+    richness = iter(((['🚨 动作景别层次不足'], True), ([], False)))
+
+    monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
+    monkeypatch.setattr(
+        "pipeline.storyboard._call_llm_for_storyboard",
+        lambda *_args, **_kwargs: deepcopy(next(responses)),
+    )
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: next(richness),
+    )
+
+    storyboard = generate_storyboard(
+        "制作一个30秒的视频，机器人在末日城市清除丧尸",
+        target_duration=30,
+    )
+    shot = storyboard["shots"][0]
+
+    assert shot["coverage_role"] == "interaction"
+    assert shot["primary_action"] == "robot fires one burst at the zombies"
+    assert shot["camera"]["start_framing"] == "medium shot"
+    assert shot["camera"]["screen_positions"] == original["shots"][0]["camera"]["screen_positions"]
+    assert shot["camera"]["axis_change"] == "establish"
+    assert shot["required_visible_entities"] == ["robot", "zombies"]
+    assert shot["blocking"] == blocking
 
 
 def test_storyboard_stops_after_one_failed_contract_correction(monkeypatch):

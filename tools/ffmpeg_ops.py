@@ -6,6 +6,7 @@ Cherry-picked patterns from OpenMontage video_stitch.py, simplified.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -757,6 +758,42 @@ def _burn_with_drawtext(video_path: str, srt_path: str, output_path: str,
 
 # ─── 片头片尾 ───
 
+_TITLE_FONT_FAMILIES = (
+    "Heiti SC",
+    "Hiragino Sans GB",
+    "PingFang SC",
+    "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    "WenQuanYi Zen Hei",
+    "Arial Unicode MS",
+)
+_TITLE_FONT_PATHS = (
+    "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "C:/Windows/Fonts/msyh.ttc",
+)
+
+
+def _resolve_title_font(text: str) -> str:
+    codepoints = " ".join(
+        f"{ord(char):x}" for char in dict.fromkeys(text) if not char.isspace()
+    )
+    if codepoints and shutil.which("fc-match"):
+        for family in _TITLE_FONT_FAMILIES:
+            result = subprocess.run(
+                ["fc-match", "-f", "%{file}\n", f"{family}:charset={codepoints}"],
+                capture_output=True,
+                text=True,
+            )
+            font_path = result.stdout.splitlines()[0].strip() if result.stdout else ""
+            if result.returncode == 0 and font_path and Path(font_path).is_file():
+                return font_path
+    for font_path in _TITLE_FONT_PATHS:
+        if Path(font_path).is_file():
+            return font_path
+    raise RuntimeError("未找到覆盖片头文字的可用字体；已停止，避免输出缺字或纯黑片头")
+
 def generate_title_card(
     title: str,
     subtitle: str = "",
@@ -770,7 +807,7 @@ def generate_title_card(
     片头也输出静音 AAC 轨。否则它与后续正片拼接时，concat demuxer
     会按第一段流结构输出，导致整条成片音频被丢弃。
     """
-    font_file = "/System/Library/Fonts/PingFang.ttc"
+    font_file = _resolve_title_font(title + subtitle)
     size = resolution.replace(":", "x")
 
     safe_title = title.replace(":", "\\:").replace("'", "'\\''" )
@@ -817,18 +854,7 @@ def generate_title_card(
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"  ⚠ 片头生成失败, 使用纯黑替代: {result.stderr[-100:]}")
-        cmd_fallback = [
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i", f"color=c=black:s={size}:d={duration}",
-            "-f", "lavfi", "-i", f"anullsrc=channel_layout=stereo:sample_rate=48000",
-            "-map", "0:v", "-map", "1:a",
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "192k", "-shortest",
-            "-movflags", "+faststart",
-            output_path,
-        ]
-        subprocess.run(cmd_fallback, check=True, capture_output=True)
+        raise RuntimeError(f"片头生成失败: {result.stderr[-500:]}")
 
 
 # ─── 多平台导出 ───

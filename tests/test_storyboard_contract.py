@@ -330,6 +330,75 @@ def test_insert_shot_requirement_depends_on_content_focus():
     assert any("缺少 insert shot" in warning for warning in product_warnings)
 
 
+def test_long_action_sequence_requires_causal_coverage_and_framing_range():
+    storyboard = {
+        "title": "robot cleanup",
+        "shots": [
+            _contract_shot(
+                shot_id,
+                duration,
+                "robot fires one burst at the zombie horde",
+                coverage_role="action_subject",
+                camera={
+                    "speed": "fast",
+                    "start_framing": framing,
+                    "end_framing": framing,
+                },
+            )
+            for shot_id, duration, framing in (
+                (1, 6, "wide shot"),
+                (2, 7, "medium wide shot"),
+                (3, 8, "medium shot"),
+                (4, 9, "wide shot"),
+            )
+        ],
+    }
+
+    warnings, is_critical = _validate_storyboard_richness(
+        storyboard,
+        user_request="制作一个30秒的视频，机器人在末日城市清除丧尸",
+    )
+
+    assert is_critical
+    assert any("动作结果视角缺失" in warning for warning in warnings)
+    assert any("动作镜头职责集中" in warning for warning in warnings)
+    assert any("动作景别层次不足" in warning for warning in warnings)
+
+
+def test_long_action_sequence_accepts_causal_coverage_without_fixed_camera_moves():
+    storyboard = {
+        "title": "robot cleanup",
+        "shots": [
+            _contract_shot(
+                shot_id,
+                duration,
+                action,
+                coverage_role=coverage_role,
+                camera={
+                    "speed": "fixed",
+                    "start_framing": framing,
+                    "end_framing": framing,
+                },
+            )
+            for shot_id, duration, action, coverage_role, framing in (
+                (1, 6, "zombies charge toward the robot", "establish", "wide shot"),
+                (2, 7, "robot fires one burst at the horde", "interaction", "medium shot"),
+                (3, 8, "lead zombie recoils from the impact", "target_reaction", "close-up"),
+                (4, 9, "robot holds the cleared intersection", "aftermath", "medium wide shot"),
+            )
+        ],
+    }
+
+    warnings, _ = _validate_storyboard_richness(
+        storyboard,
+        user_request="制作一个30秒的视频，机器人在末日城市清除丧尸",
+    )
+
+    assert not any("动作结果视角缺失" in warning for warning in warnings)
+    assert not any("动作镜头职责集中" in warning for warning in warnings)
+    assert not any("动作景别层次不足" in warning for warning in warnings)
+
+
 def test_compound_contact_sequence_requires_shot_split():
     storyboard = {
         "title": "robot zombie fight",
@@ -694,6 +763,63 @@ def test_defaults_compile_visible_impact_into_shootable_geometry():
     assert shot["required_visible_entities"] == ["robot", "zombies"]
     assert shot["interaction_geometry"]["must_share_frame"] is True
     assert shot["interaction_geometry"]["line_of_action_visible"] is True
+
+
+def test_defaults_compile_screen_positions_from_character_blocking():
+    blocking = {
+        "robot": {
+            "frame_position": "screen-left foreground",
+            "body_orientation": "profile toward screen-right",
+            "facing_target": "zombies",
+            "eyeline_target": "zombies",
+            "action_target": "zombies",
+        },
+        "zombies": {
+            "frame_position": "screen-right midground",
+            "body_orientation": "profile toward screen-left",
+            "facing_target": "robot",
+            "eyeline_target": "robot",
+            "action_target": "robot",
+        },
+    }
+    storyboard = {
+        "characters": [
+            {"name": "robot", "reference_mode": "identity"},
+            {"name": "zombies", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "Ruined street firefight",
+            "prompt_en": "cinematic action detail " * 30,
+            "characters": ["robot", "zombies"],
+            "primary_action": "robot fires one burst at zombies",
+            "action_beats": [{
+                "phase": "peak",
+                "actor": "robot",
+                "action": "fires one burst",
+                "target": "zombies",
+                "visible_result": "the front zombie recoils",
+            }],
+            "camera": {
+                "start_framing": "wide shot",
+                "end_framing": "medium shot",
+            },
+            "blocking": blocking,
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+    warnings, _ = _validate_storyboard_richness(
+        storyboard,
+        user_request="机器人在末日城市清除丧尸",
+    )
+
+    assert storyboard["shots"][0]["camera"]["screen_positions"] == {
+        "robot": "screen-left foreground",
+        "zombies": "screen-right midground",
+    }
+    assert not any("空间轴未定义" in warning for warning in warnings)
 
 
 def test_short_robot_action_replay_keeps_only_noncritical_scene_warning():
