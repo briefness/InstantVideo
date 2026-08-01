@@ -196,10 +196,13 @@ class SeedanceAPI:
         """Poll an existing Ark task so recovery never needs to resubmit it."""
         start_time = time.time()
         wait = 10
+        consecutive_errors = 0
+        last_poll_failure: dict | None = None
 
         while time.time() - start_time < timeout:
             try:
                 result = self.ark_client.content_generation.tasks.get(task_id=task_id)
+                consecutive_errors = 0
                 status = result.status
 
                 if status == "succeeded":
@@ -231,15 +234,21 @@ class SeedanceAPI:
 
             except Exception as exc:
                 failure = self._failure_from_error(exc)
+                failure["status"] = "pending"
                 failure["provider_task_id"] = task_id
                 failure["error_type"] = "poll_error"
-                return failure
+                last_poll_failure = failure
+                consecutive_errors += 1
+                if consecutive_errors >= 3:
+                    return failure
+                await asyncio.sleep(0.25 * (2 ** (consecutive_errors - 1)))
+                continue
 
             await asyncio.sleep(wait)
             wait = min(wait * 1.5, 60)
 
-        return {
-            "status": "failed",
+        return last_poll_failure or {
+            "status": "pending",
             "provider_task_id": task_id,
             "error": f"Timeout ({timeout}s)",
             "error_type": "poll_timeout",

@@ -82,6 +82,26 @@ def test_concat_preserves_audio(work_dir):
     assert 4.5 < dur < 6.5, f"时长异常: {dur}"
 
 
+def test_mixed_cut_and_crossfade_executes_with_zero_cut_overlap(work_dir):
+    clips = []
+    for index, color in enumerate(("red", "green", "blue")):
+        raw = work_dir / f"mixed_raw_{index}.mp4"
+        norm = work_dir / f"mixed_norm_{index}.mp4"
+        _make_clip(raw, with_audio=True, color=color, dur=1)
+        ffmpeg_ops.normalize_video(str(raw), str(norm), resolution="320:180")
+        clips.append(str(norm))
+
+    output = work_dir / "mixed_concat.mp4"
+    ffmpeg_ops.concat_with_transitions(
+        clips,
+        [("cut", 0.0), ("crossfade", 0.25)],
+        str(output),
+    )
+
+    assert ffmpeg_ops.has_audio_track(str(output))
+    assert ffmpeg_ops.get_video_duration(str(output)) == pytest.approx(2.75, abs=0.15)
+
+
 def test_title_card_does_not_drop_final_audio(work_dir):
     """片头 + 正片拼接后仍应保留音频, 否则导出版无法直接发布。"""
     title = work_dir / "title.mp4"

@@ -12,9 +12,11 @@ from rich.panel import Panel
 
 import config
 from pipeline.storyboard import generate_storyboard
-from pipeline.generator import VideoGenerator, ShotResult
+from pipeline.generator import RemoteTaskPendingError, VideoGenerator, ShotResult
 from pipeline.models import RunOptions, RunStatus
+from pipeline.readiness import ensure_storyboard_ready
 from pipeline.run_state import RunWorkspace
+from pipeline.semantic_review import SemanticReviewUnavailableError
 from tools import ffmpeg_ops, beat_analyzer
 from tools.tts import synthesize_voiceover, TTSSegment
 
@@ -84,6 +86,12 @@ class VideoPipeline:
 
         try:
             return await self._run(user_request)
+        except RemoteTaskPendingError as exc:
+            self.run_workspace.mark_interrupted(str(exc))
+            raise
+        except SemanticReviewUnavailableError as exc:
+            self.run_workspace.mark_interrupted(str(exc))
+            raise
         except asyncio.CancelledError:
             self.run_workspace.mark_interrupted()
             raise
@@ -134,6 +142,7 @@ class VideoPipeline:
         console.print(f"   ✓ {len(storyboard['shots'])} 个镜头, 风格: {storyboard['mood']}, 目标时长: {target_dur}s")
 
         # ─── Stage 2: 视频生成 ───
+        ensure_storyboard_ready(storyboard)
         console.print("\n[bold cyan]🎥 Stage 2: 生成视频片段...[/bold cyan]")
         def record_progress(result: ShotResult) -> None:
             self.run_workspace.record_shot(
@@ -143,6 +152,9 @@ class VideoPipeline:
                 local_path=result.local_path,
                 last_frame_url=result.last_frame_url,
                 quality_score=result.quality_score,
+                technical_quality_score=result.technical_quality_score,
+                semantic_accepted=result.semantic_accepted,
+                observed_end_state=result.observed_end_state,
                 model_used=result.model_used,
                 resolution_used=result.resolution_used,
                 attempts=result.attempts,
@@ -153,6 +165,7 @@ class VideoPipeline:
             str(self.workspace),
             on_progress=record_progress,
             resume_task_ids=self.run_workspace.resumable_provider_tasks(),
+            accepted_shot_artifacts=self.run_workspace.accepted_shot_artifacts(),
         )
         results = await generator.generate_all(storyboard)
         self._save_json("generation_results.json", [r.__dict__ for r in results])
@@ -175,6 +188,7 @@ class VideoPipeline:
         norm_dir.mkdir(exist_ok=True)
 
         video_files = []
+        media_durations: dict[int, float] = {}
         target_res = config.SEEDANCE_OUTPUT_DIMENSIONS[self.resolution][
             self.aspect_ratio
         ]
@@ -183,6 +197,8 @@ class VideoPipeline:
             norm_path = str(norm_dir / Path(r.local_path).name)
             ffmpeg_ops.normalize_video(r.local_path, norm_path, resolution=target_res)
             video_files.append(norm_path)
+            media_durations[r.shot_id] = ffmpeg_ops.get_video_duration(norm_path)
+        self._shot_media_durations = media_durations
         console.print(f"   ✓ {len(video_files)} 个视频已统一规格")
 
         # ─── Stage 3: 拼接 + 转场 ───
@@ -227,7 +243,9 @@ class VideoPipeline:
 
             # 计算每段口播在成片中的起始时间 (累加镜头时长 - 转场重叠)
             shot_start_times = self._calc_shot_start_times(
-                storyboard, transitions=self._transitions
+                storyboard,
+                transitions=self._transitions,
+                media_durations=self._shot_media_durations,
             )
             vo_mix_input = []
             for seg in vo_segments:
@@ -353,7 +371,9 @@ class VideoPipeline:
                 vo_dur_map[seg.shot_id] = seg.duration
 
         shot_starts = self._calc_shot_start_times(
-            storyboard, transitions=getattr(self, '_transitions', None)
+            storyboard,
+            transitions=getattr(self, '_transitions', None),
+            media_durations=getattr(self, '_shot_media_durations', None),
         )
         lines = []
         idx = 1
@@ -371,7 +391,10 @@ class VideoPipeline:
                 end = start + vo_dur_map[shot["shot_id"]]
             else:
                 # 无口播 → 退回镜头时长 (兼容旧逻辑)
-                end = base_start + shot["duration"] - 0.5
+                media_duration = getattr(self, '_shot_media_durations', {}).get(
+                    shot["shot_id"], shot["duration"]
+                )
+                end = base_start + media_duration - 0.5
 
             lines.append(f"{idx}")
             lines.append(f"{self._fmt_time(start)} --> {self._fmt_time(end)}")
@@ -383,7 +406,10 @@ class VideoPipeline:
             f.write("\n".join(lines))
 
     def _calc_shot_start_times(
-        self, storyboard: dict, transitions: list[tuple[str, float]] | None = None,
+        self,
+        storyboard: dict,
+        transitions: list[tuple[str, float]] | None = None,
+        media_durations: dict[int, float] | None = None,
     ) -> dict[int, float]:
         """计算每个镜头在成片中的起始时间
 
@@ -395,7 +421,11 @@ class VideoPipeline:
         shots = storyboard["shots"]
         for i, shot in enumerate(shots):
             result[shot["shot_id"]] = t
-            t += shot["duration"]
+            t += (
+                media_durations.get(shot["shot_id"], shot["duration"])
+                if media_durations
+                else shot["duration"]
+            )
             # 减去与下一镜头的转场重叠时长
             if transitions and i < len(transitions):
                 t -= transitions[i][1]  # transitions[i] = (type, duration)

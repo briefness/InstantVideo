@@ -24,8 +24,13 @@ SEEDANCE_MODEL = os.getenv(
     "SEEDANCE_MODEL", "doubao-seedance-2-0-mini-260615"
 )
 
-# LLM 文本模型 (分镜生成)
+# 豆包 Seed 多模态模型 (分镜生成 + 五点跨镜头语义验收)
 LLM_MODEL = os.getenv("LLM_MODEL", "doubao-seed-2.0-lite")
+SEMANTIC_REVIEW_MODEL = os.getenv("SEMANTIC_REVIEW_MODEL", LLM_MODEL)
+SEMANTIC_REVIEW_ENABLED = os.getenv("SEMANTIC_REVIEW_ENABLED", "true").lower() == "true"
+SEMANTIC_REVIEW_IMAGE_DETAIL = os.getenv(
+    "SEMANTIC_REVIEW_IMAGE_DETAIL", "high"
+).lower()
 
 # ─── TTS ───
 TTS_ENGINE = os.getenv("TTS_ENGINE", "macos").lower()
@@ -38,6 +43,8 @@ VOLCANO_TTS_ENDPOINT = "wss://openspeech.bytedance.com/api/v3/tts/unidirectional
 DEFAULT_RESOLUTION = "480p"
 DEFAULT_RATIO = "16:9"
 DEFAULT_DURATION = 5          # 秒 (每镜头)
+MIN_SHOT_DURATION = 4
+MAX_SHOT_DURATION = 15
 DEFAULT_FPS = 24
 DEFAULT_GENERATE_AUDIO = True
 

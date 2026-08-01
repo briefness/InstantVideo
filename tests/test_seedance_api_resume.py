@@ -81,7 +81,64 @@ async def test_poll_error_preserves_existing_task_identity():
     )
 
     assert tasks.created == 0
+    assert result["status"] == "pending"
     assert result["error_type"] == "poll_error"
+    assert result["provider_task_id"] == "ark-task-existing"
+
+
+@pytest.mark.asyncio
+async def test_transient_poll_errors_retry_same_task_without_resubmission(monkeypatch):
+    api, tasks = api_with_fake_tasks()
+    attempts = 0
+
+    def flaky_get(*, task_id: str):
+        nonlocal attempts
+        attempts += 1
+        tasks.polled.append(task_id)
+        if attempts < 3:
+            raise ConnectionError("temporary offline")
+        return SimpleNamespace(
+            status="succeeded",
+            content=SimpleNamespace(
+                video_url="https://example.com/video.mp4",
+                last_frame_url=None,
+                audio_url=None,
+            ),
+        )
+
+    tasks.get = flaky_get
+
+    async def no_sleep(_seconds):
+        return None
+
+    monkeypatch.setattr("tools.seedance_api.asyncio.sleep", no_sleep)
+
+    result = await api.generate(
+        prompt="ignored while resuming",
+        timeout=1,
+        task_id="ark-task-existing",
+    )
+
+    assert tasks.created == 0
+    assert tasks.polled == ["ark-task-existing"] * 3
+    assert result["status"] == "succeeded"
+    assert result["provider_task_id"] == "ark-task-existing"
+
+
+@pytest.mark.asyncio
+async def test_poll_timeout_is_pending_not_failed():
+    api, tasks = api_with_fake_tasks()
+    tasks.get = lambda **_kwargs: SimpleNamespace(status="running")
+
+    result = await api.generate(
+        prompt="ignored while resuming",
+        timeout=0,
+        task_id="ark-task-existing",
+    )
+
+    assert tasks.created == 0
+    assert result["status"] == "pending"
+    assert result["error_type"] == "poll_timeout"
     assert result["provider_task_id"] == "ark-task-existing"
 
 

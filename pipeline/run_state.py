@@ -81,10 +81,30 @@ class RunWorkspace:
             data = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid storyboard JSON: {path}: {exc}") from exc
-        return validate_storyboard(data)
+        validated = validate_storyboard(data)
+        from pipeline.storyboard import _apply_coverage_defaults
+
+        _apply_coverage_defaults(validated["shots"])
+        for shot in validated["shots"]:
+            state = self.manifest.shots.get(str(shot["shot_id"]))
+            if not state or state.status != ShotStatus.success:
+                continue
+            observed = {
+                key: value
+                for key, value in state.observed_end_state.items()
+                if str(value).strip()
+            }
+            if observed:
+                shot["observed_end_state"] = observed
+                shot["end_state"] = {**shot.get("end_state", {}), **observed}
+        return validate_storyboard(validated)
 
     def save_storyboard(self, storyboard: dict[str, Any]) -> dict[str, Any]:
         validated = validate_storyboard(storyboard)
+        from pipeline.storyboard import _apply_coverage_defaults
+
+        _apply_coverage_defaults(validated["shots"])
+        validated = validate_storyboard(validated)
         self._atomic_write_json(self.path / STORYBOARD_FILENAME, validated)
         for shot in validated["shots"]:
             key = str(shot["shot_id"])
@@ -107,6 +127,9 @@ class RunWorkspace:
         local_path: str | None = None,
         last_frame_url: str | None = None,
         quality_score: int = 0,
+        technical_quality_score: int = 0,
+        semantic_accepted: bool | None = None,
+        observed_end_state: dict[str, str] | None = None,
         model_used: str = "",
         resolution_used: str = "",
         attempts: int = 0,
@@ -124,8 +147,11 @@ class RunWorkspace:
             status=ShotStatus(status),
             provider_task_id=provider_task_id,
             local_path=relative_path or (previous.local_path if previous else None),
-            last_frame_url=last_frame_url or (previous.last_frame_url if previous else None),
+            last_frame_url=self._relative_to_workspace(last_frame_url),
             quality_score=quality_score,
+            technical_quality_score=technical_quality_score,
+            semantic_accepted=semantic_accepted,
+            observed_end_state=observed_end_state or {},
             model_used=model_used,
             resolution_used=resolution_used,
             attempts=max(attempts, previous.attempts if previous else 0),
@@ -142,14 +168,37 @@ class RunWorkspace:
             if state.status == ShotStatus.running and state.provider_task_id
         }
 
+    def accepted_shot_artifacts(self) -> dict[int, dict[str, Any]]:
+        """Return successful local takes as authoritative resume inputs."""
+        accepted: dict[int, dict[str, Any]] = {}
+        for state in self.manifest.shots.values():
+            if state.status != ShotStatus.success or not state.local_path:
+                continue
+            local_path = self._resolve_artifact(state.local_path)
+            if not local_path or not Path(local_path).is_file():
+                continue
+            accepted[state.shot_id] = {
+                "local_path": local_path,
+                "last_frame_url": self._resolve_artifact(state.last_frame_url),
+                "quality_score": state.quality_score,
+                "technical_quality_score": state.technical_quality_score,
+                "semantic_accepted": state.semantic_accepted,
+                "observed_end_state": dict(state.observed_end_state),
+                "model_used": state.model_used,
+                "resolution_used": state.resolution_used,
+                "attempts": state.attempts,
+                "errors": list(state.errors),
+            }
+        return accepted
+
     def mark_failed(self, error: str) -> None:
         self.manifest.status = RunStatus.failed
         self.manifest.error = error
         self._save_manifest()
 
-    def mark_interrupted(self) -> None:
+    def mark_interrupted(self, error: str = "Run interrupted") -> None:
         self.manifest.status = RunStatus.interrupted
-        self.manifest.error = "Run interrupted"
+        self.manifest.error = error
         self._save_manifest()
 
     def mark_succeeded(self, final_path: str) -> None:
@@ -175,6 +224,12 @@ class RunWorkspace:
             return str(path.resolve().relative_to(self.path))
         except ValueError:
             return value
+
+    def _resolve_artifact(self, value: str | None) -> str | None:
+        if not value or value.startswith(("http://", "https://", "data:")):
+            return value
+        path = Path(value)
+        return str(path if path.is_absolute() else self.path / path)
 
     def _save_manifest(self) -> None:
         self.manifest.updated_at = _now()

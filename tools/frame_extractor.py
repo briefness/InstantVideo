@@ -84,6 +84,8 @@ def check_video_quality(video_path: str) -> dict:
     2. 闪烁 (帧间亮度差 > 40)
     3. 色彩异常 (帧间颜色直方图相关度骤降)
     4. 时序突变 (帧间结构相似度骤降, 检测物体突然出现/消失)
+    5. 黑屏/近黑画面
+    6. 冻结/重复帧
 
     Returns:
         {
@@ -106,6 +108,8 @@ def check_video_quality(video_path: str) -> dict:
     flicker_count = 0
     color_anomaly_count = 0
     temporal_break_count = 0
+    dark_count = 0
+    frozen_pair_count = 0
     prev_gray = None
     prev_hist = None
     sample_interval = max(1, total_frames // 30)
@@ -118,6 +122,8 @@ def check_video_quality(video_path: str) -> dict:
             break
         samples += 1
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if float(gray.mean()) < 8.0:
+            dark_count += 1
 
         # 1. 模糊检测 (Laplacian 方差)
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
@@ -127,6 +133,8 @@ def check_video_quality(video_path: str) -> dict:
         if prev_gray is not None:
             # 2. 闪烁检测 (帧间亮度差)
             diff = np.abs(gray.astype(float) - prev_gray.astype(float)).mean()
+            if diff < 0.75:
+                frozen_pair_count += 1
             if diff > 40:
                 flicker_count += 1
 
@@ -148,10 +156,12 @@ def check_video_quality(video_path: str) -> dict:
             small_curr = cv2.resize(gray, (64, 64))
             small_prev = cv2.resize(prev_gray, (64, 64))
             # 归一化互相关作为结构相似度代理
-            ncc = np.corrcoef(
-                small_curr.flatten().astype(float),
-                small_prev.flatten().astype(float),
-            )[0, 1]
+            curr_values = small_curr.flatten().astype(float)
+            prev_values = small_prev.flatten().astype(float)
+            if curr_values.std() == 0 or prev_values.std() == 0:
+                ncc = 1.0 if np.array_equal(curr_values, prev_values) else 0.0
+            else:
+                ncc = np.corrcoef(curr_values, prev_values)[0, 1]
             # NCC < 0.5 表示帧间结构剧变 (物体突然出现/消失/形变)
             if ncc < 0.5:
                 temporal_break_count += 1
@@ -165,9 +175,31 @@ def check_video_quality(video_path: str) -> dict:
     flicker_ratio = flicker_count / compared_pairs
     color_anomaly_ratio = color_anomaly_count / compared_pairs
     temporal_break_ratio = temporal_break_count / compared_pairs
+    dark_ratio = dark_count / max(samples, 1)
+    frozen_pair_ratio = frozen_pair_count / compared_pairs
+    motion_coverage = 1.0 - frozen_pair_ratio
 
     score = 100
     issues = []
+    hard_failure = samples < 3
+
+    if samples < 3:
+        score = 0
+        issues.append(f"有效采样不足: {samples} 帧")
+    if dark_ratio > 0.8:
+        score -= 70
+        hard_failure = True
+        issues.append(f"黑屏/近黑帧占比 {dark_ratio:.0%}")
+    elif dark_ratio > 0.3:
+        score -= 35
+        issues.append(f"暗帧占比 {dark_ratio:.0%}")
+    if frozen_pair_ratio > 0.8:
+        score -= 60
+        hard_failure = True
+        issues.append(f"冻结帧对占比 {frozen_pair_ratio:.0%}")
+    elif frozen_pair_ratio > 0.5:
+        score -= 35
+        issues.append(f"低运动覆盖率 {motion_coverage:.0%}")
 
     if blur_ratio > 0.3:
         score -= 30
@@ -184,10 +216,13 @@ def check_video_quality(video_path: str) -> dict:
 
     return {
         "quality_score": max(0, score),
-        "pass": score >= 60,
+        "pass": score >= 60 and not hard_failure,
         "blur_ratio": blur_ratio,
         "flicker_ratio": flicker_ratio,
         "color_anomaly_ratio": color_anomaly_ratio,
         "temporal_break_ratio": temporal_break_ratio,
+        "dark_ratio": dark_ratio,
+        "frozen_pair_ratio": frozen_pair_ratio,
+        "motion_coverage": motion_coverage,
         "issues": issues,
     }

@@ -97,6 +97,20 @@ def normalize_video(
 # ─── 视频拼接 & 转场 ───
 
 
+_TRANSITION_ALIASES = {
+    "hard cut": "cut",
+    "hard_cut": "cut",
+    "straight cut": "cut",
+    "fade out": "fade_to_black",
+    "fadeout": "fade_to_black",
+}
+
+
+def _normalize_transition_type(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    return _TRANSITION_ALIASES.get(normalized, normalized)
+
+
 def infer_transitions(shots: list[dict]) -> list[tuple[str, float]]:
     """根据相邻镜头运动方向智能推导转场类型和时长
 
@@ -125,7 +139,7 @@ def infer_transitions(shots: list[dict]) -> list[tuple[str, float]]:
         speed_nxt = cam_nxt.get("speed", "").lower()
 
         # 如果分镜明确指定了非默认转场, 尊重它
-        explicit = current.get("transition_to_next", "")
+        explicit = _normalize_transition_type(current.get("transition_to_next", ""))
         if explicit and explicit != "crossfade":
             dur = _speed_to_transition_duration(speed_cur, speed_nxt, explicit)
             transitions.append((explicit, dur))
@@ -225,45 +239,62 @@ def concat_with_transitions(
         concat_simple(video_files, output_path)
         return
 
-    # 构建 xfade filter chain (视频) + acrossfade chain (音频)
+    # Build one ordered graph. A cut is concat (zero overlap); a visual
+    # transition is xfade/acrossfade (real overlap). Mixing both is valid.
+    source_parts = []
+    for index in range(len(video_files)):
+        source_parts.extend([
+            f"[{index}:v]settb=AVTB,setpts=PTS-STARTPTS[vsrc{index}]",
+            (
+                f"[{index}:a]aresample=48000,aformat=sample_fmts=fltp:"
+                "sample_rates=48000:channel_layouts=stereo,"
+                f"asetpts=PTS-STARTPTS[asrc{index}]"
+            ),
+        ])
+
     v_parts = []
     a_parts = []
-    cumulative_offset = 0.0
+    current_duration = durations[0]
+    v_prev = "[vsrc0]"
+    a_prev = "[asrc0]"
 
     for i in range(len(video_files) - 1):
-        transition_type = t_types[i] if i < len(t_types) else "crossfade"
-        transition_duration = t_durs[i] if i < len(t_durs) else 0.5
-        # 确保 transition_duration > 0 (硬切前面已过滤, 这里兜底)
-        transition_duration = max(transition_duration, 0.1)
-        xfade_name = TRANSITION_MAP.get(transition_type, "fade") or "fade"
+        transition_type = _normalize_transition_type(t_types[i])
+        transition_duration = float(t_durs[i])
+        xfade_name = TRANSITION_MAP.get(transition_type, "fade")
+        is_cut = xfade_name is None or transition_duration <= 0
 
-        # offset = 前面所有视频总时长 - 已使用的转场时长
-        if i == 0:
-            cumulative_offset = durations[0] - transition_duration
-            v_prev = "[0:v]"
-            a_prev = "[0:a]"
-        else:
-            cumulative_offset += durations[i] - transition_duration
-            v_prev = f"[v{i-1}]"
-            a_prev = f"[a{i-1}]"
-
-        v_next = f"[{i+1}:v]"
-        a_next = f"[{i+1}:a]"
+        v_next = f"[vsrc{i+1}]"
+        a_next = f"[asrc{i+1}]"
         # 最后一次输出用 [vout]/[aout]
         is_last = i == len(video_files) - 2
         v_out = "[vout]" if is_last else f"[v{i}]"
         a_out = "[aout]" if is_last else f"[a{i}]"
 
-        v_parts.append(
-            f"{v_prev}{v_next}xfade=transition={xfade_name}"
-            f":duration={transition_duration}:offset={cumulative_offset:.3f}{v_out}"
-        )
-        # acrossfade 把两段音频交叉淡化拼接, 时长与视频转场一致
-        a_parts.append(
-            f"{a_prev}{a_next}acrossfade=d={transition_duration}{a_out}"
-        )
+        if is_cut:
+            v_parts.append(f"{v_prev}{v_next}concat=n=2:v=1:a=0{v_out}")
+            a_parts.append(f"{a_prev}{a_next}concat=n=2:v=0:a=1{a_out}")
+            current_duration += durations[i + 1]
+        else:
+            transition_duration = min(
+                transition_duration,
+                max(0.05, current_duration - 0.05),
+                max(0.05, durations[i + 1] - 0.05),
+            )
+            offset = current_duration - transition_duration
+            v_parts.append(
+                f"{v_prev}{v_next}xfade=transition={xfade_name}"
+                f":duration={transition_duration}:offset={offset:.3f}{v_out}"
+            )
+            a_parts.append(
+                f"{a_prev}{a_next}acrossfade=d={transition_duration}{a_out}"
+            )
+            current_duration += durations[i + 1] - transition_duration
 
-    filter_complex = ";".join(v_parts + a_parts)
+        v_prev = v_out
+        a_prev = a_out
+
+    filter_complex = ";".join(source_parts + v_parts + a_parts)
 
     # 构建命令
     cmd = ["ffmpeg", "-y"]

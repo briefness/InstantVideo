@@ -5,10 +5,11 @@ from pathlib import Path
 import pytest
 
 import config
-from pipeline.generator import ShotResult
-from pipeline.models import RunOptions
+from pipeline.generator import RemoteTaskPendingError, ShotResult
+from pipeline.models import RunOptions, RunStatus
 from pipeline.orchestrator import VideoPipeline
 from pipeline.run_state import RunWorkspace
+from pipeline.semantic_review import SemanticReviewUnavailableError
 
 
 def storyboard() -> dict:
@@ -39,6 +40,37 @@ class FailedGenerator:
         return [result]
 
 
+class PendingGenerator:
+    def __init__(self, *_args, on_progress=None, **_kwargs):
+        self.on_progress = on_progress
+
+    async def generate_all(self, _storyboard):
+        result = ShotResult(
+            shot_id=1,
+            status="running",
+            provider_task_id="ark-task-running",
+        )
+        if self.on_progress:
+            self.on_progress(result)
+        raise RemoteTaskPendingError(result, Path("/tmp/test-run"))
+
+
+class ReviewPendingGenerator:
+    def __init__(self, *_args, on_progress=None, **_kwargs):
+        self.on_progress = on_progress
+
+    async def generate_all(self, _storyboard):
+        result = ShotResult(
+            shot_id=1,
+            status="running",
+            provider_task_id="ark-task-generated",
+            local_path="shots/shot_001.mp4",
+        )
+        if self.on_progress:
+            self.on_progress(result)
+        raise SemanticReviewUnavailableError("语义验收暂不可用，视频已保留")
+
+
 @pytest.mark.asyncio
 async def test_failed_shot_stops_before_postprocessing(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path)
@@ -56,6 +88,44 @@ async def test_failed_shot_stops_before_postprocessing(tmp_path: Path, monkeypat
 
     assert normalize_calls == []
     assert pipeline.run_workspace.manifest.status.value == "failed"
+
+
+@pytest.mark.asyncio
+async def test_pending_remote_task_interrupts_run_instead_of_failing(
+    tmp_path: Path, monkeypatch
+):
+    monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(
+        "pipeline.orchestrator.generate_storyboard", lambda **_kwargs: storyboard()
+    )
+    monkeypatch.setattr("pipeline.orchestrator.VideoGenerator", PendingGenerator)
+
+    pipeline = VideoPipeline()
+    with pytest.raises(RemoteTaskPendingError, match="--resume"):
+        await pipeline.run("5秒测试视频")
+
+    assert pipeline.run_workspace.manifest.status == RunStatus.interrupted
+    assert pipeline.run_workspace.manifest.shots["1"].status.value == "running"
+
+
+@pytest.mark.asyncio
+async def test_semantic_review_outage_interrupts_without_resubmission(
+    tmp_path: Path, monkeypatch
+):
+    monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(
+        "pipeline.orchestrator.generate_storyboard", lambda **_kwargs: storyboard()
+    )
+    monkeypatch.setattr("pipeline.orchestrator.VideoGenerator", ReviewPendingGenerator)
+
+    pipeline = VideoPipeline()
+    with pytest.raises(SemanticReviewUnavailableError, match="视频已保留"):
+        await pipeline.run("5秒测试视频")
+
+    assert pipeline.run_workspace.manifest.status == RunStatus.interrupted
+    assert pipeline.run_workspace.resumable_provider_tasks() == {
+        1: "ark-task-generated"
+    }
 
 
 @pytest.mark.asyncio
@@ -89,3 +159,56 @@ async def test_completed_resume_returns_without_running_pipeline(tmp_path: Path,
     )
 
     assert await pipeline.run() == str(final_path)
+
+
+@pytest.mark.asyncio
+async def test_resume_passes_accepted_shots_as_canonical_generator_inputs(
+    tmp_path: Path, monkeypatch
+):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="5秒测试视频"))
+    workspace.save_storyboard(storyboard())
+    shot_path = workspace.path / "shots" / "shot_001.mp4"
+    shot_path.parent.mkdir(parents=True)
+    shot_path.write_bytes(b"accepted")
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        local_path=str(shot_path),
+        semantic_accepted=True,
+        observed_end_state={"location": "test scene"},
+    )
+    captured = {}
+
+    class CapturingGenerator(FailedGenerator):
+        def __init__(self, *_args, **kwargs):
+            captured.update(kwargs)
+            super().__init__(*_args, **kwargs)
+
+    monkeypatch.setattr("pipeline.orchestrator.VideoGenerator", CapturingGenerator)
+
+    pipeline = VideoPipeline.from_workspace(workspace.path)
+    with pytest.raises(RuntimeError, match="可使用 --resume 继续"):
+        await pipeline.run()
+
+    accepted = captured["accepted_shot_artifacts"]
+    assert accepted[1]["local_path"] == str(shot_path)
+    assert accepted[1]["semantic_accepted"] is True
+
+
+def test_shot_timeline_uses_actual_media_durations():
+    pipeline = VideoPipeline()
+    board = {
+        "shots": [
+            {"shot_id": 1, "duration": 5},
+            {"shot_id": 2, "duration": 5},
+            {"shot_id": 3, "duration": 5},
+        ]
+    }
+
+    starts = pipeline._calc_shot_start_times(
+        board,
+        transitions=[("cut", 0.0), ("crossfade", 0.5)],
+        media_durations={1: 4.25, 2: 6.0, 3: 4.8},
+    )
+
+    assert starts == {1: 0.0, 2: 4.25, 3: 9.75}

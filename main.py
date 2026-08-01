@@ -13,6 +13,7 @@ import sys
 
 import config
 from pipeline.orchestrator import VideoPipeline
+from pipeline.generator import RemoteTaskPendingError
 
 
 def main():
@@ -68,6 +69,9 @@ def main():
     except KeyboardInterrupt:
         print("\n\n⏹️ 已中断")
         sys.exit(1)
+    except RemoteTaskPendingError as e:
+        print(f"\n⏸️ {e}")
+        sys.exit(2)
     except Exception as e:
         print(f"\n❌ 错误: {e}")
         sys.exit(1)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tools.ffmpeg_ops import infer_transitions, _extract_direction
+from tools.ffmpeg_ops import concat_with_transitions, infer_transitions, _extract_direction
 
 
 def test_empty_and_single():
@@ -58,6 +58,36 @@ def test_explicit_transition_respected():
     ]
     result = infer_transitions(shots)
     assert result[0][0] == "wipe_left"
+
+
+def test_hard_cut_alias_is_normalized_at_postprocessing_boundary():
+    shots = [
+        {"camera": {"speed": "slow"}, "transition_to_next": "hard cut"},
+        {"camera": {"speed": "slow"}},
+    ]
+
+    assert infer_transitions(shots) == [("cut", 0.0)]
+
+
+def test_mixed_transition_chain_preserves_real_hard_cut(monkeypatch):
+    captured = {}
+    monkeypatch.setattr("tools.ffmpeg_ops.get_video_duration", lambda _path: 5.0)
+    monkeypatch.setattr(
+        "tools.ffmpeg_ops.subprocess.run",
+        lambda command, **_kwargs: captured.setdefault("command", command),
+    )
+
+    concat_with_transitions(
+        ["one.mp4", "two.mp4", "three.mp4"],
+        [("cut", 0.0), ("crossfade", 0.5)],
+        "output.mp4",
+    )
+
+    command = captured["command"]
+    filters = command[command.index("-filter_complex") + 1]
+    assert "concat=n=2:v=1:a=0" in filters
+    assert "xfade=transition=fade:duration=0.5" in filters
+    assert "duration=0.1" not in filters
 
 
 def test_extract_direction():
