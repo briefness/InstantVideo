@@ -12,6 +12,45 @@ _BLOCKING_TARGET_FIELDS = (
 )
 
 
+def canonical_participant_id(
+    value: object,
+    candidates: Iterable[str],
+    *,
+    exclude: Iterable[str] = (),
+    fallback_to_single: bool = False,
+) -> str:
+    """Resolve descriptive LLM labels only when one stable entity ID is unambiguous."""
+    raw = str(value or "").strip()
+    if not raw or raw.casefold() == "none":
+        return raw
+    excluded = {str(name).strip() for name in exclude if str(name).strip()}
+    catalog = list(dict.fromkeys(
+        str(name).strip()
+        for name in candidates
+        if str(name).strip() and str(name).strip() not in excluded
+    ))
+    if raw in catalog:
+        return raw
+
+    key = _participant_key(raw)
+    exact = [name for name in catalog if _participant_key(name) == key]
+    if len(exact) == 1:
+        return exact[0]
+    contained = [
+        name for name in catalog
+        if _participant_key(name) in key or key in _participant_key(name)
+    ]
+    if len(contained) == 1:
+        return contained[0]
+    if fallback_to_single and len(catalog) == 1:
+        return catalog[0]
+    return raw
+
+
+def _participant_key(value: str) -> str:
+    return "".join(character for character in value.casefold() if character.isalnum())
+
+
 def visible_character_names(
     shot: dict,
     character_names: Iterable[str],

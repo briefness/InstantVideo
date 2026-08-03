@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import os
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -25,6 +26,8 @@ from pipeline.storyboard import (
     _should_use_previous_tail_reference,
 )
 from pipeline.participants import visible_character_names
+from pipeline.causality import causality_prompt_constraints
+from pipeline.narrative import narrative_prompt_constraint
 from pipeline.semantic_review import (
     SemanticReviewUnavailableError,
     SemanticTakeReviewer,
@@ -119,7 +122,7 @@ class VideoGenerator:
         ┌─────────────────────────────────────────────────────────────────┐
         │ 合格镜头: 从已验收中点帧裁出无污染角色身份参考                  │
         │ seamless: first_frame (仅上一尾帧，锁定真实起始状态)            │
-        │ 同场景 intentional_cut: 尾帧状态 + 角色身份 reference_image   │
+        │ 同场景切镜: 已验收尾帧 first_frame，锁定真实起始状态         │
         │ 跨场景 intentional_cut: 仅 canonical 角色身份                  │
         └─────────────────────────────────────────────────────────────────┘
         """
@@ -148,7 +151,6 @@ class VideoGenerator:
                 prev_last_frame = result.last_frame_url
                 if result.observed_end_state:
                     shot["observed_end_state"] = result.observed_end_state
-                    shot["end_state"] = result.observed_end_state
 
                 semantic_label = (
                     "通过" if result.semantic_accepted is True
@@ -231,7 +233,36 @@ class VideoGenerator:
     ) -> ShotResult:
         """生成单个镜头 (含缓存 + 降级链 + 429 限流退避)"""
 
+        requested_resolution = storyboard.get("resolution", config.DEFAULT_RESOLUTION)
+        self._reconcile_start_state(shot, prev_shot)
+        ensure_shot_ready(
+            shot,
+            previous_frame=prev_last_frame,
+            previous_shot=prev_shot,
+            character_refs=self.character_refs,
+        )
+        expected_refs, expected_role = self._build_image_refs(
+            shot, prev_last_frame, prev_shot
+        )
+        state_reference_required = self._has_state_reference(
+            shot, prev_shot, prev_last_frame, expected_refs, expected_role
+        )
+        resume_task_id = self.resume_task_ids.pop(shot["shot_id"], None)
         restored = self.accepted_shot_artifacts.pop(shot["shot_id"], None)
+        if restored and state_reference_required and not self._provenance_matches(
+            str(restored["local_path"]), shot, expected_refs, expected_role
+        ):
+            result = ShotResult(
+                shot_id=shot["shot_id"],
+                status="failed",
+                local_path=str(restored["local_path"]),
+                errors=[
+                    "已接受镜头的状态参考溯源与当前合同不匹配；已停止，"
+                    "不会在 resume 中隐式提交新的付费生成任务"
+                ],
+            )
+            self._notify_progress(result)
+            return result
         if restored:
             result = ShotResult(
                 shot_id=shot["shot_id"],
@@ -261,7 +292,6 @@ class VideoGenerator:
             print("     ♻️ 恢复已接受镜头，不重新生成或重新判定")
             return result
 
-        resume_task_id = self.resume_task_ids.pop(shot["shot_id"], None)
         result = ShotResult(
             shot_id=shot["shot_id"],
             status="running",
@@ -294,11 +324,21 @@ class VideoGenerator:
             self._notify_progress(result)
             return result
 
-        # ─── 缓存检查: 已有本地文件则跳过 API (断点续传核心逻辑) ───
+        # ─── 缓存检查: dependent takes need matching state provenance ───
         cached_path = str(
             self.output_dir / "shots" / f"shot_{shot['shot_id']:03d}.mp4"
         )
-        if Path(cached_path).exists() and Path(cached_path).stat().st_size > 0:
+        cache_is_compatible = (
+            not state_reference_required
+            or self._provenance_matches(
+                cached_path, shot, expected_refs, expected_role
+            )
+        )
+        if (
+            Path(cached_path).exists()
+            and Path(cached_path).stat().st_size > 0
+            and cache_is_compatible
+        ):
             qa = check_video_quality(cached_path)
             if qa["pass"]:
                 result.status = "success"
@@ -372,20 +412,21 @@ class VideoGenerator:
                     return result
             else:
                 print(f"     ⚠ 缓存文件 QA 不通过 ({qa['issues']}), 重新生成")
+        elif Path(cached_path).exists() and Path(cached_path).stat().st_size > 0:
+            result.status = "failed"
+            result.local_path = cached_path
+            result.errors.append(
+                "本地镜头的状态参考溯源与当前合同不匹配；已停止，"
+                "缓存冲突本身不授权提交新的付费生成任务"
+            )
+            self._notify_progress(result)
+            return result
 
         rate_limit_backoff = 0
         max_rate_limit_retries = 3
 
         use_refs = True  # 是否使用参考图 (失败后会关闭)
         skip_char_refs = False  # 隐私审核失败后, 丢弃角色参考帧但保留尾帧衔接
-        requested_resolution = storyboard.get("resolution", config.DEFAULT_RESOLUTION)
-        ensure_shot_ready(
-            shot,
-            previous_frame=prev_last_frame,
-            previous_shot=prev_shot,
-            character_refs=self.character_refs,
-        )
-        self._reconcile_start_state(shot, prev_shot)
         for level, deg_config in enumerate(
             config.GENERATION_CHAINS[requested_resolution]
         ):
@@ -411,6 +452,9 @@ class VideoGenerator:
                         )
                     has_state_reference = self._has_state_reference(
                         shot, prev_shot, prev_last_frame, image_urls, role
+                    )
+                    generation_provenance = self._generation_provenance(
+                        shot, image_urls, role
                     )
 
                     # 构建 prompt (注入角色描述 + 环境承接, 双重保障)
@@ -441,6 +485,9 @@ class VideoGenerator:
 
                     # 调用 API
                     def remember_submission(task_id: str) -> None:
+                        self._write_generation_provenance(
+                            shot["shot_id"], generation_provenance, task_id
+                        )
                         result.provider_task_id = task_id
                         self._notify_progress(result)
 
@@ -459,6 +506,8 @@ class VideoGenerator:
                         on_submitted=remember_submission,
                     )
                     resume_task_id = None
+                    if self._is_privacy_failure(gen_result):
+                        gen_result["error_type"] = "privacy"
 
                     if gen_result["status"] == "succeeded":
                         # ⚡ 立即下载
@@ -473,6 +522,10 @@ class VideoGenerator:
                         qa = check_video_quality(local_path)
                         result.quality_score = qa["quality_score"]
                         result.technical_quality_score = qa["quality_score"]
+                        self._write_generation_provenance(
+                            shot["shot_id"], generation_provenance,
+                            result.provider_task_id,
+                        )
 
                         if not qa["pass"]:
                             result.errors.append(f"QA 不通过: {qa['issues']}")
@@ -558,7 +611,19 @@ class VideoGenerator:
                     elif gen_result.get("error_type") == "privacy":
                         # 隐私审核: 角色参考帧被判定为含真实人物
                         # 降级策略: 丢弃角色参考帧, 仅保留尾帧做画面衔接
-                        if not skip_char_refs:
+                        if not image_urls:
+                            # 纯文本请求没有可降级的参考职责；重复提交相同请求
+                            # 只会增加成本，并不能改变远端审核结果。
+                            result.errors.append(
+                                f"L{level}: 纯文本请求仍被隐私审核拒绝, 停止重试"
+                            )
+                            result.status = "failed"
+                            self._notify_progress(result)
+                            return result
+                        if (
+                            not skip_char_refs
+                            and self._has_removable_identity_refs(image_urls, role)
+                        ):
                             skip_char_refs = True
                             result.errors.append(
                                 f"L{level}: 隐私审核拒绝角色参考帧, 降级为尾帧衔接 + 文字描述"
@@ -567,7 +632,15 @@ class VideoGenerator:
                             await asyncio.sleep(3)
                             continue
                         else:
-                            # 尾帧也被拒绝 → 纯文本 T2V
+                            # 状态镜头不能丢尾帧；独立镜头才可继续 T2V。
+                            if state_reference_required:
+                                result.errors.append(
+                                    f"L{level}: 状态参考被隐私审核拒绝，"
+                                    "没有可移除的身份参考，无法满足连续性契约"
+                                )
+                                result.status = "failed"
+                                self._notify_progress(result)
+                                return result
                             use_refs = False
                             result.errors.append(
                                 f"L{level}: 隐私审核再次拒绝, 退化为纯文本 T2V"
@@ -601,31 +674,6 @@ class VideoGenerator:
                         print(f"     ⚠ L{level} 错误: {err_msg[:200]}")
 
                         err_low = err_msg.lower()
-                        # 隐私类错误走专用降级路径
-                        is_privacy = any(
-                            kw in err_low for kw in [
-                                "real person", "privacy", "sensitive",
-                                "privacyinformation", "人脸", "真人", "肖像",
-                            ]
-                        )
-                        if is_privacy and use_refs:
-                            if not skip_char_refs:
-                                skip_char_refs = True
-                                result.errors.append(
-                                    f"L{level}: 隐私审核 (错误消息), 降级为尾帧衔接"
-                                )
-                                print(f"     ⚠ 隐私审核 (错误消息): 降级为尾帧衔接模式")
-                                await asyncio.sleep(3)
-                                continue
-                            else:
-                                use_refs = False
-                                result.errors.append(
-                                    f"L{level}: 隐私审核再次拒绝, 退化为纯文本 T2V"
-                                )
-                                print(f"     ⚠ 隐私审核: 退化为纯文本 T2V")
-                                await asyncio.sleep(3)
-                                continue
-
                         is_ref_error = use_refs and any(
                             kw in err_low for kw in [
                                 "download image", "image format", "image size",
@@ -635,6 +683,13 @@ class VideoGenerator:
                             ]
                         )
                         if is_ref_error:
+                            if state_reference_required:
+                                result.errors.append(
+                                    f"L{level}: 状态参考图不可用，停止以避免生成不连续镜头"
+                                )
+                                result.status = "failed"
+                                self._notify_progress(result)
+                                return result
                             result.errors.append(f"L{level}: 参考图异常, 改为无图重试")
                             print(f"     ⚠ 参考图异常, 改为无图重试")
                             use_refs = False
@@ -661,6 +716,101 @@ class VideoGenerator:
         self._notify_progress(result)
         return result
 
+    @staticmethod
+    def _shot_contract_fingerprint(shot: dict) -> str:
+        immutable = {
+            key: value
+            for key, value in shot.items()
+            if key not in {"observed_end_state", "output_reference_depth"}
+        }
+        payload = json.dumps(
+            immutable, sort_keys=True, ensure_ascii=False, default=str
+        ).encode()
+        return hashlib.sha256(payload).hexdigest()
+
+    @staticmethod
+    def _reference_fingerprint(value: str) -> str:
+        if not value.startswith(("http://", "https://", "data:")):
+            path = Path(value)
+            try:
+                if path.is_file():
+                    return hashlib.sha256(path.read_bytes()).hexdigest()
+            except OSError:
+                pass
+        return hashlib.sha256(str(value).encode()).hexdigest()
+
+    def _generation_provenance(
+        self, shot: dict, image_urls: list[str], role: Optional[str]
+    ) -> dict:
+        return {
+            "version": "state-handoff-v2",
+            "shot_contract": self._shot_contract_fingerprint(shot),
+            "image_role": role,
+            "reference_fingerprints": [
+                self._reference_fingerprint(value) for value in image_urls
+            ],
+        }
+
+    def _generation_provenance_path(self, shot_id: int, *, video_path: str | None = None) -> Path:
+        if video_path:
+            path = Path(video_path)
+            return path.with_name(f"{path.stem}_generation.json")
+        return self.output_dir / "shots" / f"shot_{shot_id:03d}_generation.json"
+
+    def _write_generation_provenance(
+        self, shot_id: int, provenance: dict, task_id: str | None
+    ) -> None:
+        payload = {**provenance, "provider_task_id": task_id}
+        path = self._generation_provenance_path(shot_id)
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        temporary.replace(path)
+
+    def _provenance_matches(
+        self, video_path: str, shot: dict, image_urls: list[str], role: Optional[str]
+    ) -> bool:
+        path = self._generation_provenance_path(
+            int(shot["shot_id"]), video_path=video_path
+        )
+        if not path.is_file():
+            return False
+        try:
+            stored = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+        expected = self._generation_provenance(shot, image_urls, role)
+        return all(stored.get(key) == value for key, value in expected.items())
+
+    def _read_generation_provenance(self, video_path: str) -> dict:
+        path = self._generation_provenance_path(0, video_path=video_path)
+        if not path.is_file():
+            return {}
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return value if isinstance(value, dict) else {}
+
+    def _preserve_incompatible_take(self, shot_id: int, video_path: str) -> str:
+        source = Path(video_path)
+        if not source.is_file():
+            return video_path
+        existing = len(list(
+            source.parent.glob(f"shot_{shot_id:03d}_incompatible_*.mp4")
+        ))
+        rejected = source.with_name(
+            f"shot_{shot_id:03d}_incompatible_{existing + 1}.mp4"
+        )
+        source.replace(rejected)
+        provenance = self._generation_provenance_path(shot_id, video_path=str(source))
+        if provenance.is_file():
+            provenance.replace(
+                self._generation_provenance_path(shot_id, video_path=str(rejected))
+            )
+        return str(rejected)
+
     def _build_image_refs(
         self,
         shot: dict,
@@ -671,8 +821,7 @@ class VideoGenerator:
 
         返回 (image_urls, role):
         ┌───────────────────────────────────────────────────────────┐
-        │ seamless: 尾帧 + first_frame，锁定真实起始状态            │
-        │ 同场景 intentional_cut: 尾帧状态 + 角色图 reference_image │
+        │ seamless / 同场景切镜: 尾帧 first_frame，锁定真实起始状态 │
         │ 跨场景 intentional_cut: 角色图 reference_image            │
         │ 无可用职责资产: [] + None                                 │
         └───────────────────────────────────────────────────────────┘
@@ -693,13 +842,12 @@ class VideoGenerator:
 
         if continuity == "intentional_cut":
             if prev_last_frame and _should_use_previous_tail_reference(
-                shot, prev_shot
+                shot,
+                prev_shot,
+                has_identity_reference=bool(char_ref_paths),
             ):
-                print(
-                    "     [REF] 同场景切镜: 尾帧状态 + "
-                    f"{len(char_ref_paths)} 张角色 reference_image"
-                )
-                return [prev_last_frame, *char_ref_paths], "reference_image"
+                print("     [REF] 同场景状态交接: 尾帧 first_frame（官方状态职责）")
+                return [prev_last_frame], "first_frame"
             if char_ref_paths:
                 print(
                     f"     [REF] 有意切镜: {len(char_ref_paths)} 张角色 reference_image"
@@ -751,9 +899,11 @@ class VideoGenerator:
         boundary_context = {}
         if previous_shot is not None:
             previous_state = previous_shot.get("observed_end_state", {})
+            provenance = self._read_generation_provenance(video_path)
             boundary_context = {
                 "same_scene": _scene_id(shot) == _scene_id(previous_shot),
                 "previous_scene_id": _scene_id(previous_shot),
+                "state_reference_role": provenance.get("image_role"),
                 "previous_observed_end_state": (
                     dict(previous_state) if isinstance(previous_state, dict) else {}
                 ),
@@ -776,15 +926,22 @@ class VideoGenerator:
                 "已保留视频，恢复运行不会重复生成"
             ) from exc
 
-    @staticmethod
     def _next_reference_depth(
+        self,
         shot: dict,
         previous_shot: Optional[dict],
         previous_frame: Optional[str],
     ) -> int:
         if previous_shot is None or not previous_frame:
             return 0
-        if not _should_use_previous_tail_reference(shot, previous_shot):
+        has_identity_reference = any(
+            name in self.character_refs for name in shot.get("characters", [])
+        )
+        if not _should_use_previous_tail_reference(
+            shot,
+            previous_shot,
+            has_identity_reference=has_identity_reference,
+        ):
             return 0
         return int(previous_shot.get("output_reference_depth", 0)) + 1
 
@@ -801,11 +958,32 @@ class VideoGenerator:
         if shot.get("continuity_from_previous") == "seamless":
             print("     [REF] 隐私降级: 仅尾帧 first_frame")
             return [prev_last_frame], "first_frame"
-        if _should_use_previous_tail_reference(shot, prev_shot):
-            print("     [REF] 隐私降级: 仅尾帧状态 reference_image")
-            return [prev_last_frame], "reference_image"
+        if _should_use_previous_tail_reference(
+            shot,
+            prev_shot,
+            has_identity_reference=False,
+        ):
+            print("     [REF] 隐私降级: 仅尾帧 first_frame")
+            return [prev_last_frame], "first_frame"
         print("     [REF] 隐私降级: 跨场景或参考链已达上限, T2V 模式")
         return [], None
+
+    @staticmethod
+    def _has_removable_identity_refs(
+        image_urls: list[str], role: Optional[str]
+    ) -> bool:
+        """Only reference_image carries identity assets that can be dropped."""
+        return bool(image_urls) and role == "reference_image"
+
+    @staticmethod
+    def _is_privacy_failure(result: Mapping[str, object]) -> bool:
+        if result.get("error_type") == "privacy":
+            return True
+        message = str(result.get("error", "")).casefold()
+        return any(keyword in message for keyword in (
+            "real person", "privacy", "sensitive", "privacyinformation",
+            "人脸", "真人", "肖像",
+        ))
 
     @staticmethod
     def _has_state_reference(
@@ -819,10 +997,7 @@ class VideoGenerator:
             return False
         if role == "first_frame":
             return True
-        return (
-            role == "reference_image"
-            and _should_use_previous_tail_reference(shot, prev_shot)
-        )
+        return role == "reference_image"
 
     def _inject_character_description(
         self, prompt: str, shot: dict, storyboard: dict
@@ -895,10 +1070,32 @@ class VideoGenerator:
             if geometry.get("occlusion_policy") == "none":
                 geometry_parts.append("neither subject may be occluded")
             parts.append(", ".join(geometry_parts))
+        causal_constraint = causality_prompt_constraints(shot)
+        if causal_constraint:
+            parts.append(causal_constraint)
+        narrative_constraint = narrative_prompt_constraint(shot)
+        if narrative_constraint:
+            parts.append(narrative_constraint)
         if end:
             parts.append(f"finish with {end}")
         camera = shot.get("camera", {})
         positions = camera.get("screen_positions", {}) if isinstance(camera, dict) else {}
+        composition_change = str(shot.get("composition_change", "")).strip()
+        start_framing = str(camera.get("start_framing", "")).strip() if isinstance(camera, dict) else ""
+        end_framing = str(camera.get("end_framing", "")).strip() if isinstance(camera, dict) else ""
+        if composition_change in {"medium", "large"}:
+            framing = start_framing or end_framing
+            change_scope = "a clearly different shot size or angle" if composition_change == "medium" else "unmistakably different coverage"
+            if framing:
+                parts.append(
+                    f"use a {framing} with {change_scope} from the supplied previous tail; "
+                    "do not copy the previous framing"
+                )
+            else:
+                parts.append(
+                    f"use {change_scope} from the supplied previous tail; "
+                    "do not copy the previous framing"
+                )
         if positions:
             placement = ", ".join(
                 f"{name}={position}" for name, position in positions.items()
@@ -1007,10 +1204,20 @@ class VideoGenerator:
     def _preserve_rejected_take(
         self, shot_id: int, video_path: str, take_number: int
     ) -> str:
+        source = Path(video_path)
         rejected = self.output_dir / "shots" / (
             f"shot_{shot_id:03d}_rejected_{take_number}.mp4"
         )
-        Path(video_path).replace(rejected)
+        source.replace(rejected)
+        provenance = self._generation_provenance_path(
+            shot_id, video_path=str(source)
+        )
+        if provenance.is_file():
+            provenance.replace(
+                self._generation_provenance_path(
+                    shot_id, video_path=str(rejected)
+                )
+            )
         return str(rejected)
 
     async def _reassess_latest_rejected_take(
@@ -1065,7 +1272,14 @@ class VideoGenerator:
         canonical_path = (
             self.output_dir / "shots" / f"shot_{shot['shot_id']:03d}.mp4"
         )
+        rejected_provenance = self._generation_provenance_path(
+            shot["shot_id"], video_path=str(rejected_path)
+        )
         rejected_path.replace(canonical_path)
+        if rejected_provenance.is_file():
+            rejected_provenance.replace(
+                self._generation_provenance_path(shot["shot_id"])
+            )
         result.local_path = str(canonical_path)
         result.last_frame_url = self._extract_local_tail_frame(
             shot["shot_id"], str(canonical_path)

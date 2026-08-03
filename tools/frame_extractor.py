@@ -6,6 +6,47 @@ import os
 from pathlib import Path
 
 
+def frame_structure_similarity(
+    first_path: str | Path,
+    second_path: str | Path,
+) -> float:
+    """Return a luminance SSIM score for two frames (1.0 means identical)."""
+    import cv2
+    import numpy as np
+
+    first = cv2.imread(str(first_path), cv2.IMREAD_GRAYSCALE)
+    second = cv2.imread(str(second_path), cv2.IMREAD_GRAYSCALE)
+    if first is None or second is None:
+        raise ValueError("无法读取用于构图比较的帧")
+
+    size = (256, 256)
+    first = cv2.resize(first, size, interpolation=cv2.INTER_AREA).astype(np.float64)
+    second = cv2.resize(second, size, interpolation=cv2.INTER_AREA).astype(np.float64)
+    kernel = (11, 11)
+    sigma = 1.5
+    mean_first = cv2.GaussianBlur(first, kernel, sigma)
+    mean_second = cv2.GaussianBlur(second, kernel, sigma)
+    variance_first = cv2.GaussianBlur(first * first, kernel, sigma) - mean_first**2
+    variance_second = cv2.GaussianBlur(second * second, kernel, sigma) - mean_second**2
+    covariance = cv2.GaussianBlur(first * second, kernel, sigma) - mean_first * mean_second
+    c1 = (0.01 * 255) ** 2
+    c2 = (0.03 * 255) ** 2
+    score = (
+        (2 * mean_first * mean_second + c1) * (2 * covariance + c2)
+        / (
+            (mean_first**2 + mean_second**2 + c1)
+            * (variance_first + variance_second + c2)
+        )
+    )
+    return float(np.clip(score.mean(), -1.0, 1.0))
+
+
+def composition_change_is_readable(level: str, similarity: float) -> bool:
+    """Apply deterministic framing-change thresholds for declared cut scale."""
+    thresholds = {"medium": 0.93, "large": 0.85}
+    return level not in thresholds or similarity <= thresholds[level]
+
+
 def extract_frame(video_path: str, output_path: str, timestamp: float = None) -> str:
     """
     从视频中提取最佳帧作为角色参考图

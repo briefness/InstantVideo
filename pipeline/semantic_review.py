@@ -13,13 +13,27 @@ from typing import Any
 from openai import OpenAI
 
 import config
+from pipeline.causality import (
+    PHYSICAL_EFFECT_EVIDENCE_RULE,
+    causal_evidence_issues,
+    causality_review_instruction,
+    interaction_geometry,
+    requires_causal_review,
+)
+from pipeline.narrative import requires_narrative_review
 from tools.ffmpeg_ops import get_video_duration
-from tools.frame_extractor import extract_frame
+from tools.frame_extractor import (
+    composition_change_is_readable,
+    extract_frame,
+    frame_structure_similarity,
+)
 
 
-_REVIEWER_VERSION = "continuity-v4"
-_SAMPLING_POLICY = "five-point-v1"
-_MAX_COMPLETION_TOKENS = 4096
+_REVIEWER_VERSION = "continuity-v14"
+_STANDARD_SAMPLING_POLICY = "five-point-v1"
+_CAUSAL_SAMPLING_POLICY = "adaptive-nine-point-v1"
+_STANDARD_COMPLETION_TOKENS = 4096
+_CAUSAL_COMPLETION_TOKENS = 8192
 _MAX_RESPONSE_ATTEMPTS = 2
 _BOUNDARY_REVIEW_FIELDS = (
     "environment_continuity_valid",
@@ -49,7 +63,8 @@ def _strict_bool(value: Any, field: str, *, default: bool | None = None) -> bool
 
 
 def _clean_optional_text(value: Any) -> str:
-    return "" if value is None else str(value).strip()
+    text = "" if value is None else str(value).strip()
+    return "" if text.casefold() in {"none", "null", "n/a", "无"} else text
 
 
 @dataclass(frozen=True)
@@ -59,6 +74,11 @@ class SemanticReview:
     action_geometry_valid: bool
     primary_action_completed: bool
     observed_end_state: dict[str, str]
+    effect_path_valid: bool = True
+    reaction_causality_valid: bool = True
+    narrative_state_change_valid: bool = True
+    blocking_valid: bool = True
+    composition_change_valid: bool = True
     boundary_continuity_valid: bool = True
     identity_continuity_valid: bool = True
     environment_continuity_valid: bool = True
@@ -71,7 +91,15 @@ class SemanticReview:
     failure_reason: str = ""
 
     @classmethod
-    def from_dict(cls, value: dict[str, Any]) -> "SemanticReview":
+    def from_dict(
+        cls,
+        value: dict[str, Any],
+        *,
+        require_causality: bool = False,
+        require_narrative: bool = False,
+        require_blocking: bool = False,
+        require_composition: bool = False,
+    ) -> "SemanticReview":
         required = value.get("required_entities_visible", {})
         observed = value.get("observed_end_state", {})
         review = cls(
@@ -84,6 +112,31 @@ class SemanticReview:
             } if isinstance(required, dict) else {},
             action_geometry_valid=_strict_bool(
                 value.get("action_geometry_valid"), "action_geometry_valid"
+            ),
+            effect_path_valid=_strict_bool(
+                value.get("effect_path_valid"),
+                "effect_path_valid",
+                default=not require_causality,
+            ),
+            reaction_causality_valid=_strict_bool(
+                value.get("reaction_causality_valid"),
+                "reaction_causality_valid",
+                default=not require_causality,
+            ),
+            narrative_state_change_valid=_strict_bool(
+                value.get("narrative_state_change_valid"),
+                "narrative_state_change_valid",
+                default=not require_narrative,
+            ),
+            blocking_valid=_strict_bool(
+                value.get("blocking_valid"),
+                "blocking_valid",
+                default=not require_blocking,
+            ),
+            composition_change_valid=_strict_bool(
+                value.get("composition_change_valid"),
+                "composition_change_valid",
+                default=not require_composition,
             ),
             primary_action_completed=_strict_bool(
                 value.get("primary_action_completed"), "primary_action_completed"
@@ -130,6 +183,11 @@ class SemanticReview:
         objectively_valid = (
             all(review.required_entities_visible.values())
             and review.action_geometry_valid
+            and review.effect_path_valid
+            and review.reaction_causality_valid
+            and review.narrative_state_change_valid
+            and review.blocking_valid
+            and review.composition_change_valid
             and review.primary_action_completed
             and review.boundary_continuity_valid
             and review.identity_continuity_valid
@@ -156,6 +214,16 @@ def _objective_failure_reason(review: SemanticReview) -> str:
         reasons.append("必需主体不可见: " + ", ".join(missing))
     if not review.action_geometry_valid:
         reasons.append("动作空间关系不成立")
+    if not review.effect_path_valid:
+        reasons.append("作用路径或区域与结果不一致")
+    if not review.reaction_causality_valid:
+        reasons.append("反应范围不符合因果契约")
+    if not review.narrative_state_change_valid:
+        reasons.append("镜头未产生约定的可见故事状态变化")
+    if not review.blocking_valid:
+        reasons.append("角色调度、朝向、视线或动作目标不符合契约")
+    if not review.composition_change_valid:
+        reasons.append("有意切镜未实现约定的构图变化")
     if not review.primary_action_completed:
         reasons.append("主动作未完成")
     if not review.boundary_continuity_valid:
@@ -220,6 +288,37 @@ class SemanticTakeReviewer:
     ) -> SemanticReview:
         video_hash = _sha256_file(Path(video_path))
         contract = _review_contract(shot)
+        causal_review = requires_causal_review(shot)
+        state_handoff_review = bool(
+            previous_frame_path
+            and Path(previous_frame_path).is_file()
+            and isinstance(boundary_context, dict)
+            and boundary_context.get("same_scene") is True
+        )
+        first_frame_handoff = bool(
+            state_handoff_review
+            and boundary_context.get("state_reference_role") == "first_frame"
+        )
+        completion_token_budget = _completion_token_budget(
+            causal_review or state_handoff_review
+        )
+        effect_phase = str(
+            interaction_geometry(shot).get("effect_phase", "none")
+        ).strip()
+        evidence_review = effect_phase in {"setup", "active", "aftermath"}
+        narrative_review = requires_narrative_review(shot)
+        blocking_review = bool(shot.get("blocking"))
+        production_slot = shot.get("production_slot")
+        plan_requires_result = bool(
+            isinstance(production_slot, dict)
+            and production_slot.get("requires_visible_result")
+        )
+        composition_review = bool(
+            previous_frame_path
+            and Path(previous_frame_path).is_file()
+            and shot.get("continuity_from_previous") == "intentional_cut"
+            and shot.get("composition_change") in {"medium", "large"}
+        )
         contract["boundary_context"] = boundary_context or {}
         crop_entities = list(dict.fromkeys(identity_crop_entities or []))
         contract["identity_crop_entities"] = crop_entities
@@ -234,12 +333,26 @@ class SemanticTakeReviewer:
         evaluator = {
             "model": self.model,
             "reviewer_version": _REVIEWER_VERSION,
-            "sampling_policy": _SAMPLING_POLICY,
+            "sampling_policy": (
+                _CAUSAL_SAMPLING_POLICY
+                if causal_review else _STANDARD_SAMPLING_POLICY
+            ),
             "image_detail": config.SEMANTIC_REVIEW_IMAGE_DETAIL,
             "reference_hashes": [
                 _sha256_file(Path(path)) for path in reference_paths
             ],
             "identity_crop_entities": crop_entities,
+            "composition_metric": "luminance-ssim-v1",
+            "composition_sample": (
+                "midpoint" if first_frame_handoff else "first-sample"
+            ),
+            "causal_evidence_policy": (
+                "per-sample-v1" if evidence_review else "legacy-aggregate"
+            ),
+            "boundary_evidence_policy": (
+                "state-handoff-v1" if state_handoff_review else "not-required"
+            ),
+            "max_completion_tokens": completion_token_budget,
         }
         evaluator_hash = hashlib.sha256(
             json.dumps(evaluator, sort_keys=True).encode()
@@ -252,7 +365,13 @@ class SemanticTakeReviewer:
             and cached.get("evaluator_hash") == evaluator_hash
         ):
             try:
-                return SemanticReview.from_dict(cached["review"])
+                return SemanticReview.from_dict(
+                    cached["review"],
+                    require_causality=causal_review,
+                    require_narrative=narrative_review,
+                    require_blocking=blocking_review,
+                    require_composition=composition_review,
+                )
             except ValueError:
                 pass
 
@@ -261,17 +380,113 @@ class SemanticTakeReviewer:
             base_url=config.ARK_BASE_URL,
         )
         duration = get_video_duration(video_path)
-        timestamps = _sample_timestamps(duration)
+        timestamps = _sample_timestamps(duration, dense=causal_review)
         required_entities = [
             str(entity) for entity in contract.get("required_visible_entities") or []
         ]
         visibility_order = json.dumps(required_entities, ensure_ascii=False)
         crop_order = json.dumps(crop_entities, ensure_ascii=False)
+        causal_fields = (
+            "effect_path_valid, reaction_causality_valid, "
+            if causal_review else ""
+        )
+        causal_evidence_field = (
+            " Also return causal_sample_evidence in exact current-sample order."
+            if evidence_review else ""
+        )
+        narrative_fields = (
+            "narrative_state_change_valid, " if narrative_review else ""
+        )
+        blocking_fields = "blocking_valid, " if blocking_review else ""
+        composition_fields = (
+            "composition_change_valid, " if composition_review else ""
+        )
+        causal_instruction = causality_review_instruction(shot)
+        causal_evidence_instruction = (
+            "Return causal_sample_evidence as exactly "
+            f"{len(timestamps)} objects in current-sample order. Every object must contain "
+            "strict booleans physical_effect_visible, reaction_visible, "
+            "effect_intersects_reaction, out_of_scope_reaction_visible, "
+            "contracted_outcome_visible, and outcome_causally_connected. "
+            f"{PHYSICAL_EFFECT_EVIDENCE_RULE}. "
+            "contracted_outcome_visible is true only when "
+            "the shot's visible_result and full outcome_scope are visibly achieved in "
+            "that sample; preparation, a flash, a generic flinch, or a partial result "
+            "cannot satisfy a larger contracted scope. Preserve chronology: an active "
+            "outcome cannot precede its visible physical cause, and an aftermath sample "
+            "cannot contain a new physical effect. reaction_visible means a new state "
+            "change attributable to the contracted effect; ordinary walking, existing "
+            "motion, or unchanged behavior is not a reaction. A reaction "
+            "intersects only when the same reacting subject visibly lies on the physical "
+            "path, inside the effect region, at contact, or in the contracted intermediary "
+            "chain at that sample. Smoke, a flash, a later explosion, a fallen subject in "
+            "another location, or mere temporal proximity is not intersection evidence. "
+            "outcome_causally_connected is true only when the ordered samples visibly "
+            "show the contracted effect reaching the affected subjects and producing the "
+            "full outcome. Subjects disappearing between samples, a later empty frame, "
+            "occlusion, reframing, smoke, or a cut cannot establish this connection. "
+            if evidence_review else ""
+        )
+        boundary_evidence_instruction = (
+            "Return boundary_state_evidence with strict booleans "
+            "prior_state_preserved, state_progress_not_reversed, "
+            "open_motion_handoff_valid, persistent_entities_preserved, and "
+            "scene_identity_preserved. Compare only the accepted previous tail and "
+            "the first current sample. state_progress_not_reversed is false when a "
+            "completed, consumed, displaced, damaged, fallen, opened, emptied, or "
+            "otherwise advanced state reappears in an earlier state. A new camera angle "
+            "does not excuse reversal. "
+            if state_handoff_review else ""
+        )
+        narrative_instruction = (
+            "For narrative_state_change_valid, compare the earliest and latest current "
+            "samples and require a concrete visible difference showing state_change took "
+            "the story from state_before to the full state_after. Do not infer completion "
+            "from the prompt, smoke, a partial reaction, camera movement, mood, or a new "
+            "angle alone. "
+            if narrative_review else ""
+        )
+        blocking_instruction = (
+            "blocking_valid requires every named participant to match its contracted frame "
+            "position, body orientation, facing target, eyeline, travel direction, and "
+            "action target. Reject a readable effect when the body, weapon, gaze, or effect "
+            "source points away from its target. "
+            if blocking_review else ""
+        )
+        plan_instruction = (
+            "The production slot reserves this take for a visible story result. Reject "
+            "primary_action_completed unless the chronological samples show that result; "
+            "camera motion, an emitted effect without consequence, or an inferred off-screen "
+            "outcome cannot satisfy the slot. "
+            if plan_requires_result else ""
+        )
+        composition_instruction = (
+            "composition_change_valid compares the accepted previous tail with the current "
+            + ("temporal midpoint" if first_frame_handoff else "first sample")
+            + ". "
+            "take. medium requires a clearly readable new shot size or angle; large requires "
+            "unmistakably different coverage. Preserving identity and environment does not "
+            "excuse copying the previous framing. "
+            if composition_review else ""
+        )
         with tempfile.TemporaryDirectory(prefix="review-", dir=self.cache_dir) as frame_dir:
             current_images = []
+            composition_similarity = None
+            composition_sample_index = (
+                min(
+                    range(len(timestamps)),
+                    key=lambda index: abs(timestamps[index] - duration * 0.5),
+                )
+                if first_frame_handoff else 0
+            )
             for index, timestamp in enumerate(timestamps, start=1):
                 frame_path = Path(frame_dir) / f"frame_{index}.jpg"
                 extract_frame(video_path, str(frame_path), timestamp=timestamp)
+                if index - 1 == composition_sample_index and composition_review:
+                    composition_similarity = frame_structure_similarity(
+                        previous_frame_path,
+                        frame_path,
+                    )
                 current_images.append((timestamp, _image_content(frame_path)))
 
             content: list[dict[str, Any]] = [{
@@ -280,8 +495,12 @@ class SemanticTakeReviewer:
                     "Shot contract:\n"
                     + json.dumps(contract, ensure_ascii=False)
                     + "\nReturn strict JSON booleans for accepted, "
-                    "action_geometry_valid, "
-                    "primary_action_completed, boundary_continuity_valid, and "
+                    + "action_geometry_valid, "
+                    + causal_fields
+                    + narrative_fields
+                    + blocking_fields
+                    + composition_fields
+                    + "primary_action_completed, boundary_continuity_valid, and "
                     "identity_continuity_valid. When a previous-shot tail is supplied, "
                     "also return strict booleans for environment_continuity_valid, "
                     "action_handoff_valid, screen_direction_valid, and "
@@ -298,6 +517,12 @@ class SemanticTakeReviewer:
                     "midpoint. A box is allowed only when it contains one clear, mostly "
                     "complete identity character and excludes every other recognizable "
                     "character, crowd member, reflection, and silhouette."
+                        + causal_evidence_field
+                        + plan_instruction
+                        + (
+                            " Also return boundary_state_evidence."
+                            if state_handoff_review else ""
+                        )
                 ),
             }]
             if previous_frame_path and Path(previous_frame_path).is_file():
@@ -341,11 +566,19 @@ class SemanticTakeReviewer:
                         "You are a strict film continuity supervisor. Review the candidate "
                         "frames against the shot contract and supplied accepted references. "
                         "Reject identity drift, unmotivated boundary changes, or when a "
-                        "required entity is absent or unreadable, actor and target do not "
-                        "share a readable line of action, attack direction is wrong, or the "
+                        "required entity is absent or unreadable, the contracted spatial "
+                        "relationship is not readable, action direction is wrong, or the "
                         "primary action is not completed. Camera polish cannot compensate "
-                        "for failed action geography. For a same-scene boundary, compare the "
-                        "accepted previous tail only with the first current frame: preserve "
+                        "for failed action geography. "
+                        + causal_instruction
+                        + causal_evidence_instruction
+                        + boundary_evidence_instruction
+                        + narrative_instruction
+                        + blocking_instruction
+                        + composition_instruction
+                        + "For a "
+                        "same-scene boundary, compare the accepted previous tail only with "
+                        "the first current frame: preserve "
                         "recognizable environment landmarks and lighting; continue the prior "
                         "open motion, pose, gaze, and action phase; preserve screen direction "
                         "and the 180-degree axis; preserve persistent props, damage, and exact "
@@ -368,7 +601,7 @@ class SemanticTakeReviewer:
                     messages=messages,
                     temperature=0,
                     response_format={"type": "json_object"},
-                    max_completion_tokens=_MAX_COMPLETION_TOKENS,
+                    max_completion_tokens=completion_token_budget,
                 )
                 raw, diagnostic, refused = _completion_payload(response)
                 if refused:
@@ -392,6 +625,86 @@ class SemanticTakeReviewer:
         assert parsed is not None
         if not isinstance(parsed, dict):
             raise SemanticReviewUnavailableError("语义验收响应必须是 JSON 对象")
+        causal_evidence = None
+        if evidence_review:
+            causal_evidence = parsed.get("causal_sample_evidence")
+            required_evidence_fields = (
+                "physical_effect_visible",
+                "reaction_visible",
+                "effect_intersects_reaction",
+                "out_of_scope_reaction_visible",
+                "contracted_outcome_visible",
+                "outcome_causally_connected",
+            )
+            if (
+                not isinstance(causal_evidence, list)
+                or len(causal_evidence) != len(timestamps)
+                or any(
+                    not isinstance(sample, dict)
+                    or any(
+                        not isinstance(sample.get(field), bool)
+                        for field in required_evidence_fields
+                    )
+                    for sample in causal_evidence
+                )
+            ):
+                raise SemanticReviewUnavailableError(
+                    "语义验收逐采样因果证据与采样数量或字段类型不一致"
+                )
+            evidence_issues = causal_evidence_issues(shot, causal_evidence)
+            if evidence_issues:
+                parsed["effect_path_valid"] = False
+                parsed["reaction_causality_valid"] = False
+                existing_reason = _clean_optional_text(parsed.get("failure_reason"))
+                parsed["failure_reason"] = "；".join([
+                    *evidence_issues,
+                    *([existing_reason] if existing_reason else []),
+                ])
+        boundary_state_evidence = None
+        if state_handoff_review:
+            boundary_state_evidence = parsed.get("boundary_state_evidence")
+            required_boundary_evidence = (
+                "prior_state_preserved",
+                "state_progress_not_reversed",
+                "open_motion_handoff_valid",
+                "persistent_entities_preserved",
+                "scene_identity_preserved",
+            )
+            if (
+                not isinstance(boundary_state_evidence, dict)
+                or any(
+                    not isinstance(boundary_state_evidence.get(field), bool)
+                    for field in required_boundary_evidence
+                )
+            ):
+                raise SemanticReviewUnavailableError(
+                    "语义验收缺少结构化跨镜状态交接证据"
+                )
+            failed = [
+                field for field in required_boundary_evidence
+                if not boundary_state_evidence[field]
+            ]
+            if failed:
+                parsed["boundary_continuity_valid"] = False
+                if not boundary_state_evidence["scene_identity_preserved"]:
+                    parsed["environment_continuity_valid"] = False
+                if not boundary_state_evidence["open_motion_handoff_valid"]:
+                    parsed["action_handoff_valid"] = False
+                if not boundary_state_evidence["persistent_entities_preserved"]:
+                    parsed["prop_continuity_valid"] = False
+                existing_reason = _clean_optional_text(parsed.get("failure_reason"))
+                reason = "跨镜状态交接失败: " + ", ".join(failed)
+                parsed["failure_reason"] = "；".join(
+                    [reason, *([existing_reason] if existing_reason else [])]
+                )
+        if composition_review and composition_similarity is not None:
+            declared_change = str(shot.get("composition_change"))
+            parsed["composition_change_valid"] = bool(
+                parsed.get("composition_change_valid")
+            ) and composition_change_is_readable(
+                declared_change,
+                composition_similarity,
+            )
         returned_visibility = parsed.get("required_entities_visible")
         if isinstance(returned_visibility, list):
             if (
@@ -443,7 +756,13 @@ class SemanticTakeReviewer:
             }
         parsed["identity_crop_boxes"] = normalized_crops
         try:
-            review = SemanticReview.from_dict(parsed)
+            review = SemanticReview.from_dict(
+                parsed,
+                require_causality=causal_review,
+                require_narrative=narrative_review,
+                require_blocking=blocking_review,
+                require_composition=composition_review,
+            )
         except ValueError as exc:
             raise SemanticReviewUnavailableError(
                 f"语义验收字段类型无效: {exc}"
@@ -460,6 +779,9 @@ class SemanticTakeReviewer:
             "contract_hash": contract_hash,
             "evaluator_hash": evaluator_hash,
             "evaluator": evaluator,
+            "composition_similarity": composition_similarity,
+            "causal_sample_evidence": causal_evidence,
+            "boundary_state_evidence": boundary_state_evidence,
             "review": asdict(review),
         })
         return review
@@ -471,11 +793,20 @@ def _review_contract(shot: dict) -> dict[str, Any]:
         for key in (
             "shot_id", "primary_action", "coverage_role",
             "required_visible_entities", "interaction_geometry", "action_beats",
+            "narrative_beat",
             "camera", "blocking", "start_state", "end_state", "characters",
             "scene_id", "continuity_from_previous", "composition_change",
-            "extract_character_ref",
+            "extract_character_ref", "production_slot",
         )
     }
+
+
+def _completion_token_budget(causal_review: bool) -> int:
+    return (
+        _CAUSAL_COMPLETION_TOKENS
+        if causal_review
+        else _STANDARD_COMPLETION_TOKENS
+    )
 
 
 def _completion_payload(response: Any) -> tuple[str, str, bool]:
@@ -496,13 +827,15 @@ def _completion_payload(response: Any) -> tuple[str, str, bool]:
     return raw, diagnostic, refused
 
 
-def _sample_timestamps(duration: float) -> tuple[float, ...]:
+def _sample_timestamps(duration: float, *, dense: bool = False) -> tuple[float, ...]:
     end = max(0.1, duration - 0.1)
+    fractions = (
+        (0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875)
+        if dense else (0.25, 0.5, 0.75)
+    )
     return tuple(dict.fromkeys(round(value, 3) for value in (
         0.1,
-        max(0.1, duration * 0.25),
-        max(0.1, duration * 0.5),
-        max(0.1, duration * 0.75),
+        *(max(0.1, duration * fraction) for fraction in fractions),
         end,
     )))
 

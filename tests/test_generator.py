@@ -148,8 +148,8 @@ class TestBuildImageRefs:
         assert urls == ["http://a/last.jpg"]
         assert role == "first_frame"
 
-    def test_same_scene_intentional_cut_uses_state_and_identity_refs(self, generator):
-        """同场景切镜在同一多模态模式中分离状态与身份职责。"""
+    def test_same_scene_intentional_cut_uses_official_first_frame_state_role(self, generator):
+        """同场景状态交接使用 Seedance 官方 first_frame 职责。"""
         ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
         Path(ref_path).parent.mkdir(parents=True, exist_ok=True)
         Path(ref_path).write_bytes(b"fake_image")
@@ -166,10 +166,10 @@ class TestBuildImageRefs:
             "http://a/last.jpg",
             {"shot_id": 2, "scene_id": "street"},
         )
-        assert urls == ["http://a/last.jpg", ref_path]
-        assert role == "reference_image"
+        assert urls == ["http://a/last.jpg"]
+        assert role == "first_frame"
 
-    def test_large_same_scene_cut_uses_tail_as_state_not_composition(
+    def test_large_same_scene_cut_keeps_state_and_identity_separate(
         self, generator
     ):
         ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
@@ -189,10 +189,10 @@ class TestBuildImageRefs:
             {"shot_id": 2, "scene_id": "street"},
         )
 
-        assert urls == ["http://a/last.jpg", ref_path]
-        assert role == "reference_image"
+        assert urls == ["http://a/last.jpg"]
+        assert role == "first_frame"
 
-    def test_medium_same_scene_cut_without_identity_ref_still_uses_state_tail(
+    def test_medium_same_scene_cut_without_identity_ref_falls_back_to_state_tail(
         self, generator
     ):
         urls, role = generator._build_image_refs(
@@ -208,7 +208,48 @@ class TestBuildImageRefs:
         )
 
         assert urls == ["http://a/last.jpg"]
-        assert role == "reference_image"
+        assert role == "first_frame"
+
+    def test_medium_same_scene_cut_uses_state_and_identity_refs(
+        self, generator
+    ):
+        ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
+        Path(ref_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(ref_path).write_bytes(b"fake_image")
+        generator.character_refs["hero"] = ref_path
+
+        urls, role = generator._build_image_refs(
+            {
+                "shot_id": 2,
+                "scene_id": "street",
+                "characters": ["hero"],
+                "continuity_from_previous": "intentional_cut",
+                "composition_change": "medium",
+            },
+            "http://a/last.jpg",
+            {"shot_id": 1, "scene_id": "street", "output_reference_depth": 0},
+        )
+
+        assert urls == ["http://a/last.jpg"]
+        assert role == "first_frame"
+
+    def test_medium_same_scene_object_handoff_uses_tail_as_state_reference(
+        self, generator
+    ):
+        urls, role = generator._build_image_refs(
+            {
+                "shot_id": 2,
+                "scene_id": "workbench",
+                "characters": ["domino_group"],
+                "continuity_from_previous": "intentional_cut",
+                "composition_change": "medium",
+            },
+            "http://a/last.jpg",
+            {"shot_id": 1, "scene_id": "workbench", "output_reference_depth": 0},
+        )
+
+        assert urls == ["http://a/last.jpg"]
+        assert role == "first_frame"
 
     def test_cross_scene_intentional_cut_uses_only_character_reference(self, generator):
         ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
@@ -257,7 +298,7 @@ class TestBuildImageRefs:
             {"shot_id": 3, "scene_id": "street"},
         )
         assert urls == ["http://a/last.jpg"]
-        assert role == "reference_image"
+        assert role == "first_frame"
 
     def test_local_prev_frame_supported(self, generator):
         """恢复时提取的本地尾帧可由 API 转成 data URI 继续衔接"""
@@ -265,6 +306,133 @@ class TestBuildImageRefs:
         urls, role = generator._build_image_refs({"shot_id": 2}, local_file)
         assert urls == [local_file]
         assert role == "first_frame"
+
+
+@pytest.mark.asyncio
+async def test_dependent_cached_take_without_matching_provenance_stops(
+    generator, monkeypatch
+):
+    previous_tail = generator.output_dir / "shots" / "shot_001_lastframe.jpg"
+    previous_tail.write_bytes(b"accepted-tail")
+    cached = generator.output_dir / "shots" / "shot_002.mp4"
+    cached.write_bytes(b"legacy-take-without-state-reference")
+
+    class NoGenerationAPI:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            pytest.fail("provenance mismatch must not authorize a paid task")
+
+    generator.api = NoGenerationAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: str(previous_tail)
+    )
+    shot = {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "workbench",
+        "scene_description": "same workbench",
+        "prompt_en": "Continue the visible physical process.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "characters": [],
+        "production_slot": {"reference_policy": "state_and_identity"},
+    }
+    previous = {"shot_id": 1, "scene_id": "workbench"}
+
+    result = await generator._generate_single_shot(
+        shot,
+        str(previous_tail),
+        previous,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert cached.read_bytes() == b"legacy-take-without-state-reference"
+    assert "缓存冲突本身不授权" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_resume_provenance_mismatch_stops_without_paid_generation(
+    generator,
+):
+    previous_tail = generator.output_dir / "shots" / "shot_001_lastframe.jpg"
+    previous_tail.write_bytes(b"accepted-tail")
+    accepted = generator.output_dir / "shots" / "shot_002.mp4"
+    accepted.write_bytes(b"accepted-take")
+
+    class NoGenerationAPI:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            pytest.fail("resume provenance mismatch must not submit a paid task")
+
+    generator.api = NoGenerationAPI()
+    generator.semantic_reviewer = None
+    generator.accepted_shot_artifacts = {
+        2: {"local_path": str(accepted), "semantic_accepted": True}
+    }
+    shot = {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "workbench",
+        "scene_description": "same workbench",
+        "prompt_en": "Continue the visible physical process.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "characters": [],
+        "production_slot": {"reference_policy": "state_and_identity"},
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        str(previous_tail),
+        {"shot_id": 1, "scene_id": "workbench"},
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert accepted.read_bytes() == b"accepted-take"
+    assert "不会在 resume 中隐式提交" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_observed_end_state_does_not_replace_planned_contract(
+    generator, monkeypatch
+):
+    planned_end = {"prop_state": "planned endpoint"}
+    observed_end = {"prop_state": "observed endpoint"}
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A physical process reaches its endpoint.",
+        "end_state": planned_end.copy(),
+    }
+
+    async def accepted_result(*_args, **_kwargs):
+        return ShotResult(
+            shot_id=1,
+            status="success",
+            local_path="shot.mp4",
+            last_frame_url="tail.jpg",
+            semantic_accepted=True,
+            observed_end_state=observed_end,
+        )
+
+    monkeypatch.setattr(generator, "_generate_single_shot", accepted_result)
+    monkeypatch.setattr(
+        "pipeline.generator.ensure_storyboard_ready", lambda _value: None
+    )
+
+    await generator.generate_all({"shots": [shot]})
+
+    assert shot["end_state"] == planned_end
+    assert shot["observed_end_state"] == observed_end
 
 
 class TestInjectCharacterDescription:
@@ -460,6 +628,7 @@ class TestAcceptedTailFrame:
         assert captured["boundary_context"] == {
             "same_scene": True,
             "previous_scene_id": "street",
+            "state_reference_role": None,
             "previous_observed_end_state": previous["observed_end_state"],
         }
         assert captured["identity_crop_entities"] == ["hero"]
@@ -534,6 +703,155 @@ async def test_semantic_retake_is_bounded_across_resume(generator, monkeypatch):
     assert len(list((generator.output_dir / "shots").glob("*_rejected_*.mp4"))) == 2
     assert second.status == "failed"
     assert "已达到上限" in second.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_privacy_rejection_without_references_stops_without_duplicate_requests(
+    generator,
+):
+    class PrivacyRejectingAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            return {
+                "status": "failed",
+                "error_type": "privacy",
+                "error": "privacy review rejected text-only request",
+            }
+
+    generator.api = PrivacyRejectingAPI()
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "a fully mechanical machine crosses an empty street",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 1
+    assert "停止重试" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("privacy_response", [
+    {
+        "status": "failed",
+        "error_type": "privacy",
+        "error": "privacy review rejected first frame",
+    },
+    {
+        "status": "failed",
+        "error": "privacy information rejected first frame",
+    },
+])
+async def test_privacy_rejection_of_state_only_first_frame_does_not_repeat_request(
+    generator, monkeypatch, privacy_response
+):
+    previous_tail = generator.output_dir / "shots" / "shot_001_lastframe.jpg"
+    previous_tail.write_bytes(b"accepted-tail")
+
+    class PrivacyRejectingAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append((kwargs.get("image_urls"), kwargs.get("image_role")))
+            return privacy_response
+
+    async def no_sleep(_seconds):
+        return None
+
+    generator.api = PrivacyRejectingAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr("pipeline.generator.asyncio.sleep", no_sleep)
+    shot = {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "mountain_peak",
+        "scene_description": "same mountain peak",
+        "prompt_en": "Continue the accepted duel state.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "characters": ["white_cultivator", "blue_cultivator"],
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        str(previous_tail),
+        {"shot_id": 1, "scene_id": "mountain_peak"},
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == [([str(previous_tail)], "first_frame")]
+    assert "没有可移除的身份参考" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("privacy_response", [
+    {
+        "status": "failed",
+        "error_type": "privacy",
+        "error": "privacy review rejected reference",
+    },
+    {
+        "status": "failed",
+        "error": "privacy information rejected reference",
+    },
+])
+async def test_privacy_rejection_retries_once_when_identity_refs_are_removed(
+    generator, monkeypatch, privacy_response
+):
+    identity_ref = generator.output_dir / "character_refs" / "hero.jpg"
+    identity_ref.write_bytes(b"identity")
+    generator.character_refs["hero"] = str(identity_ref)
+
+    class PrivacyRejectingAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append((kwargs.get("image_urls"), kwargs.get("image_role")))
+            return privacy_response
+
+    async def no_sleep(_seconds):
+        return None
+
+    generator.api = PrivacyRejectingAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr("pipeline.generator.asyncio.sleep", no_sleep)
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "scene_description": "new location",
+        "prompt_en": "The hero enters a new location.",
+        "characters": ["hero"],
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == [([str(identity_ref)], "reference_image"), (None, None)]
+    assert "纯文本请求仍被隐私审核拒绝" in result.errors[-1]
 
 
 @pytest.mark.asyncio
@@ -716,6 +1034,59 @@ class TestContinuityContract:
         assert "facing zombies" in result
         assert "action directed at zombies" in result
         assert "peak: robot fires one burst toward zombies" in result
+
+    def test_shot_contract_compiles_generic_causal_scope(self, generator):
+        shot = {
+            "primary_action": "source projects an effect through the scene",
+            "interaction_geometry": {
+                "interaction_mode": "directed_path",
+                "source": "a visible origin on the source",
+                "effect_region": "the narrow path from source to target",
+                "reaction_scope": "only entities intersecting that path",
+                "unaffected_behavior": "entities outside the path remain unaffected",
+            },
+        }
+
+        result = generator._inject_shot_contract("Abstract interaction.", shot)
+
+        assert "directed_path cause-and-effect" in result
+        assert "a visible origin on the source" in result
+        assert "the narrow path from source to target" in result
+        assert "only entities intersecting that path" in result
+        assert "entities outside the path remain unaffected" in result
+
+    def test_shot_contract_compiles_narrative_state_change(self, generator):
+        shot = {
+            "primary_action": "the subject reveals the result",
+            "narrative_beat": {
+                "function": "payoff",
+                "state_before": "the outcome is uncertain",
+                "state_change": "the result becomes visible",
+                "state_after": "the goal is visibly achieved",
+            },
+        }
+
+        result = generator._inject_shot_contract("A final reveal.", shot)
+
+        assert "narrative payoff" in result
+        assert "the outcome is uncertain" in result
+        assert "the result becomes visible" in result
+        assert "the goal is visibly achieved" in result
+
+    def test_shot_contract_compiles_required_composition_change(self, generator):
+        result = generator._inject_shot_contract(
+            "A welding action.",
+            {
+                "composition_change": "medium",
+                "camera": {
+                    "start_framing": "medium shot",
+                    "end_framing": "medium shot",
+                },
+            },
+        )
+
+        assert "use a medium shot with a clearly different shot size or angle" in result
+        assert "do not copy the previous framing" in result
 
     def test_seamless_contract_trusts_real_first_frame_over_planned_state(
         self, generator

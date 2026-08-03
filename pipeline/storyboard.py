@@ -10,8 +10,25 @@ from pathlib import Path
 from openai import OpenAI
 
 import config
-from pipeline.models import validate_storyboard
-from pipeline.participants import visible_character_names
+from pipeline.models import validate_storyboard, validate_storyboard_draft
+from pipeline.participants import canonical_participant_id, visible_character_names
+from pipeline.narrative import normalize_narrative_handoffs, narrative_readiness_issues
+from pipeline.production_plan import (
+    apply_production_plan,
+    build_production_plan,
+    classify_framing,
+    format_production_plan,
+    production_plan_issues,
+    reference_policy,
+)
+from pipeline.causality import (
+    CAUSAL_INTERACTION_MODES,
+    blocking_geometry_issues,
+    causal_storyboard_issues,
+    compile_interaction_blocking,
+    normalize_causal_scope,
+    with_causal_mode_invariants,
+)
 
 
 _STORYBOARD_MAX_COMPLETION_TOKENS = 16_384
@@ -26,7 +43,7 @@ _CORRECTION_SYSTEM_PROMPT = (
 )
 _MISPLACED_SHOT_METADATA = (
     "title", "total_duration", "aspect_ratio", "resolution", "style",
-    "music_style", "content_focus", "theme_elements",
+    "music_style", "content_focus", "theme_elements", "story_arc",
 )
 _ACTION_FOCUS_TERMS = (
     "大战", "打斗", "战斗", "对决", "决斗", "格斗", "武打", "搏斗",
@@ -148,28 +165,6 @@ def _content_focus_guidance(focus: str) -> str:
     return "均衡叙事：根据用户强调的主体、情绪与节奏分配动作、运镜和留白"
 
 
-def _action_structure_guidance(focus: str, target_duration: int) -> str:
-    """Allocate short action runtime before the LLM invents shot content."""
-    if focus != "action":
-        return ""
-    if target_duration <= 12:
-        return (
-            "使用 2 个镜头，两个镜头都必须直接推进冲突；"
-            "Shot 1 在冲突中建立空间，Shot 2 在动作中收束并呈现可见结果"
-        )
-    if target_duration <= 20:
-        return (
-            "使用 3 个镜头，至少 2 个镜头直接推进冲突；"
-            "Shot 2 承接攻击、防守或反击；纯建立与纯收尾只能保留一个："
-            "若 Shot 1 纯建立，Shot 3 必须在动作中收束；若 Shot 3 保留简短余韵，"
-            "Shot 1 必须在冲突中建立人物和空间"
-        )
-    return (
-        "推进冲突的镜头时长必须超过纯建立、准备和离场；"
-        "建立空间与结果收束也应尽量附着在主体动作上"
-    )
-
-
 def _requires_process_order(user_request: str) -> bool:
     request = user_request.lower()
     return any(term in request for term in _PROCESS_ORDER_TERMS)
@@ -253,7 +248,7 @@ def generate_storyboard(
     system_prompt = _load_system_prompt()
 
     content_focus = _infer_content_focus(user_request)
-    action_structure = _action_structure_guidance(content_focus, target_duration)
+    production_plan = build_production_plan(content_focus, target_duration)
     user_prompt = f"""用户需求: {user_request}
 
 目标参数:
@@ -262,21 +257,22 @@ def generate_storyboard(
 - 分辨率: {resolution}
 - 整体风格: {style}
 - 叙事重心: {_content_focus_guidance(content_focus)}
-{f"- 动作槽位契约: {action_structure}" if action_structure else ""}
+
+生产计划（先于创意内容确定，属于不可改写的执行输入）:
+{format_production_plan(production_plan)}
 
 请生成完整的分镜脚本 (JSON 格式)。"""
 
     storyboard = _call_llm_for_storyboard(client, system_prompt, user_prompt)
-    storyboard["content_focus"] = content_focus
-
-    # 补充默认值
-    _apply_defaults(storyboard, aspect_ratio, resolution, style)
-    storyboard = validate_storyboard(storyboard)
+    storyboard = _compile_storyboard_contract(
+        storyboard, aspect_ratio, resolution, style, production_plan=production_plan
+    )
 
     # 丰富度校验 + 自动修正 (严重问题触发 LLM 重跑)
     warnings, is_critical = _validate_storyboard_richness(
         storyboard,
         user_request=user_request,
+        require_narrative_contract=True,
     )
     if warnings:
         print("\n   [丰富度校验]")
@@ -294,14 +290,19 @@ def generate_storyboard(
             temperature=0.2,
         )
         _preserve_correction_contract(original_storyboard, storyboard)
-        storyboard["content_focus"] = content_focus
-        _apply_defaults(storyboard, aspect_ratio, resolution, style)
-        storyboard = validate_storyboard(storyboard)
+        storyboard = _compile_storyboard_contract(
+            storyboard,
+            aspect_ratio,
+            resolution,
+            style,
+            production_plan=production_plan,
+        )
 
         # 二次校验: 不再重试，但严重缺陷也不能进入付费生成。
         warnings_2, is_critical_2 = _validate_storyboard_richness(
             storyboard,
             user_request=user_request,
+            require_narrative_contract=True,
         )
         if warnings_2:
             print("\n   [二次校验]")
@@ -451,18 +452,15 @@ def _framing_rank(value: object) -> int | None:
     for phrase, rank in _FRAMING_RANKS:
         if phrase in text:
             return rank
-    return None
+    return {
+        "close_detail": 1,
+        "medium": 3,
+        "wide": 5,
+    }.get(classify_framing(value))
 
 
 def _framing_family(value: object) -> str | None:
-    rank = _framing_rank(value)
-    if rank is None:
-        return None
-    if rank <= 2:
-        return "close_detail"
-    if rank <= 4:
-        return "medium"
-    return "wide"
+    return classify_framing(value)
 
 
 def _boundary_framing(shot: dict, boundary: str) -> int | None:
@@ -586,7 +584,10 @@ def _apply_coverage_defaults(shots: list[dict]) -> None:
         beats = [beat for beat in shot.get("action_beats", []) if isinstance(beat, dict)]
         actors = [str(beat.get("actor", "")).strip() for beat in beats]
         targets = [str(beat.get("target", "")).strip() for beat in beats]
-        participants = list(dict.fromkeys(name for name in actors + targets if name))
+        participants = list(dict.fromkeys(
+            name for name in actors + targets
+            if name and name.casefold() != "none"
+        ))
         if not shot.get("required_visible_entities"):
             shot["required_visible_entities"] = (
                 participants or list(shot.get("characters", []))
@@ -619,16 +620,50 @@ def _apply_coverage_defaults(shots: list[dict]) -> None:
                 geometry["target_screen_position"] = str(positions.get(target, ""))
             if not geometry.get("occlusion_policy"):
                 geometry["occlusion_policy"] = "none"
-            if str(interaction.get("visible_result", "")).strip():
+            phase = str(geometry.get("effect_phase", "")).strip()
+            if not phase and str(interaction.get("visible_result", "")).strip():
                 geometry["must_share_frame"] = True
                 geometry["line_of_action_visible"] = True
-            else:
+            elif not phase:
                 geometry.setdefault("must_share_frame", False)
                 geometry.setdefault("line_of_action_visible", False)
             shot["interaction_geometry"] = geometry
         else:
             shot.setdefault("coverage_role", "establish" if index == 0 else "aftermath")
             shot.setdefault("interaction_geometry", {})
+        shot["interaction_geometry"] = with_causal_mode_invariants(
+            shot.get("interaction_geometry")
+        )
+        geometry = shot["interaction_geometry"]
+        entity_ids = list(shot.get("characters", []))
+        actor = canonical_participant_id(geometry.get("actor"), entity_ids)
+        target = canonical_participant_id(
+            geometry.get("target"),
+            entity_ids,
+            exclude=[actor],
+            fallback_to_single=True,
+        )
+        if actor:
+            geometry["actor"] = actor
+        if target:
+            geometry["target"] = target
+        compile_interaction_blocking(shot)
+        if str(geometry.get("effect_phase", "")).strip() == "active":
+            mode = str(geometry.get("interaction_mode", "none")).strip()
+            actor = str(geometry.get("actor", "")).strip()
+            target = str(geometry.get("target", "")).strip()
+            causal_entities = [target]
+            if mode in {"direct_contact", "directed_path"} or geometry.get(
+                "must_share_frame"
+            ):
+                causal_entities.insert(0, actor)
+            shot["required_visible_entities"] = list(dict.fromkeys([
+                *shot.get("required_visible_entities", []),
+                *(
+                    name for name in causal_entities
+                    if name and name.casefold() != "none"
+                ),
+            ]))
 
 
 def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style: str):
@@ -697,6 +732,32 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
     for correction in _normalize_continuity_contract(storyboard["shots"]):
         print(f"   [连续性校正] {correction}，改为 intentional_cut")
     _apply_coverage_defaults(storyboard["shots"])
+    for shot_id, previous_id in normalize_narrative_handoffs(storyboard):
+        print(
+            f"   [故事状态校正] Shot {shot_id} state_before "
+            f"复用 Shot {previous_id} state_after"
+        )
+    for correction in normalize_causal_scope(storyboard["shots"]):
+        print(f"   [因果范围校正] {correction}")
+
+
+def _compile_storyboard_contract(
+    storyboard: dict,
+    aspect_ratio: str,
+    resolution: str,
+    style: str,
+    *,
+    production_plan: dict | None = None,
+) -> dict:
+    """Normalize LLM labels before compiling their deterministic consequences."""
+    if production_plan is not None:
+        apply_production_plan(storyboard, production_plan)
+    _apply_defaults(storyboard, aspect_ratio, resolution, style)
+    normalized = validate_storyboard_draft(storyboard)
+    if production_plan is not None:
+        apply_production_plan(normalized, production_plan)
+    _apply_defaults(normalized, aspect_ratio, resolution, style)
+    return validate_storyboard(normalized)
 
 
 def _normalize_positive_duration(value):
@@ -755,6 +816,37 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 - coverage 必须服务因果：在空间/交互、动作主体、目标反应或关键细节、结果收束中选择适合当前剧情的职责，不机械套模板
 - 至少用 wide、medium、close/detail 三类景别建立空间、看清交互并展示一次结果；近景/细节镜头不得承担远距离双方同框命中
 """
+    causality_repair = ""
+    if any(
+        marker in warning
+        for warning in warnings
+        for marker in (
+            "interaction_mode", "作用来源", "作用区域",
+            "反应范围", "范围外行为", "作用路径", "effect_phase",
+            "outcome_scope", "effect_motion", "结果范围", "准备阶段",
+            "生效阶段", "aftermath", "全部目标",
+        )
+    ):
+        causality_repair = """
+- 只按物理传播方式选择 interaction_mode：直接接触 direct_contact、有方向路径 directed_path、区域作用 area_effect、中介触发 indirect_effect
+- effect_phase 必须按真实时间阶段选择：准备/瞄准/充能用 setup，物理作用发生用 active，只展示既有结果用 aftermath，无交互用 none
+- setup/none 必须使用 interaction_mode=none、outcome_scope=none、effect_motion=none，不得提前画出有效攻击路径或目标反应
+- active 必须声明 outcome_scope=single/subset/all 和 effect_motion=static/sweep/expand/propagate；静止 directed_path 不能宣称影响全部目标，全部目标必须实际展示 sweep
+- aftermath 不得创建新作用，也不得把上一 active 已影响的 single/subset 无原因扩大成 all
+- 明确 source、effect_region、reaction_scope、unaffected_behavior；只有作用区域内主体可产生结果，范围外主体必须保持契约指定的行为
+- 不得把 area_effect 强制改成直线命中，也不得用武器名或具体题材代替作用范围描述
+"""
+    narrative_repair = ""
+    if any(
+        marker in warning
+        for warning in warnings
+        for marker in ("story_arc", "narrative_beat", "故事状态")
+    ):
+        narrative_repair = """
+- 完整填写 story_arc 的 goal/stakes/turning_point/resolution，使结局是画面可见的状态而非抽象评价
+- 每镜 narrative_beat 必须以一个可见动作、信息或结果改变故事状态；运镜和气氛不能充当 state_change
+- 后镜 state_before 必须逐字复用前镜 state_after；只修复断裂处，不重写已连贯的角色、场景和动作
+"""
 
     return f"""{original_prompt}
 
@@ -765,9 +857,12 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 {issues_text}
 
 修正原则:
-- 只修改导致告警的字段和镜头，保留已经通过校验的角色、场景、空间轴、时长与连续性字段
+- 只修改导致告警的创意字段；ProductionPlan 及其镜头数量、shot_id、duration、阶段、结果槽位、景别族和参考策略不可改写
+- 保留已经通过校验的角色、场景、空间轴与连续故事状态
 {action_repair}
 {coverage_repair}
+{causality_repair}
+{narrative_repair}
 
 上次生成的分镜 (需要修正):
 ```json
@@ -796,6 +891,10 @@ def _preserve_correction_contract(original: dict, corrected: dict) -> None:
         if key not in corrected or corrected[key] in (None, "", [], {}):
             if key in original:
                 corrected[key] = deepcopy(original[key])
+    if isinstance(original.get("story_arc"), dict):
+        corrected["story_arc"] = _merge_missing_mapping(
+            original["story_arc"], corrected.get("story_arc", {})
+        )
 
     original_shots = {
         shot.get("shot_id"): shot
@@ -817,6 +916,10 @@ def _preserve_correction_contract(original: dict, corrected: dict) -> None:
         for key in ("start_state", "end_state"):
             if isinstance(source.get(key), dict):
                 shot[key] = _merge_missing_mapping(source[key], shot.get(key, {}))
+        if isinstance(source.get("narrative_beat"), dict):
+            shot["narrative_beat"] = _merge_missing_mapping(
+                source["narrative_beat"], shot.get("narrative_beat", {})
+            )
 
         role = str(shot.get("coverage_role", "")).strip()
         current_characters = shot.get("characters")
@@ -938,10 +1041,13 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 14. 物理能力: characters 必须声明 mobility; 动作必须符合角色移动形态, 履带/轮式角色不得迈步、跑跳或踢击
 15. 空间轴: 多角色动作镜头必须在 camera.screen_positions 声明角色左右位置并保持轴线; axis_change 只用 establish/hold/reestablish, 没有越轴写 hold
 16. 动作调度: 动作镜头用 action_beats 写 1-3 个 trigger/peak/aftermath 因果阶段; 同一镜头的 beat 只能有一个主动 actor，目标反应写 visible_result; 多角色动作镜头还必须在 blocking 为每个角色声明 frame_position/body_orientation/facing_target/eyeline_target/action_target，武器和身体必须朝向实际目标
-17. 可拍摄性: 每镜填写 composition_change、coverage_role、required_visible_entities 和 interaction_geometry；必须展示命中时 actor/target 同框且攻击线可见，极近景/浅景深不能同时要求远处目标清晰受击
+17. 可拍摄性: 每镜填写 composition_change、coverage_role、required_visible_entities 和 interaction_geometry；接触要求双方同框，定向作用要求路径可见，区域/间接作用要求作用范围与反应目标可读
 18. 身份参考预算: 动作片不得为了提取身份单独占用静态镜头; 角色可以在多人冲突镜头首次出现且 extract_character_ref=false，只有自然的单一 identity 角色清晰镜头才可提取，其他镜头由生成阶段从顶层 characters 自动注入完整外观
 19. 结构化主题: 顶层 theme_elements 使用稳定英文ID; 不得用中文标题与英文 prompt 做字符串匹配
 20. 长动作 coverage: 24 秒以上且至少 4 镜时，根据剧情组合空间/交互、动作主体、目标反应或关键细节、结果收束，并覆盖 wide、medium、close/detail 三类景别；变化服务因果，不机械套固定顺序或运镜
+21. 交互因果: 每镜 interaction_geometry 必须填写 effect_phase/outcome_scope/effect_motion；setup 不得产生物理作用，active 才能选择 direct_contact/directed_path/area_effect/indirect_effect，aftermath 不得扩大上一镜已建立的结果范围
+22. 作用守恒: 静止 directed_path 只能影响路径相交的 single/subset；要影响 all 必须清楚展示 sweep，只有作用范围内主体可反应
+23. 故事状态: 顶层 story_arc 填写 goal/stakes/turning_point/resolution；每镜 narrative_beat 填写 function/state_before/state_change/state_after，后镜 state_before 必须逐字复用前镜 state_after
 
 ## Seedance 模型局限 (必须规避)
 
@@ -961,7 +1067,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 ## 输出格式 (严格 JSON, 参考 storyboard_system.md)
 注意: 身份参考是可选增强，不是首次出场硬约束；动作片允许角色在多人冲突镜头首次出现，只有自然的单一 identity 角色清晰镜头才提取
 subtitle_text 必须中文; prompt_en 必须英文
-顶层必须包含 content_focus 和 theme_elements；每个 shot 必须包含 scene_id, continuity_from_previous, composition_change, coverage_role, required_visible_entities, interaction_geometry, primary_action, action_beats, start_state, end_state, blocking, key_props, continuity_props
+顶层必须包含 content_focus、theme_elements 和 story_arc；每个 shot 必须包含 scene_id, continuity_from_previous, composition_change, coverage_role, required_visible_entities, interaction_geometry, narrative_beat, primary_action, action_beats, start_state, end_state, blocking, key_props, continuity_props
 最多连续 2 次 seamless; 插入特写、换机位或大跨度景别变化必须 intentional_cut
 """
 
@@ -980,21 +1086,28 @@ def _scene_id(shot: dict) -> str:
     return _extract_scene_name(shot.get("scene_description", ""))
 
 
-_MAX_OUTPUT_REFERENCE_DEPTH = 2
-
-
-def _should_use_previous_tail_reference(current: dict, previous: dict | None) -> bool:
+def _should_use_previous_tail_reference(
+    current: dict,
+    previous: dict | None,
+    *,
+    has_identity_reference: bool | None = None,
+) -> bool:
     """Return whether accepted footage should carry state into this shot."""
     if previous is None or _scene_id(current) != _scene_id(previous):
         return False
+    policy = reference_policy(current)
+    if policy in {"independent", "identity_only"}:
+        return False
+    if policy in {
+        "state_if_same_scene", "state_and_identity", "identity_or_state",
+    }:
+        # identity_or_state is a persisted v1 policy. Treat it as the corrected
+        # state-and-identity behavior so old workspaces do not lose scene state.
+        return True
     continuity = current.get("continuity_from_previous")
     if continuity == "seamless":
         return True
-    return (
-        continuity == "intentional_cut"
-        and int(previous.get("output_reference_depth", 0))
-        < _MAX_OUTPUT_REFERENCE_DEPTH
-    )
+    return continuity == "intentional_cut"
 
 
 # 用于检测 prompt 中是否包含物件引入动作的关键词
@@ -1194,6 +1307,13 @@ def _theme_anchor_coverage(storyboard: dict) -> tuple[int, int, list[str]]:
 
 def _shot_advances_action_conflict(shot: dict) -> bool:
     """Use both the compact action and structured beats to detect real conflict."""
+    geometry = shot.get("interaction_geometry")
+    if (
+        isinstance(geometry, dict)
+        and geometry.get("effect_phase") == "active"
+        and geometry.get("interaction_mode") in CAUSAL_INTERACTION_MODES
+    ):
+        return True
     if _advances_action_conflict(str(shot.get("primary_action", ""))):
         return True
     for beat in shot.get("action_beats", []):
@@ -1211,6 +1331,8 @@ def _shot_advances_action_conflict(shot: dict) -> bool:
 def _validate_storyboard_richness(
     storyboard: dict,
     user_request: str = "",
+    *,
+    require_narrative_contract: bool = False,
 ) -> tuple[list[str], bool]:
     """分镜丰富度校验 — 返回 (warnings, is_critical)
 
@@ -1235,6 +1357,22 @@ def _validate_storyboard_richness(
     warnings: list[str] = []
     critical_count = 0  # 严重问题计数
     content_focus = _infer_content_focus(user_request)
+
+    for issue in production_plan_issues(storyboard):
+        warnings.append(f"🚨 {issue}")
+        critical_count += 1
+
+    for issue in narrative_readiness_issues(
+        storyboard, required=require_narrative_contract
+    ):
+        warnings.append(f"🚨 {issue}")
+        critical_count += 1
+
+    for issue in causal_storyboard_issues(
+        storyboard, required=require_narrative_contract
+    ):
+        warnings.append(f"🚨 {issue}")
+        critical_count += 1
 
     # --- 1. 场景连续性 ---
     scene_names = [
@@ -1435,6 +1573,10 @@ def _validate_storyboard_richness(
                 )
                 critical_count += 1
 
+            for issue in blocking_geometry_issues(shot):
+                warnings.append(f"🚨 {issue}")
+                critical_count += 1
+
             if _shot_advances_action_conflict(shot):
                 action_beats = shot.get("action_beats", [])
                 if not isinstance(action_beats, list) or not action_beats:
@@ -1596,7 +1738,10 @@ def _validate_storyboard_richness(
     from pipeline.readiness import coverage_readiness_issues
 
     for shot in shots:
-        for issue in coverage_readiness_issues(shot):
+        for issue in coverage_readiness_issues(
+            shot,
+            require_causality_contract=require_narrative_contract,
+        ):
             warnings.append(f"🚨 {issue}")
             critical_count += 1
 

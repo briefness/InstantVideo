@@ -155,11 +155,105 @@ class InteractionGeometrySpec(BaseModel):
 
     actor: str = ""
     target: str = ""
+    interaction_mode: Literal[
+        "none", "direct_contact", "directed_path", "area_effect", "indirect_effect"
+    ] = "none"
+    effect_phase: Literal[
+        "unspecified", "none", "setup", "active", "aftermath"
+    ] = "unspecified"
+    outcome_scope: Literal[
+        "unspecified", "none", "single", "subset", "all"
+    ] = "unspecified"
+    effect_motion: Literal[
+        "unspecified", "none", "static", "sweep", "expand", "propagate"
+    ] = "unspecified"
+    source: str = ""
+    effect_region: str = ""
+    reaction_scope: str = ""
+    unaffected_behavior: str = ""
     must_share_frame: bool = False
     line_of_action_visible: bool = False
     actor_screen_position: str = ""
     target_screen_position: str = ""
     occlusion_policy: Literal["none", "partial", "motivated"] = "none"
+
+    @field_validator("interaction_mode", mode="before")
+    @classmethod
+    def normalize_interaction_mode(cls, value: Any) -> str:
+        label = str(value or "none").strip().lower().replace("-", " ").replace("_", " ")
+        aliases = {
+            "none": "none",
+            "direct contact": "direct_contact",
+            "contact": "direct_contact",
+            "directed path": "directed_path",
+            "path": "directed_path",
+            "area effect": "area_effect",
+            "area": "area_effect",
+            "indirect effect": "indirect_effect",
+            "indirect": "indirect_effect",
+        }
+        if label in aliases:
+            return aliases[label]
+        semantic_aliases = (
+            ("direct_contact", ("contact", "collision", "melee", "touch", "impact")),
+            ("directed_path", ("projectile", "beam", "ray", "line", "ranged", "path")),
+            ("area_effect", ("area", "aoe", "blast", "explosion", "wave", "field")),
+            ("indirect_effect", ("indirect", "trap", "chain", "environment", "mediated")),
+        )
+        for canonical, markers in semantic_aliases:
+            if any(marker in label for marker in markers):
+                return canonical
+        return "none"
+
+    @field_validator("effect_phase", mode="before")
+    @classmethod
+    def normalize_effect_phase(cls, value: Any) -> str:
+        label = str(value or "unspecified").strip().lower().replace("-", " ").replace("_", " ")
+        if label in {"none", "no effect", "non causal"}:
+            return "none"
+        if any(marker in label for marker in (
+            "setup", "prepare", "preparation", "aim", "target", "charge", "trigger"
+        )):
+            return "setup"
+        if any(marker in label for marker in (
+            "active", "fire", "impact", "contact", "peak", "attack"
+        )):
+            return "active"
+        if any(marker in label for marker in (
+            "aftermath", "result", "resolution", "payoff", "resolved"
+        )):
+            return "aftermath"
+        return "unspecified"
+
+    @field_validator("outcome_scope", mode="before")
+    @classmethod
+    def normalize_outcome_scope(cls, value: Any) -> str:
+        label = str(value or "unspecified").strip().lower().replace("-", " ").replace("_", " ")
+        if label in {"none", "no effect", "zero"}:
+            return "none"
+        if any(marker in label for marker in ("single", "one target", "one subject")):
+            return "single"
+        if any(marker in label for marker in ("subset", "partial", "some", "several")):
+            return "subset"
+        if any(marker in label for marker in ("all", "whole", "entire", "every")):
+            return "all"
+        return "unspecified"
+
+    @field_validator("effect_motion", mode="before")
+    @classmethod
+    def normalize_effect_motion(cls, value: Any) -> str:
+        label = str(value or "unspecified").strip().lower().replace("-", " ").replace("_", " ")
+        if label in {"none", "no motion"}:
+            return "none"
+        if any(marker in label for marker in ("sweep", "scan", "pan across")):
+            return "sweep"
+        if any(marker in label for marker in ("expand", "radial", "spread outward")):
+            return "expand"
+        if any(marker in label for marker in ("propagate", "chain", "travel through")):
+            return "propagate"
+        if any(marker in label for marker in ("static", "fixed", "straight")):
+            return "static"
+        return "unspecified"
 
     @field_validator("occlusion_policy", mode="before")
     @classmethod
@@ -172,6 +266,77 @@ class InteractionGeometrySpec(BaseModel):
         if any(marker in label for marker in ("motivated", "intentional", "叙事")):
             return "motivated"
         return "none"
+
+
+class StoryArcSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    goal: str = ""
+    stakes: str = ""
+    turning_point: str = ""
+    resolution: str = ""
+
+
+class NarrativeBeatSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    function: Literal["setup", "progress", "turn", "payoff"] | None = None
+    state_before: str = ""
+    state_change: str = ""
+    state_after: str = ""
+
+    @field_validator("function", mode="before")
+    @classmethod
+    def normalize_function(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        label = str(value).strip().lower().replace("-", " ").replace("_", " ")
+        aliases = (
+            ("setup", ("setup", "opening", "establish", "inciting", "介绍", "建立")),
+            ("turn", ("turn", "turning", "reversal", "reveal", "转折", "揭示")),
+            ("payoff", ("payoff", "resolution", "resolve", "ending", "结果", "收束")),
+            ("progress", ("progress", "development", "escalation", "过程", "推进")),
+        )
+        for canonical, markers in aliases:
+            if any(marker in label for marker in markers):
+                return canonical
+        return "progress"
+
+
+class ProductionSlotSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    shot_id: int = Field(gt=0)
+    duration: int = Field(
+        ge=config.MIN_SHOT_DURATION,
+        le=config.MAX_SHOT_DURATION,
+    )
+    narrative_function: Literal["setup", "progress", "turn", "payoff"]
+    allowed_effect_phases: list[
+        Literal["none", "setup", "active", "aftermath"]
+    ] = Field(min_length=1)
+    requires_visible_result: bool
+    coverage_roles: list[
+        Literal[
+            "establish", "action_subject", "target_reaction",
+            "interaction", "aftermath", "insert",
+        ]
+    ] = Field(min_length=1)
+    framing_family: Literal["wide", "medium", "close_detail"]
+    reference_policy: Literal[
+        "independent", "state_if_same_scene", "state_and_identity",
+        "identity_or_state", "identity_only",
+    ]
+
+
+class ProductionPlanSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal["production-plan-v1"]
+    content_focus: Literal["balanced", "action", "product"]
+    target_duration: int = Field(gt=0)
+    planned_duration: int = Field(gt=0)
+    slots: list[ProductionSlotSpec] = Field(min_length=1)
 
 
 class ShotSpec(BaseModel):
@@ -200,6 +365,8 @@ class ShotSpec(BaseModel):
     interaction_geometry: InteractionGeometrySpec = Field(
         default_factory=InteractionGeometrySpec
     )
+    narrative_beat: NarrativeBeatSpec | None = None
+    production_slot: ProductionSlotSpec | None = None
     primary_action: str = ""
     action_beats: list[ActionBeatSpec] = Field(default_factory=list, max_length=3)
     start_state: ContinuityStateSpec = Field(default_factory=ContinuityStateSpec)
@@ -336,6 +503,8 @@ class StoryboardSpec(BaseModel):
     music_style: str = "cinematic orchestral"
     content_focus: Literal["balanced", "action", "product"] = "balanced"
     theme_elements: list[str] = Field(default_factory=list)
+    story_arc: StoryArcSpec | None = None
+    production_plan: ProductionPlanSpec | None = None
     characters: list[CharacterSpec] = Field(default_factory=list)
     shots: list[ShotSpec] = Field(min_length=1)
 
@@ -445,3 +614,11 @@ class RunManifest(BaseModel):
 def validate_storyboard(data: dict[str, Any]) -> dict[str, Any]:
     """Validate once at the LLM/persistence seam and preserve dict callers."""
     return StoryboardSpec.model_validate(data).model_dump(mode="json", exclude_none=True)
+
+
+def validate_storyboard_draft(data: dict[str, Any]) -> dict[str, Any]:
+    """Project an untrusted LLM draft onto the strict persisted schema."""
+    return StoryboardSpec.model_validate(
+        data,
+        extra="ignore",
+    ).model_dump(mode="json", exclude_none=True)

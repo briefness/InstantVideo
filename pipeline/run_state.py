@@ -96,7 +96,6 @@ class RunWorkspace:
             }
             if observed:
                 shot["observed_end_state"] = observed
-                shot["end_state"] = {**shot.get("end_state", {}), **observed}
         return validate_storyboard(validated)
 
     def save_storyboard(self, storyboard: dict[str, Any]) -> dict[str, Any]:

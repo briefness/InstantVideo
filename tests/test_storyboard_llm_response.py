@@ -11,12 +11,13 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pipeline.storyboard import (
-    _action_structure_guidance,
     _build_correction_prompt,
     _call_llm_for_storyboard,
     _parse_json_response,
     generate_storyboard,
 )
+from pipeline.causality import blocking_geometry_issues
+from pipeline.models import validate_storyboard, validate_storyboard_draft
 
 
 def _response(
@@ -133,16 +134,28 @@ def test_storyboard_call_accepts_lower_temperature_for_contract_correction():
     assert completions.calls[0]["temperature"] == 0.2
 
 
-def test_fifteen_second_action_guidance_allocates_conflict_to_edge_shots():
-    guidance = _action_structure_guidance("action", 15)
+def test_llm_draft_projection_drops_unknown_keys_but_runtime_validation_stays_strict():
+    draft = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "test scene",
+            "prompt_en": "cinematic test shot",
+            "interaction_geometry": {
+                "effect_phase": "none",
+                "reaction_zone": "an unsupported invented field",
+            },
+        }],
+    }
 
-    assert "3 个镜头" in guidance
-    assert "冲突中建立" in guidance
-    assert "动作中收束" in guidance
-    assert "至少 2 个镜头" in guidance
+    projected = validate_storyboard_draft(draft)
+
+    assert "reaction_zone" not in projected["shots"][0]["interaction_geometry"]
+    with pytest.raises(ValueError, match="reaction_zone"):
+        validate_storyboard(draft)
 
 
-def test_generate_storyboard_normalizes_positive_duration_before_validation(
+def test_generate_storyboard_applies_planned_duration_before_validation(
     monkeypatch,
 ):
     draft = {
@@ -170,7 +183,7 @@ def test_generate_storyboard_normalizes_positive_duration_before_validation(
         target_duration=30,
     )
 
-    assert storyboard["shots"][0]["duration"] == 4
+    assert storyboard["shots"][0]["duration"] == 5
 
 
 def test_generate_storyboard_normalizes_misplaced_top_level_metadata(monkeypatch):
@@ -204,7 +217,7 @@ def test_generate_storyboard_normalizes_misplaced_top_level_metadata(monkeypatch
     assert "total_duration" not in storyboard["shots"][0]
 
 
-def test_generate_storyboard_does_not_mask_non_positive_duration(monkeypatch):
+def test_generate_storyboard_replaces_llm_duration_with_executable_plan(monkeypatch):
     draft = {
         "title": "invalid duration",
         "shots": [{
@@ -220,8 +233,14 @@ def test_generate_storyboard_does_not_mask_non_positive_duration(monkeypatch):
         lambda *_args, **_kwargs: deepcopy(draft),
     )
 
-    with pytest.raises(ValueError, match="duration"):
-        generate_storyboard("制作一个30秒动作视频", target_duration=30)
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: ([], False),
+    )
+
+    storyboard = generate_storyboard("制作一个30秒动作视频", target_duration=30)
+
+    assert storyboard["shots"][0]["duration"] == 5
 
 
 def test_action_density_correction_is_surgical_and_explicit():
@@ -231,14 +250,36 @@ def test_action_density_correction_is_surgical_and_explicit():
         ["🚨 动作重心不足: 仅 1/3 个镜头"],
     )
 
-    assert "只修改导致告警的字段" in prompt
+    assert "只修改导致告警的创意字段" in prompt
     assert "冲突中建立" in prompt
     assert "动作中收束" in prompt
     assert "至少 2 个镜头" in prompt
 
 
-def test_short_action_generation_recovers_with_one_surgical_correction(monkeypatch):
+def test_missing_interaction_mode_routes_to_causality_correction():
+    prompt = _build_correction_prompt(
+        "用户需求: 抽象交互短片",
+        {"shots": [{"shot_id": 1}]},
+        ["🚨 Shot 1: 可见因果交互缺少 interaction_mode"],
+    )
+
+    assert "direct_contact" in prompt
+    assert "directed_path" in prompt
+    assert "area_effect" in prompt
+    assert "indirect_effect" in prompt
+    assert "准备/瞄准/充能用 setup" in prompt
+    assert "aftermath 不得创建新作用" in prompt
+
+
+def test_short_action_generation_receives_immutable_production_slots(monkeypatch):
+    narrative_states = (
+        ("the threat is approaching", "the street conflict is active"),
+        ("the street conflict is active", "the immediate threat is reduced"),
+        ("the immediate threat is reduced", "the route is visibly secured"),
+    )
+
     def shot(shot_id: int, duration: int, action: str, framing: str) -> dict:
+        state_before, state_after = narrative_states[shot_id - 1]
         return {
             "shot_id": shot_id,
             "duration": duration,
@@ -246,6 +287,12 @@ def test_short_action_generation_recovers_with_one_surgical_correction(monkeypat
             "scene_description": "【末日市中心】同一街道中的连续冲突",
             "prompt_en": "cinematic detail " * 40,
             "primary_action": action,
+            "narrative_beat": {
+                "function": ("setup", "progress", "payoff")[shot_id - 1],
+                "state_before": state_before,
+                "state_change": f"shot {shot_id} visibly changes the situation",
+                "state_after": state_after,
+            },
             "start_state": {
                 "location": "post apocalyptic downtown street",
                 "subject": "subjects hold their starting positions",
@@ -263,41 +310,58 @@ def test_short_action_generation_recovers_with_one_surgical_correction(monkeypat
                 "start_framing": framing,
                 "end_framing": framing,
             },
+            "interaction_geometry": {
+                "interaction_mode": "none",
+                "effect_phase": "none",
+                "outcome_scope": "none",
+                "effect_motion": "none",
+            },
             "mood": f"action mood {shot_id}",
             "characters": [],
             "extract_character_ref": False,
         }
 
-    first_draft = {
+    draft = {
         "title": "robot cleanup",
+        "story_arc": {
+            "goal": "secure the route",
+            "stakes": "the route remains dangerous",
+            "turning_point": "the threat enters direct conflict",
+            "resolution": "the route is visibly secured",
+        },
         "shots": [
             shot(1, 4, "smoke drifts across the ruined street", "wide shot"),
             shot(2, 5, "robot fires one burst at zombies", "close-up"),
             shot(3, 6, "robot scans the cleared street", "medium shot"),
         ],
     }
-    corrected = deepcopy(first_draft)
-    corrected["shots"][0]["primary_action"] = "zombies charge at the robot"
-    responses = iter((first_draft, corrected))
     calls = []
 
     def fake_call(client, system_prompt, user_prompt, **kwargs):
         calls.append((user_prompt, kwargs))
-        return deepcopy(next(responses))
+        return deepcopy(draft)
 
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
     monkeypatch.setattr("pipeline.storyboard._call_llm_for_storyboard", fake_call)
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: ([], False),
+    )
 
     result = generate_storyboard(
         "制作一个15秒的视频，机器人末日清除丧尸",
         target_duration=15,
     )
 
-    assert result["shots"][0]["primary_action"] == "zombies charge at the robot"
+    assert result["shots"][0]["primary_action"] == "smoke drifts across the ruined street"
     assert result["shots"][2]["primary_action"] == "robot scans the cleared street"
-    assert "动作槽位契约" in calls[0][0]
-    assert "冲突中建立" in calls[1][0]
-    assert calls[1][1]["temperature"] == 0.2
+    assert all(
+        shot["interaction_geometry"]["effect_phase"] == "active"
+        for shot in result["shots"]
+    )
+    assert "生产计划" in calls[0][0]
+    assert "effect_phase=active" in calls[0][0]
+    assert len(calls) == 1
 
 
 def test_contract_correction_preserves_accepted_spatial_fields(monkeypatch):
@@ -401,11 +465,20 @@ def test_contract_correction_preserves_accepted_spatial_fields(monkeypatch):
 
     assert shot["coverage_role"] == "interaction"
     assert shot["primary_action"] == "robot fires one burst at the zombies"
-    assert shot["camera"]["start_framing"] == "medium shot"
+    assert shot["camera"]["start_framing"] == "wide shot"
     assert shot["camera"]["screen_positions"] == original["shots"][0]["camera"]["screen_positions"]
     assert shot["camera"]["axis_change"] == "establish"
     assert shot["required_visible_entities"] == ["robot", "zombies"]
-    assert shot["blocking"] == blocking
+    assert shot["blocking"]["robot"]["frame_position"] == (
+        blocking["robot"]["frame_position"]
+    )
+    assert shot["blocking"]["robot"]["travel_direction"] == (
+        blocking["robot"]["travel_direction"]
+    )
+    assert shot["blocking"]["robot"]["body_orientation"] == (
+        "three-quarter toward screen-right and background, away from camera"
+    )
+    assert not blocking_geometry_issues(shot)
 
 
 def test_storyboard_stops_after_one_failed_contract_correction(monkeypatch):

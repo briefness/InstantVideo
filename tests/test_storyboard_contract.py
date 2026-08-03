@@ -1,9 +1,19 @@
 """Storyboard continuity and motion-budget contract tests."""
 
+import pytest
+
+from pipeline.causality import (
+    blocking_geometry_issues,
+    causal_evidence_issues,
+    compile_interaction_blocking,
+    normalize_causal_scope,
+)
 from pipeline.storyboard import (
     _apply_defaults,
+    _compile_storyboard_contract,
     _infer_content_focus,
     _scene_id,
+    _shot_advances_action_conflict,
     _validate_storyboard_richness,
 )
 
@@ -60,6 +70,81 @@ def test_content_focus_is_inferred_from_explicit_request():
     assert _infer_content_focus("制作一个30秒的孙悟空大战龟仙人") == "action"
     assert _infer_content_focus("智能手表产品宣传片") == "product"
     assert _infer_content_focus("制作一个猫咖日常短视频") == "balanced"
+
+
+def test_spatial_compiler_derives_axis_and_blocking_from_actor_target():
+    shot = {
+        "characters": ["actor", "target"],
+        "interaction_geometry": {"actor": "actor", "target": "target"},
+        "camera": {},
+        "blocking": {},
+    }
+
+    compile_interaction_blocking(shot)
+
+    assert shot["camera"]["screen_positions"] == {
+        "actor": "left foreground",
+        "target": "right midground",
+    }
+    assert shot["blocking"]["actor"]["facing_target"] == "target"
+    assert shot["blocking"]["target"]["facing_target"] == "actor"
+
+
+def test_causal_compiler_prevents_aftermath_scope_expansion():
+    shots = [
+        {
+            "shot_id": 1,
+            "scene_id": "scene",
+            "interaction_geometry": {
+                "target": "group",
+                "effect_phase": "active",
+                "outcome_scope": "subset",
+            },
+        },
+        {
+            "shot_id": 2,
+            "scene_id": "scene",
+            "interaction_geometry": {
+                "target": "group",
+                "effect_phase": "aftermath",
+                "outcome_scope": "all",
+            },
+        },
+    ]
+
+    corrections = normalize_causal_scope(shots)
+
+    assert shots[1]["interaction_geometry"]["outcome_scope"] == "subset"
+    assert corrections
+
+
+def test_setup_still_rejects_any_emitted_effect_or_early_outcome():
+    shot = {
+        "interaction_geometry": {
+            "effect_phase": "setup",
+            "interaction_mode": "none",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        }
+    }
+    preparation_only = [{
+        "physical_effect_visible": False,
+        "reaction_visible": False,
+        "effect_intersects_reaction": False,
+        "out_of_scope_reaction_visible": False,
+        "contracted_outcome_visible": False,
+        "outcome_causally_connected": False,
+    }]
+    emitted_effect = [{**preparation_only[0], "physical_effect_visible": True}]
+    early_outcome = [{**preparation_only[0], "contracted_outcome_visible": True}]
+
+    assert causal_evidence_issues(shot, preparation_only) == []
+    assert "准备阶段提前出现物理作用或约定结果" in causal_evidence_issues(
+        shot, emitted_effect
+    )
+    assert "准备阶段提前出现物理作用或约定结果" in causal_evidence_issues(
+        shot, early_outcome
+    )
 
 
 def test_camera_movement_cannot_be_primary_subject_action():
@@ -397,6 +482,44 @@ def test_long_action_sequence_accepts_causal_coverage_without_fixed_camera_moves
     assert not any("动作结果视角缺失" in warning for warning in warnings)
     assert not any("动作镜头职责集中" in warning for warning in warnings)
     assert not any("动作景别层次不足" in warning for warning in warnings)
+
+
+def test_required_narrative_contract_rejects_broken_state_handoff():
+    storyboard = {
+        "story_arc": {
+            "goal": "change the situation",
+            "stakes": "the problem persists",
+            "turning_point": "new information changes the approach",
+            "resolution": "the situation reaches a visible outcome",
+        },
+        "shots": [
+            {
+                **_contract_shot(1, 5, "subject reveals an obstacle"),
+                "narrative_beat": {
+                    "function": "setup",
+                    "state_before": "the path appears clear",
+                    "state_change": "an obstacle appears",
+                    "state_after": "the path is blocked",
+                },
+            },
+            {
+                **_contract_shot(2, 6, "subject changes course"),
+                "narrative_beat": {
+                    "function": "progress",
+                    "state_before": "an unrelated reset state",
+                    "state_change": "a new route is attempted",
+                    "state_after": "the subject approaches the goal",
+                },
+            },
+        ],
+    }
+
+    warnings, is_critical = _validate_storyboard_richness(
+        storyboard, require_narrative_contract=True
+    )
+
+    assert is_critical
+    assert any("故事状态交接断裂" in warning for warning in warnings)
 
 
 def test_compound_contact_sequence_requires_shot_split():
@@ -765,6 +888,290 @@ def test_defaults_compile_visible_impact_into_shootable_geometry():
     assert shot["interaction_geometry"]["line_of_action_visible"] is True
 
 
+@pytest.mark.parametrize(
+    ("mode", "field"),
+    (
+        ("directed_path", "line_of_action_visible"),
+        ("direct_contact", "must_share_frame"),
+    ),
+)
+def test_defaults_derive_causal_mode_invariants(mode, field):
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "Abstract interaction",
+            "prompt_en": "cinematic interaction detail " * 30,
+            "interaction_geometry": {
+                "actor": "source",
+                "target": "target",
+                "interaction_mode": mode,
+                "source": "visible origin",
+                "effect_region": "contracted effect region",
+                "reaction_scope": "only the contracted target",
+                "unaffected_behavior": "everything outside remains unchanged",
+                "must_share_frame": False,
+                "line_of_action_visible": False,
+            },
+            "action_beats": [{
+                "phase": "peak",
+                "actor": "source",
+                "action": "causes one effect",
+                "target": "target",
+                "visible_result": "",
+            }],
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][0]["interaction_geometry"][field] is True
+
+
+@pytest.mark.parametrize(
+    ("phase", "expected"),
+    (
+        (
+            "setup",
+            {
+                "interaction_mode": "none",
+                "outcome_scope": "none",
+                "effect_motion": "none",
+            },
+        ),
+        (
+            "aftermath",
+            {
+                "interaction_mode": "none",
+                "outcome_scope": "subset",
+                "effect_motion": "none",
+            },
+        ),
+    ),
+)
+def test_defaults_derive_effect_phase_invariants(phase, expected):
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "interaction_geometry": {
+                "effect_phase": phase,
+                "interaction_mode": "directed_path",
+                "outcome_scope": "subset",
+                "effect_motion": "sweep",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    geometry = storyboard["shots"][0]["interaction_geometry"]
+    assert {key: geometry[key] for key in expected} == expected
+
+
+@pytest.mark.parametrize(
+    ("mode", "scope", "motion"),
+    (
+        ("direct_contact", "single", "static"),
+        ("directed_path", "subset", "static"),
+        ("directed_path", "all", "sweep"),
+        ("area_effect", "all", "static"),
+        ("indirect_effect", "subset", "propagate"),
+    ),
+)
+def test_defaults_compile_missing_active_effect_motion(mode, scope, motion):
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": mode,
+                "outcome_scope": scope,
+                "effect_motion": "unspecified",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][0]["interaction_geometry"]["effect_motion"] == motion
+
+
+def test_defaults_force_sweep_for_whole_directed_path_outcome():
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "directed_path",
+                "outcome_scope": "all",
+                "effect_motion": "static",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][0]["interaction_geometry"]["effect_motion"] == "sweep"
+
+
+@pytest.mark.parametrize(
+    ("geometry", "expected"),
+    (
+        (
+            {
+                "effect_phase": "resolution",
+                "interaction_mode": "directed path",
+                "outcome_scope": "some targets",
+            },
+            ("aftermath", "none", "subset", "none"),
+        ),
+        (
+            {
+                "effect_phase": "firing impact",
+                "interaction_mode": "directed path",
+                "outcome_scope": "some targets",
+            },
+            ("active", "directed_path", "subset", "static"),
+        ),
+    ),
+)
+def test_contract_compiler_derives_invariants_after_alias_normalization(
+    geometry, expected
+):
+    storyboard = {
+        "shots": [_shot(1, interaction_geometry=geometry)],
+    }
+
+    compiled = _compile_storyboard_contract(
+        storyboard, "16:9", "480p", "cinematic"
+    )
+
+    result = compiled["shots"][0]["interaction_geometry"]
+    assert (
+        result["effect_phase"],
+        result["interaction_mode"],
+        result["outcome_scope"],
+        result["effect_motion"],
+    ) == expected
+
+
+def test_defaults_merge_active_causal_entities_into_visibility_contract():
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "required_visible_entities": ["source"],
+            "interaction_geometry": {
+                "actor": "source",
+                "target": "target_group",
+                "effect_phase": "active",
+                "interaction_mode": "directed_path",
+                "outcome_scope": "subset",
+                "effect_motion": "static",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][0]["required_visible_entities"] == [
+        "source",
+        "target_group",
+    ]
+
+
+def test_structured_active_effect_advances_conflict_without_keyword_matching():
+    shot = _shot(
+        1,
+        primary_action="执行当前作用",
+        interaction_geometry={
+            "effect_phase": "active",
+            "interaction_mode": "area_effect",
+            "outcome_scope": "subset",
+            "effect_motion": "static",
+        },
+    )
+
+    assert _shot_advances_action_conflict(shot) is True
+
+
+def test_defaults_canonicalize_interaction_targets_to_stable_entity_ids():
+    storyboard = {
+        "characters": [
+            {"name": "subject", "reference_mode": "identity"},
+            {"name": "target_group", "reference_mode": "group"},
+        ],
+        "shots": [
+            _shot(
+                1,
+                characters=["subject", "target_group"],
+                interaction_geometry={
+                    "actor": "subject",
+                    "target": "front targets",
+                    "effect_phase": "active",
+                    "interaction_mode": "area_effect",
+                    "outcome_scope": "subset",
+                    "effect_motion": "static",
+                },
+            ),
+            _shot(
+                2,
+                characters=["subject", "target_group"],
+                interaction_geometry={
+                    "actor": "subject",
+                    "target": "remaining targets",
+                    "effect_phase": "aftermath",
+                    "interaction_mode": "none",
+                    "outcome_scope": "subset",
+                    "effect_motion": "none",
+                },
+            ),
+        ],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert [
+        shot["interaction_geometry"]["target"] for shot in storyboard["shots"]
+    ] == ["target_group", "target_group"]
+
+
+def test_defaults_compile_narrative_handoff_from_previous_result():
+    storyboard = {
+        "shots": [
+            {
+                "shot_id": 1,
+                "duration": 5,
+                "narrative_beat": {
+                    "function": "setup",
+                    "state_before": "the route is open",
+                    "state_change": "a barrier appears",
+                    "state_after": "the route is blocked",
+                },
+            },
+            {
+                "shot_id": 2,
+                "duration": 5,
+                "narrative_beat": {
+                    "function": "progress",
+                    "state_before": "an unrelated paraphrase",
+                    "state_change": "the subject removes the barrier",
+                    "state_after": "the route is open again",
+                },
+            },
+        ],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][1]["narrative_beat"]["state_before"] == (
+        "the route is blocked"
+    )
+
+
 def test_defaults_compile_screen_positions_from_character_blocking():
     blocking = {
         "robot": {
@@ -820,6 +1227,62 @@ def test_defaults_compile_screen_positions_from_character_blocking():
         "zombies": "screen-right midground",
     }
     assert not any("空间轴未定义" in warning for warning in warnings)
+
+
+def test_defaults_compile_redundant_blocking_from_actor_target_positions():
+    storyboard = {
+        "characters": [
+            {"name": "source", "reference_mode": "identity"},
+            {"name": "receiver", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "Abstract interaction space",
+            "prompt_en": "cinematic interaction " * 30,
+            "primary_action": "source affects receiver",
+            "characters": ["source", "receiver"],
+            "camera": {
+                "screen_positions": {
+                    "source": "screen-left foreground",
+                    "receiver": "screen-right background",
+                }
+            },
+            "blocking": {
+                "source": {"body_orientation": "front toward camera"},
+                "receiver": {"body_orientation": "away from source"},
+            },
+            "action_beats": [{
+                "phase": "peak",
+                "actor": "source",
+                "action": "applies one visible effect",
+                "target": "receiver",
+                "visible_result": "receiver visibly changes state",
+            }],
+            "interaction_geometry": {
+                "actor": "source",
+                "target": "receiver",
+                "interaction_mode": "directed_path",
+                "effect_phase": "active",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    source = storyboard["shots"][0]["blocking"]["source"]
+    receiver = storyboard["shots"][0]["blocking"]["receiver"]
+    assert source["body_orientation"] == (
+        "three-quarter toward screen-right and background, away from camera"
+    )
+    assert source["facing_target"] == "receiver"
+    assert source["eyeline_target"] == "receiver"
+    assert source["action_target"] == "receiver"
+    assert receiver["facing_target"] == "source"
+    assert receiver["action_target"] == "source"
+    assert not blocking_geometry_issues(storyboard["shots"][0])
 
 
 def test_short_robot_action_replay_keeps_only_noncritical_scene_warning():

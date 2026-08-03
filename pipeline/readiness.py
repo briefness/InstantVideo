@@ -5,7 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Mapping
 
+from pipeline.causality import (
+    blocking_geometry_issues,
+    causal_storyboard_issues,
+    causality_readiness_issues,
+    interaction_mode,
+)
+from pipeline.narrative import narrative_readiness_issues
 from pipeline.participants import visible_character_names
+from pipeline.production_plan import production_plan_issues
 
 
 class GenerationReadinessError(ValueError):
@@ -14,7 +22,16 @@ class GenerationReadinessError(ValueError):
 
 def storyboard_readiness_issues(storyboard: dict) -> list[str]:
     """Return deterministic plan defects without making provider calls."""
-    issues: list[str] = []
+    issues: list[str] = production_plan_issues(storyboard)
+    issues.extend(narrative_readiness_issues(storyboard))
+    story_arc = storyboard.get("story_arc")
+    issues.extend(causal_storyboard_issues(
+        storyboard,
+        required=(
+            isinstance(story_arc, dict)
+            and any(str(value).strip() for value in story_arc.values())
+        ),
+    ))
     characters = {
         character.get("name"): character
         for character in storyboard.get("characters", [])
@@ -75,6 +92,8 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
             if not shot.get("action_beats"):
                 issues.append(f"Shot {shot_id}: 多角色动作镜头缺少 action_beats")
 
+        issues.extend(blocking_geometry_issues(shot))
+
         issues.extend(coverage_readiness_issues(shot))
 
     return issues
@@ -94,7 +113,11 @@ def shot_readiness_issues(
     from pipeline.storyboard import _should_use_previous_tail_reference
 
     needs_tail = continuity == "seamless" or _should_use_previous_tail_reference(
-        shot, previous_shot
+        shot,
+        previous_shot,
+        has_identity_reference=any(
+            bool(character_refs.get(name)) for name in shot.get("characters", [])
+        ),
     )
     if needs_tail and not previous_frame:
         issues.append(f"Shot {shot_id}: 连续性镜头缺少已接受的上一镜尾帧")
@@ -141,10 +164,17 @@ def _is_multi_character_action(shot: dict) -> bool:
     return _advances_action_conflict(str(shot.get("primary_action", "")))
 
 
-def coverage_readiness_issues(shot: dict) -> list[str]:
+def coverage_readiness_issues(
+    shot: dict,
+    *,
+    require_causality_contract: bool = False,
+) -> list[str]:
     """Return only coverage and interaction defects for one shot."""
     shot_id = shot.get("shot_id", "?")
-    issues: list[str] = []
+    issues = causality_readiness_issues(
+        shot,
+        require_for_visible_interaction=require_causality_contract,
+    )
     beats = [
         beat for beat in shot.get("action_beats", [])
         if isinstance(beat, dict) and str(beat.get("actor", "")).strip()
@@ -158,14 +188,17 @@ def coverage_readiness_issues(shot: dict) -> list[str]:
 
     geometry = shot.get("interaction_geometry", {})
     geometry = geometry if isinstance(geometry, dict) else {}
-    visible_interaction = next(
-        (
-            beat for beat in beats
-            if str(beat.get("target", "")).strip()
-            and str(beat.get("visible_result", "")).strip()
-        ),
-        None,
-    )
+    effect_phase = str(geometry.get("effect_phase", "")).strip()
+    visible_interaction = None
+    if effect_phase == "active" or effect_phase in {"", "unspecified"}:
+        visible_interaction = next(
+            (
+                beat for beat in beats
+                if str(beat.get("target", "")).strip()
+                and str(beat.get("visible_result", "")).strip()
+            ),
+            {} if effect_phase == "active" else None,
+        )
     if not geometry.get("must_share_frame") and visible_interaction is None:
         return issues
 
@@ -178,9 +211,22 @@ def coverage_readiness_issues(shot: dict) -> list[str]:
         or (visible_interaction or {}).get("target", "")
     ).strip()
     required_visible = set(shot.get("required_visible_entities", []))
-    if not actor or not target:
+    mode = interaction_mode(shot)
+    target_only_visibility = (
+        mode in {"area_effect", "indirect_effect"}
+        and not geometry.get("must_share_frame")
+    )
+    if target_only_visibility and not target:
+        issues.append(f"Shot {shot_id}: {mode} 交互缺少 target")
+    elif target_only_visibility and target not in required_visible:
+        issues.append(
+            f"Shot {shot_id}: {mode} 的反应 target 必须在 required_visible_entities"
+        )
+    elif not target_only_visibility and (not actor or not target):
         issues.append(f"Shot {shot_id}: 交互镜头缺少 actor 或 target")
-    elif actor not in required_visible or target not in required_visible:
+    elif not target_only_visibility and (
+        actor not in required_visible or target not in required_visible
+    ):
         issues.append(
             f"Shot {shot_id}: 同框交互的 actor/target 必须都在 required_visible_entities"
         )

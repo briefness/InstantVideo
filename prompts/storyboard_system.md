@@ -26,6 +26,12 @@
   "music_style": "乐器、节奏与动态",
   "content_focus": "balanced",
   "theme_elements": ["stable_english_theme_id"],
+  "story_arc": {
+    "goal": "what must visibly be achieved",
+    "stakes": "what remains unresolved if it fails",
+    "turning_point": "the change that alters the approach or situation",
+    "resolution": "the final visible story outcome"
+  },
   "characters": [],
   "shots": []
 }
@@ -33,8 +39,9 @@
 
 - `content_focus` 只能是 `balanced`、`action`、`product`。调用方会根据用户需求最终确定它。
 - `theme_elements` 使用能在 `prompt_en`、角色名或道具中复用的稳定英文 ID。
-- 目标总时长是节奏指导，不要求逐帧卡死。优先保证完整动作和自然剪辑；各镜 `duration` 之和可以合理浮动。
-- 建议镜头数：10 秒 2 镜，15 秒 3 镜，20 秒 3-4 镜，30 秒 4-6 镜，60 秒 8-10 镜。
+- 调用方会随请求提供不可改写的 ProductionPlan。严格按其镜头数量、`shot_id`、`duration`、叙事功能、作用阶段、结果槽位、景别族和参考策略填充内容；不要新增、删除、合并或重排镜头。
+- ProductionPlan 只确定可执行拓扑，不替代创作：角色、场景、动作语义、构图细节、光线和情绪仍应针对用户题材设计。
+- 目标总时长是生产计划的输入，不要求最终成片逐帧卡死。优先保证完整动作和自然剪辑；实际生成素材允许合理浮动。
 
 # 角色契约
 
@@ -72,11 +79,25 @@
   "interaction_geometry": {
     "actor": "",
     "target": "",
+    "interaction_mode": "none",
+    "effect_phase": "none",
+    "outcome_scope": "none",
+    "effect_motion": "none",
+    "source": "",
+    "effect_region": "",
+    "reaction_scope": "",
+    "unaffected_behavior": "",
     "must_share_frame": false,
     "line_of_action_visible": false,
     "actor_screen_position": "",
     "target_screen_position": "",
     "occlusion_policy": "none"
+  },
+  "narrative_beat": {
+    "function": "setup",
+    "state_before": "story situation at the start",
+    "state_change": "new visible information, decision, action result or condition",
+    "state_after": "story situation after this shot"
   },
   "primary_action": "one visible subject action",
   "action_beats": [],
@@ -132,6 +153,9 @@
 - `composition_change` 只能是 `small`、`medium`、`large`。`seamless` 必须是 `small`。
 - `coverage_role` 只能是 `establish`、`action_subject`、`target_reaction`、`interaction`、`aftermath`、`insert`。
 - `interaction_geometry.occlusion_policy` 只能是 `none`、`partial`、`motivated`。
+- `interaction_geometry.interaction_mode` 只能是 `none`、`direct_contact`、`directed_path`、`area_effect`、`indirect_effect`。
+- `action_beats` 同时包含非空 `target` 和 `visible_result` 时属于可见因果交互，`interaction_mode` 不得使用 `none`。
+- `narrative_beat.function` 只能是 `setup`、`progress`、`turn`、`payoff`。按实际剧情选择，不要求每个视频机械覆盖全部类型。
 - `camera.axis_change` 只能是 `establish`、`hold`、`reestablish`。
 - 最多连续 2 次 `seamless`，随后用有意切镜重新组织画面。
 
@@ -160,8 +184,13 @@
 
 - `phase` 只能是 `trigger`、`peak`、`aftermath`。不要使用 advance、setup、scan complete 等自由标签。
 - 同一镜头只能有一个主动 actor。对手的受击或躲避写入 `visible_result`；需要切到对手反应时另建 `target_reaction` 镜头。
-- 开枪、挥砍、格斗、追逐等需要观众看清因果的镜头，把双方列入 `required_visible_entities`，设 `must_share_frame: true` 和 `line_of_action_visible: true`。
-- 交互镜头不得用极端特写或浅景深同时要求远处目标清晰受击。优先中景、全身或全景，确保攻击者、目标和作用线可读。
+- `direct_contact` 必须让接触双方同框；`directed_path` 必须让来源、路径和可见反应目标可读。`area_effect` 与 `indirect_effect` 不强制画外来源同框，但作用区域和可见反应目标必须清楚。
+- `effect_phase` 必须是 `none/setup/active/aftermath`：瞄准、准备、充能属于 setup，禁止产生有效攻击路径和目标反应；真正接触、发射或作用发生属于 active；只展示已建立结果属于 aftermath。
+- `outcome_scope` 必须是 `none/single/subset/all`，`effect_motion` 必须是 `none/static/sweep/expand/propagate`。setup/none 的后二者必须为 none；active 必须明确实际影响范围和运动方式。
+- 静止的 `directed_path` 只能影响与路径相交的单个或部分目标。要影响全部目标，画面必须清楚展示 `sweep` 扫过全部目标；`aftermath` 不得把上一镜 single/subset 的结果无原因扩大成 all。
+- 任何可见因果交互都必须选择通用模式并完整填写 `source`、`effect_region`、`reaction_scope`、`unaffected_behavior`：接触使用 `direct_contact`，有方向路径使用 `directed_path`，区域作用使用 `area_effect`，由机关、环境或中介触发使用 `indirect_effect`。不要按题材或武器名猜测模式。
+- `directed_path` 只有路径实际覆盖的目标可以反应；`area_effect` 允许作用线外但区域内的目标反应；所有模式都必须明确范围外主体继续做什么，不能让整个群体无缘由同步变化。
+- 交互镜头不得用极端特写或浅景深同时要求远处目标清晰反应。优先选择能同时读清该模式所需来源、接触、路径、区域和结果的景别。
 - `camera.screen_positions` 必须为每个可见角色写稳定位置，例如 `screen-left foreground`、`screen-right midground`。
 - `blocking` 必须为每个可见角色写：
 
@@ -179,6 +208,7 @@
 ```
 
 - 非交互角色的 target 字段可以写其关注对象或 `none`，但字段仍需明确。武器、身体朝向、视线和实际目标必须一致。
+- 身体朝向必须与相机中的相对位置相容：目标比执行者更靠背景时，执行者不能写 `front toward camera`；目标在执行者右侧时不能明确朝 `screen-left`，反之亦然。优先写 `back three-quarter toward background`、`profile toward screen-right` 等可执行机位关系。
 
 # 身份参考归属
 
@@ -195,6 +225,13 @@
 - 平衡叙事：根据请求保留建立、推进、转折和收束，不机械套用动作比例。
 - 不要让所有镜头时长、景别和情绪完全相同；变化必须来自叙事需要，不为多样性制造突变。
 
+# 故事状态
+
+- `story_arc` 说明整段视频的目标、风险、局势变化与最终可见结果；15 秒可以是一个简单微剧情，时长更长时再增加推进层次，不为短片强塞支线。
+- 每镜必须填写 `narrative_beat`，并让动作或信息真正把 `state_before` 改为 `state_after`。运镜、气氛和单纯换景不能充当 `state_change`。
+- 后镜 `state_before` 必须逐字复用前镜 `state_after`，避免人物目标、威胁、产品状态或流程阶段在切镜时重置。
+- 题材决定状态含义：冲突可改变攻防与局势，产品可改变认知与使用结果，日常剧情可改变关系、情绪或任务进度。不要机械套三幕式或强行反转。
+
 # Prompt 与道具
 
 - `prompt_en` 使用 80-150 个英文词，按 Subject -> Action -> Environment -> Camera -> Lighting/style -> Constraints 组织。
@@ -210,8 +247,9 @@
 
 1. JSON 可被严格解析，字段名和枚举完全符合上面契约。
 2. `shot_id` 唯一且按叙事顺序递增。
-3. 每镜 `primary_action`、`start_state`、`end_state` 和 80-150 词 `prompt_en` 完整。
-4. 交互镜头双方可见、方向正确、位置和 blocking 完整。
-5. 只有真正单一 identity 角色的画面才提取参考。
-6. 相邻起止状态、场景、光线、道具、屏幕方向和未完成动作能够衔接。
-7. 时长接近用户目标即可，不为凑秒数破坏动作完整性。
+3. `story_arc` 完整；每镜 `narrative_beat` 真正改变状态，并与相邻镜头精确交接。
+4. 每镜 `primary_action`、`start_state`、`end_state` 和 80-150 词 `prompt_en` 完整。
+5. 交互镜头的来源、作用范围、反应范围和范围外行为完整且一致。
+6. 只有真正单一 identity 角色的画面才提取参考。
+7. 相邻起止状态、场景、光线、道具、屏幕方向和未完成动作能够衔接。
+8. 时长接近用户目标即可，不为凑秒数破坏动作完整性。

@@ -142,6 +142,70 @@ def test_storyboard_normalizes_coverage_contract_aliases():
     assert shot["interaction_geometry"]["occlusion_policy"] == "none"
 
 
+def test_storyboard_normalizes_causal_interaction_mode():
+    data = storyboard()
+    data["shots"][0]["interaction_geometry"] = {
+        "interaction_mode": "directed path",
+        "source": "visible emitted force",
+        "effect_region": "narrow path from actor to target",
+        "reaction_scope": "only subjects intersecting the path",
+        "unaffected_behavior": "subjects outside the path continue unchanged",
+    }
+
+    shot = validate_storyboard(data)["shots"][0]
+
+    assert shot["interaction_geometry"]["interaction_mode"] == "directed_path"
+    assert shot["interaction_geometry"]["reaction_scope"] == (
+        "only subjects intersecting the path"
+    )
+
+
+def test_storyboard_normalizes_effect_contract_without_schema_failure():
+    storyboard = validate_storyboard({
+        "title": "effect contract",
+        "total_duration": 5,
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "A generic interaction scene.",
+            "prompt_en": "A generic source acts on a generic target.",
+            "interaction_geometry": {
+                "interaction_mode": "beam path",
+                "effect_phase": "firing impact",
+                "outcome_scope": "some targets",
+                "effect_motion": "straight fixed path",
+            },
+        }],
+    })
+
+    geometry = storyboard["shots"][0]["interaction_geometry"]
+    assert geometry["interaction_mode"] == "directed_path"
+    assert geometry["effect_phase"] == "active"
+    assert geometry["outcome_scope"] == "subset"
+    assert geometry["effect_motion"] == "static"
+
+
+def test_storyboard_normalizes_narrative_function_without_losing_state():
+    data = storyboard()
+    data["story_arc"] = {
+        "goal": "restore access",
+        "stakes": "the route remains blocked",
+        "turning_point": "the first method fails",
+        "resolution": "a viable route opens",
+    }
+    data["shots"][0]["narrative_beat"] = {
+        "function": "inciting incident",
+        "state_before": "the route appears usable",
+        "state_change": "an obstacle is revealed",
+        "state_after": "the route is visibly blocked",
+    }
+
+    normalized = validate_storyboard(data)
+
+    assert normalized["shots"][0]["narrative_beat"]["function"] == "setup"
+    assert normalized["story_arc"]["resolution"] == "a viable route opens"
+
+
 def test_run_options_reject_unsupported_mini_and_platform_settings():
     with pytest.raises(ValidationError, match="unsupported Seedance Mini resolution"):
         RunOptions(request="A test video", resolution="1080p")
@@ -208,6 +272,25 @@ def test_workspace_restores_accepted_shot_artifacts_as_canonical_state(
     assert artifact["local_path"] == str(video)
     assert artifact["last_frame_url"] == str(tail)
     assert artifact["observed_end_state"]["action_phase"] == "burst completed"
+
+
+def test_resume_keeps_planned_and_observed_end_states_separate(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    planned = storyboard()
+    planned["shots"][0]["end_state"] = {
+        "prop_state": "door remains closed",
+    }
+    workspace.save_storyboard(planned)
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        observed_end_state={"prop_state": "door is visibly open"},
+    )
+
+    restored = RunWorkspace.resume(workspace.path).load_storyboard()["shots"][0]
+
+    assert restored["end_state"]["prop_state"] == "door remains closed"
+    assert restored["observed_end_state"]["prop_state"] == "door is visibly open"
 
 
 def test_completed_workspace_reuses_existing_final_video(tmp_path: Path):
