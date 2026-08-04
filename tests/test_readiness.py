@@ -13,7 +13,15 @@ from pipeline.readiness import (
     ensure_shot_ready,
     storyboard_readiness_issues,
 )
-from pipeline.participants import visible_character_names
+from pipeline.participants import (
+    canonical_entity_id,
+    iter_structured_entity_references,
+    normalize_shot_participants,
+    normalize_structured_entity_references,
+    shot_entity_registry,
+    structured_entity_reference_issues,
+    visible_character_names,
+)
 from pipeline.production_plan import apply_production_plan, build_production_plan
 
 
@@ -31,6 +39,261 @@ def test_visible_participants_cover_all_structured_character_fields():
     assert visible_character_names(
         shot, ["robot", "zombies", "guard", "observer"]
     ) == ["robot", "zombies", "guard", "observer"]
+
+
+def test_normalize_shot_participants_uses_unique_shared_entity_token():
+    shot = {
+        "characters": ["lead_orbit", "the final orbit"],
+        "required_visible_entities": ["lead_orbit", "the final orbit"],
+        "camera": {"screen_positions": {
+            "lead_orbit": "left foreground",
+            "the final orbit": "right midground",
+        }},
+        "blocking": {
+            "lead_orbit": {"action_target": "the final orbit"},
+            "the final orbit": {"action_target": "lead_orbit"},
+        },
+        "action_beats": [{"actor": "lead_orbit", "target": "the final orbit"}],
+        "interaction_geometry": {
+            "actor": "lead_orbit",
+            "target": "the final orbit",
+        },
+    }
+
+    normalize_shot_participants(shot, ["lead_orbit", "orbit_group"])
+
+    assert shot["characters"] == ["lead_orbit", "orbit_group"]
+    assert shot["required_visible_entities"] == ["lead_orbit", "orbit_group"]
+    assert set(shot["camera"]["screen_positions"]) == {"lead_orbit", "orbit_group"}
+    assert set(shot["blocking"]) == {"lead_orbit", "orbit_group"}
+    assert shot["action_beats"][0]["target"] == "orbit_group"
+    assert shot["interaction_geometry"]["target"] == "orbit_group"
+
+
+def test_normalize_all_nested_entity_aliases_against_one_registry():
+    shot = {
+        "shot_id": 3,
+        "characters": ["lead_unit", "orbit_group"],
+        "required_visible_entities": ["lead_unit", "remaining_orbits"],
+        "camera": {"screen_positions": {
+            "lead_unit": "left foreground",
+            "remaining_orbits": "right midground",
+        }},
+        "blocking": {
+            "lead_unit": {
+                "action_target": "remaining_orbits",
+                "facing_target": "next block ahead",
+            },
+            "last orbit": {"action_target": "lead_unit"},
+        },
+        "action_beats": [{
+            "actor": "lead_unit",
+            "target": "last two remaining orbits",
+        }],
+        "interaction_geometry": {
+            "actor": "lead_unit",
+            "target": "remaining_orbits",
+        },
+    }
+    registry = shot_entity_registry(shot, ["lead_unit", "orbit_group"])
+
+    assert {
+        reference.field for reference in iter_structured_entity_references(shot)
+    } == {
+        "characters",
+        "required_visible_entities",
+        "camera.screen_positions",
+        "blocking",
+        "blocking.action_target",
+        "action_beats.actor",
+        "action_beats.target",
+        "interaction_geometry.actor",
+        "interaction_geometry.target",
+    }
+
+    normalize_structured_entity_references(shot, registry)
+
+    assert shot["required_visible_entities"] == ["lead_unit", "orbit_group"]
+    assert set(shot["camera"]["screen_positions"]) == {
+        "lead_unit", "orbit_group",
+    }
+    assert set(shot["blocking"]) == {"lead_unit", "orbit_group"}
+    assert shot["blocking"]["lead_unit"]["action_target"] == "orbit_group"
+    assert shot["blocking"]["lead_unit"]["facing_target"] == "next block ahead"
+    assert shot["action_beats"][0]["target"] == "orbit_group"
+    assert shot["interaction_geometry"]["target"] == "orbit_group"
+    assert structured_entity_reference_issues(
+        shot, ["lead_unit", "orbit_group"]
+    ) == []
+
+
+def test_normalize_shot_participants_does_not_guess_ambiguous_aliases():
+    shot = {"characters": ["an unnamed participant"]}
+
+    normalize_shot_participants(shot, ["group_one", "group_two"])
+
+    assert shot["characters"] == ["an unnamed participant"]
+
+
+def test_normalize_shot_participants_does_not_guess_a_lone_unmatched_label():
+    shot = {"characters": ["an unnamed participant"]}
+
+    normalize_shot_participants(shot, ["known_participant"])
+
+    assert shot["characters"] == ["an unnamed participant"]
+
+
+def test_normalize_shot_participants_preserves_unknown_declared_character():
+    shot = {"shot_id": 1, "characters": ["known_actor", "unmatched_stranger"]}
+
+    normalize_shot_participants(shot, ["known_actor", "known_group"])
+
+    assert shot["characters"] == ["known_actor", "unmatched_stranger"]
+    issues = storyboard_readiness_issues({
+        "characters": [
+            {"name": "known_actor", "reference_mode": "identity"},
+            {"name": "known_group", "reference_mode": "group"},
+        ],
+        "shots": [{
+            **shot,
+            "duration": 5,
+            "prompt_en": "A clear action completes in one stable composition.",
+        }],
+    })
+    assert any("未定义角色 unmatched_stranger" in issue for issue in issues)
+
+
+def test_prop_aliases_do_not_merge_on_shared_lexical_token():
+    from pipeline.participants import shot_entity_registry
+
+    registry = shot_entity_registry(
+        {"key_props": ["shoulder cannon", "arm cannon"]},
+        ["actor"],
+    )
+
+    assert registry.props == ("shoulder cannon", "arm cannon")
+
+
+def test_target_unknown_object_does_not_lexically_bind_to_prop():
+    from pipeline.storyboard import _apply_defaults
+
+    storyboard = {
+        "characters": [{"name": "actor", "reference_mode": "identity"}],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "prompt_en": "actor aims at a strange object",
+            "characters": ["actor"],
+            "key_props": ["arm cannon"],
+            "action_beats": [{"actor": "actor", "target": "unknown waist cannon"}],
+            "interaction_geometry": {"actor": "actor", "target": "unknown waist cannon"},
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert shot["action_beats"][0]["target"] == "unknown waist cannon"
+    assert shot["interaction_geometry"]["target"] == "unknown waist cannon"
+
+
+def test_canonical_entity_id_requires_one_shared_meaningful_token():
+    catalog = ["zombie_group", "combat_robot"]
+
+    assert canonical_entity_id("last_zombie", catalog) == "zombie_group"
+    assert canonical_entity_id("remaining_zombies", catalog) == "zombie_group"
+    assert canonical_entity_id("alice", ["bob"]) == "alice"
+    assert canonical_entity_id("mixing bowl", ["assistant"]) == "mixing bowl"
+
+
+def test_readiness_rejects_unknown_nested_entity_reference():
+    issues = storyboard_readiness_issues({
+        "characters": [
+            {"name": "catalog_actor", "reference_mode": "identity"},
+            {"name": "catalog_group", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "prompt_en": "A clear action completes in one stable composition.",
+            "characters": ["catalog_actor"],
+            "action_beats": [{
+                "actor": "catalog_actor",
+                "target": "mystery_group",
+                "visible_result": "a visible state change occurs",
+            }],
+        }],
+    })
+
+    assert any("mystery_group" in issue for issue in issues)
+
+
+def test_readiness_allows_spatial_eyeline_descriptions_without_entity_ids():
+    issues = storyboard_readiness_issues({
+        "characters": [{"name": "scout", "reference_mode": "identity"}],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "prompt_en": "A scout scans the empty street and watches the next block ahead.",
+            "characters": ["scout"],
+            "blocking": {
+                "scout": {
+                    "facing_target": "next block ahead",
+                    "eyeline_target": "surroundings",
+                    "action_target": "none",
+                },
+            },
+        }],
+    })
+
+    assert not any("eyeline_target" in issue for issue in issues)
+    assert not any("facing_target" in issue for issue in issues)
+
+
+def test_direct_contact_prop_target_needs_no_character_blocking():
+    from pipeline.storyboard import _apply_defaults
+
+    storyboard = {
+        "characters": [
+            {"name": "chef", "reference_mode": "identity"},
+            {"name": "assistant", "reference_mode": "identity"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "prompt_en": "A chef visibly stirs the mixing bowl while the assistant observes.",
+            "characters": ["chef", "assistant"],
+            "key_props": ["mixing bowl"],
+            "camera": {"screen_positions": {
+                "chef": "left foreground",
+                "assistant": "right midground",
+                "mixing bowl": "center foreground",
+            }},
+            "action_beats": [{
+                "actor": "chef",
+                "target": "mixing bowl",
+                "visible_result": "the bowl contents visibly change",
+            }],
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "direct_contact",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+                "actor": "chef",
+                "target": "mixing bowl",
+                "source": "chef hands",
+                "effect_region": "mixing bowl",
+                "reaction_scope": "mixing bowl contents",
+                "unaffected_behavior": "assistant observes",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert "mixing bowl" not in shot["blocking"]
+    assert not storyboard_readiness_issues(storyboard)
 
 
 def test_multi_character_extraction_is_rejected_before_generation():
@@ -446,6 +709,84 @@ def test_sample_evidence_rejects_reaction_outside_effect_path():
 
     assert any("未与作用区域相交" in issue for issue in issues)
     assert any("范围外目标发生反应" in issue for issue in issues)
+
+
+def test_precontact_motion_is_allowed_when_a_complete_causal_chain_follows():
+    base = {
+        "physical_effect_visible": False,
+        "reaction_visible": False,
+        "effect_intersects_reaction": False,
+        "out_of_scope_reaction_visible": False,
+        "contracted_outcome_visible": False,
+        "outcome_causally_connected": False,
+    }
+    samples = [
+        base,
+        base,
+        {**base, "physical_effect_visible": True},
+        {
+            **base,
+            "physical_effect_visible": True,
+            "reaction_visible": True,
+        },
+        {
+            **base,
+            "physical_effect_visible": True,
+            "reaction_visible": True,
+            "effect_intersects_reaction": True,
+            "contracted_outcome_visible": True,
+            "outcome_causally_connected": True,
+        },
+    ]
+
+    issues = causal_evidence_issues(
+        {"interaction_geometry": {"effect_phase": "active"}},
+        samples,
+    )
+
+    assert issues == []
+
+
+def test_nonintersecting_reaction_without_later_contact_still_fails():
+    issues = causal_evidence_issues(
+        {"interaction_geometry": {"effect_phase": "active"}},
+        [{
+            "physical_effect_visible": True,
+            "reaction_visible": True,
+            "effect_intersects_reaction": False,
+            "out_of_scope_reaction_visible": False,
+            "contracted_outcome_visible": True,
+            "outcome_causally_connected": True,
+        }],
+    )
+
+    assert any("作用区域内目标" in issue for issue in issues)
+
+
+def test_connected_outcome_cannot_precede_visible_contact():
+    issues = causal_evidence_issues(
+        {"interaction_geometry": {"effect_phase": "active"}},
+        [
+            {
+                "physical_effect_visible": True,
+                "reaction_visible": False,
+                "effect_intersects_reaction": False,
+                "out_of_scope_reaction_visible": False,
+                "contracted_outcome_visible": True,
+                "outcome_causally_connected": True,
+            },
+            {
+                "physical_effect_visible": True,
+                "reaction_visible": True,
+                "effect_intersects_reaction": True,
+                "out_of_scope_reaction_visible": False,
+                "contracted_outcome_visible": True,
+                "outcome_causally_connected": True,
+            },
+        ],
+    )
+
+    assert any("先于可见接触" in issue for issue in issues)
 
 
 def test_sample_evidence_rejects_physical_effect_during_setup():

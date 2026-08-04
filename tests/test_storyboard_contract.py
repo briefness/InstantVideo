@@ -8,8 +8,11 @@ from pipeline.causality import (
     compile_interaction_blocking,
     normalize_causal_scope,
 )
+from pipeline.readiness import storyboard_readiness_issues
 from pipeline.storyboard import (
+    _BUILTIN_SYSTEM_PROMPT,
     _apply_defaults,
+    _build_correction_prompt,
     _compile_storyboard_contract,
     _infer_content_focus,
     _scene_id,
@@ -66,6 +69,22 @@ def _contract_shot(
     return shot
 
 
+def test_equal_shot_durations_are_not_a_critical_storyboard_error():
+    storyboard = {
+        "title": "equal duration sequence",
+        "shots": [
+            _contract_shot(1, 5, "hero observes the room"),
+            _contract_shot(2, 5, "hero opens the door"),
+            _contract_shot(3, 5, "hero exits the room"),
+        ],
+    }
+
+    warnings, is_critical = _validate_storyboard_richness(storyboard)
+
+    assert not is_critical
+    assert not any("时长全部相同" in warning for warning in warnings)
+
+
 def test_content_focus_is_inferred_from_explicit_request():
     assert _infer_content_focus("制作一个30秒的孙悟空大战龟仙人") == "action"
     assert _infer_content_focus("智能手表产品宣传片") == "product"
@@ -88,6 +107,219 @@ def test_spatial_compiler_derives_axis_and_blocking_from_actor_target():
     }
     assert shot["blocking"]["actor"]["facing_target"] == "target"
     assert shot["blocking"]["target"]["facing_target"] == "actor"
+
+
+def test_defaults_compile_unique_local_participant_alias_to_catalog_id():
+    storyboard = {
+        "characters": [
+            {"name": "lead_orbit", "reference_mode": "identity"},
+            {"name": "orbit_group", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "characters": ["lead_orbit", "the final orbit"],
+            "required_visible_entities": ["lead_orbit", "the final orbit"],
+            "camera": {"screen_positions": {
+                "lead_orbit": "left foreground",
+                "the final orbit": "right midground",
+            }},
+            "blocking": {
+                "lead_orbit": {"action_target": "the final orbit"},
+                "the final orbit": {"action_target": "lead_orbit"},
+            },
+            "action_beats": [{
+                "actor": "lead_orbit",
+                "target": "the final orbit",
+                "visible_result": "the target visibly changes state",
+            }],
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "directed_path",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+                "actor": "lead_orbit",
+                "target": "the final orbit",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert shot["characters"] == ["lead_orbit", "orbit_group"]
+    assert shot["interaction_geometry"]["target"] == "orbit_group"
+    assert not any(
+        "未定义角色" in issue for issue in storyboard_readiness_issues(storyboard)
+    )
+
+
+def test_defaults_compile_action_beat_alias_against_canonical_roster():
+    storyboard = {
+        "characters": [
+            {"name": "lead_orbit", "reference_mode": "identity"},
+            {"name": "orbit_group", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "characters": ["lead_orbit", "the final orbit"],
+            "action_beats": [{
+                "actor": "lead_orbit",
+                "target": "the final remaining orbit",
+                "visible_result": "the target visibly changes state",
+            }],
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "directed_path",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+                "actor": "lead_orbit",
+                "target": "the final orbit",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert shot["characters"] == ["lead_orbit", "orbit_group"]
+    assert shot["interaction_geometry"]["target"] == "orbit_group"
+    assert shot["action_beats"][0] == {
+        "actor": "lead_orbit",
+        "target": "orbit_group",
+        "visible_result": "the target visibly changes state",
+    }
+
+
+def test_defaults_do_not_bind_a_prop_target_to_the_remaining_participant():
+    storyboard = {
+        "characters": [
+            {"name": "chef", "reference_mode": "identity"},
+            {"name": "assistant", "reference_mode": "identity"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "characters": ["chef", "assistant"],
+            "key_props": ["mixing bowl"],
+            "action_beats": [{
+                "actor": "chef",
+                "target": "mixing bowl",
+                "visible_result": "the bowl visibly changes state",
+            }],
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "direct_contact",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+                "actor": "chef",
+                "target": "mixing bowl",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert shot["action_beats"][0]["target"] == "mixing bowl"
+    assert shot["interaction_geometry"]["target"] == "mixing bowl"
+
+
+def test_defaults_move_a_declared_prop_alias_out_of_characters():
+    storyboard = {
+        "characters": [
+            {"name": "chef", "reference_mode": "identity"},
+            {"name": "assistant", "reference_mode": "identity"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "characters": ["chef", "the mixing bowl"],
+            "key_props": ["mixing bowl"],
+            "continuity_props": ["the mixing bowl"],
+            "action_beats": [{
+                "actor": "chef",
+                "target": "the mixing bowl",
+                "visible_result": "the bowl visibly changes state",
+            }],
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "direct_contact",
+                "outcome_scope": "single",
+                "effect_motion": "static",
+                "actor": "chef",
+                "target": "the mixing bowl",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    shot = storyboard["shots"][0]
+    assert shot["characters"] == ["chef"]
+    assert shot["continuity_props"] == ["mixing bowl"]
+    assert shot["action_beats"][0]["target"] == "mixing bowl"
+    assert shot["interaction_geometry"]["target"] == "mixing bowl"
+
+
+def test_richness_uses_readiness_as_its_hard_validation_gate():
+    storyboard = {
+        "characters": [{"name": "catalog_hero", "reference_mode": "identity"}],
+        "shots": [
+            _contract_shot(
+                1,
+                5,
+                "the hero completes one clear action",
+                characters=["local_alias"],
+                extract_character_ref=False,
+            ),
+        ],
+    }
+
+    warnings, is_critical = _validate_storyboard_richness(storyboard)
+
+    assert is_critical
+    assert any("未定义角色 local_alias" in warning for warning in warnings)
+
+
+def test_richness_reports_each_readiness_issue_once():
+    storyboard = {
+        "characters": [{"name": "catalog_hero", "reference_mode": "identity"}],
+        "shots": [
+            _contract_shot(
+                1,
+                5,
+                "the hero completes one clear action",
+                characters=["catalog_hero"],
+                extract_character_ref=False,
+                action_beats=[{
+                    "actor": "catalog_hero",
+                    "target": "mystery_group",
+                    "visible_result": "a state changes",
+                }],
+            ),
+        ],
+    }
+
+    warnings, is_critical = _validate_storyboard_richness(storyboard)
+
+    assert is_critical
+    assert sum("mystery_group" in warning for warning in warnings) == 1
+
+
+def test_participant_catalog_constraint_is_present_in_generation_and_repair_prompts():
+    repair = _build_correction_prompt(
+        "original request",
+        {"characters": [{"name": "catalog_hero"}], "shots": []},
+        ["🚨 Shot 1: 未定义角色 local_alias"],
+    )
+
+    constraint = "actor 和角色 target 必须逐字复用顶层 characters.name"
+    assert constraint in _BUILTIN_SYSTEM_PROMPT
+    assert constraint in repair
+    assert "key_props/continuity_props" in _BUILTIN_SYSTEM_PROMPT
+    assert "key_props/continuity_props" in repair
 
 
 def test_causal_compiler_prevents_aftermath_scope_expansion():
@@ -139,10 +371,10 @@ def test_setup_still_rejects_any_emitted_effect_or_early_outcome():
     early_outcome = [{**preparation_only[0], "contracted_outcome_visible": True}]
 
     assert causal_evidence_issues(shot, preparation_only) == []
-    assert "准备阶段提前出现物理作用或约定结果" in causal_evidence_issues(
+    assert "准备阶段提前出现物理作用" in causal_evidence_issues(
         shot, emitted_effect
     )
-    assert "准备阶段提前出现物理作用或约定结果" in causal_evidence_issues(
+    assert "准备阶段提前出现约定结果（叙事结果）" in causal_evidence_issues(
         shot, early_outcome
     )
 
@@ -983,7 +1215,7 @@ def test_defaults_compile_missing_active_effect_motion(mode, scope, motion):
     storyboard = {
         "shots": [{
             "shot_id": 1,
-            "duration": 5,
+            "duration": 6,
             "interaction_geometry": {
                 "effect_phase": "active",
                 "interaction_mode": mode,
@@ -1002,7 +1234,7 @@ def test_defaults_force_sweep_for_whole_directed_path_outcome():
     storyboard = {
         "shots": [{
             "shot_id": 1,
-            "duration": 5,
+            "duration": 6,
             "interaction_geometry": {
                 "effect_phase": "active",
                 "interaction_mode": "directed_path",
@@ -1015,6 +1247,53 @@ def test_defaults_force_sweep_for_whole_directed_path_outcome():
     _apply_defaults(storyboard, "16:9", "480p", "cinematic")
 
     assert storyboard["shots"][0]["interaction_geometry"]["effect_motion"] == "sweep"
+
+
+def test_defaults_reduce_short_multi_target_sweep_to_single_static():
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "interaction_mode": "directed_path",
+                "outcome_scope": "subset",
+                "effect_motion": "sweep",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    geometry = storyboard["shots"][0]["interaction_geometry"]
+    assert geometry["outcome_scope"] == "single"
+    assert geometry["effect_motion"] == "static"
+
+
+def test_defaults_infer_active_motion_from_explicit_path_and_target():
+    storyboard = {
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "interaction_geometry": {
+                "effect_phase": "active",
+                "actor": "actor",
+                "target": "target",
+                "line_of_action_visible": True,
+                "effect_motion": "none",
+            },
+        }],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    geometry = storyboard["shots"][0]["interaction_geometry"]
+    assert geometry["interaction_mode"] == "directed_path"
+    assert geometry["outcome_scope"] == "single"
+    assert geometry["effect_motion"] == "static"
+    assert geometry["reaction_scope"] == (
+        "one clearly isolated intended target within the visible effect region"
+    )
 
 
 @pytest.mark.parametrize(
@@ -1102,15 +1381,15 @@ def test_defaults_canonicalize_interaction_targets_to_stable_entity_ids():
     storyboard = {
         "characters": [
             {"name": "subject", "reference_mode": "identity"},
-            {"name": "target_group", "reference_mode": "group"},
+            {"name": "hive_group", "reference_mode": "group"},
         ],
         "shots": [
             _shot(
                 1,
-                characters=["subject", "target_group"],
+                characters=["subject", "hive_group"],
                 interaction_geometry={
                     "actor": "subject",
-                    "target": "front targets",
+                    "target": "front hive",
                     "effect_phase": "active",
                     "interaction_mode": "area_effect",
                     "outcome_scope": "subset",
@@ -1119,10 +1398,10 @@ def test_defaults_canonicalize_interaction_targets_to_stable_entity_ids():
             ),
             _shot(
                 2,
-                characters=["subject", "target_group"],
+                characters=["subject", "hive_group"],
                 interaction_geometry={
                     "actor": "subject",
-                    "target": "remaining targets",
+                    "target": "remaining hive",
                     "effect_phase": "aftermath",
                     "interaction_mode": "none",
                     "outcome_scope": "subset",
@@ -1136,7 +1415,7 @@ def test_defaults_canonicalize_interaction_targets_to_stable_entity_ids():
 
     assert [
         shot["interaction_geometry"]["target"] for shot in storyboard["shots"]
-    ] == ["target_group", "target_group"]
+    ] == ["hive_group", "hive_group"]
 
 
 def test_defaults_compile_narrative_handoff_from_previous_result():
@@ -1485,6 +1764,31 @@ def test_extreme_close_up_character_reference_is_critical():
     assert any("角色参考镜头" in warning for warning in warnings)
 
 
+def test_defaults_disable_unusable_closeup_character_reference():
+    storyboard = {
+        "characters": [{"name": "hero", "reference_mode": "identity"}],
+        "shots": [
+            _shot(
+                1,
+                characters=["hero"],
+                extract_character_ref=True,
+                camera={
+                    "start_framing": "extreme close-up",
+                    "end_framing": "close-up",
+                },
+                start_state={"camera": "extreme close-up"},
+                end_state={"camera": "close-up"},
+            )
+        ],
+    }
+
+    _apply_defaults(storyboard, "16:9", "480p", "cinematic")
+
+    assert storyboard["shots"][0]["extract_character_ref"] is False
+    warnings, _ = _validate_storyboard_richness(storyboard)
+    assert not any("角色参考镜头只有特写" in warning for warning in warnings)
+
+
 def test_later_single_character_shot_can_extract_reference():
     storyboard = {
         "title": "robot",
@@ -1528,3 +1832,42 @@ def test_missing_motion_contract_is_critical():
 
     assert is_critical
     assert any("动作契约不完整" in warning for warning in warnings)
+
+
+def test_richness_does_not_duplicate_deterministic_blocking_geometry_warning():
+    storyboard = {
+        "content_focus": "action",
+        "characters": [
+            {"name": "actor", "reference_mode": "identity"},
+            {"name": "target", "reference_mode": "group"},
+        ],
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "prompt_en": "actor attacks target",
+            "characters": ["actor", "target"],
+            "primary_action": "actor attacks target",
+            "camera": {"screen_positions": {
+                "actor": "center foreground",
+                "target": "center background",
+            }},
+            "blocking": {
+                "actor": {"body_orientation": "front toward camera"},
+            },
+            "interaction_geometry": {"actor": "actor", "target": "target"},
+        }],
+    }
+
+    warnings, _ = _validate_storyboard_richness(storyboard)
+
+    assert sum("身体朝向与目标景深矛盾" in warning for warning in warnings) == 1
+
+
+def test_correction_prompt_repairs_unregistered_nested_entities():
+    prompt = _build_correction_prompt(
+        "make an action storyboard",
+        {"characters": [{"name": "actor"}]},
+        ["🚨 Shot 1: action_beats.target 引用未注册实体 mystery_group"],
+    )
+
+    assert "actor 和角色 target 必须逐字复用顶层 characters.name" in prompt

@@ -144,6 +144,64 @@ async def test_resume_skips_storyboard_generation(tmp_path: Path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_resume_blocks_legacy_remote_task_without_submission_descriptor(
+    tmp_path: Path, monkeypatch
+):
+    """An old running task must never be mistaken for a fresh paid submission."""
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="5秒测试视频"))
+    workspace.save_storyboard(storyboard())
+    workspace.record_shot(
+        shot_id=1,
+        status="running",
+        provider_task_id="legacy-provider-task",
+        attempts=1,
+    )
+
+    class GeneratorMustNotStart:
+        def __init__(self, *_args, **_kwargs):
+            pytest.fail("legacy unresolved task must block before generator startup")
+
+    monkeypatch.setattr("pipeline.orchestrator.VideoGenerator", GeneratorMustNotStart)
+
+    pipeline = VideoPipeline.from_workspace(workspace.path)
+    with pytest.raises(RuntimeError, match="缺少不可变提交描述"):
+        await pipeline.run()
+
+    assert pipeline.run_workspace.resumable_pending_tasks() == {}
+    assert pipeline.run_workspace.resumable_provider_tasks() == {
+        1: "legacy-provider-task"
+    }
+
+
+@pytest.mark.asyncio
+async def test_resume_blocks_terminal_local_qa_failure_without_new_submission(
+    tmp_path: Path, monkeypatch
+):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="5秒测试视频"))
+    workspace.save_storyboard(storyboard())
+    failed_take = workspace.path / "shots" / "shot_001.mp4"
+    failed_take.parent.mkdir(exist_ok=True)
+    failed_take.write_bytes(b"unusable local take")
+    workspace.record_shot(
+        shot_id=1,
+        status="failed",
+        provider_task_id="already-paid-task",
+        local_path=str(failed_take),
+        errors=["远端任务已成功，但本地技术 QA 异常"],
+    )
+
+    class GeneratorMustNotStart:
+        def __init__(self, *_args, **_kwargs):
+            pytest.fail("terminal materialization failure must block before generation")
+
+    monkeypatch.setattr("pipeline.orchestrator.VideoGenerator", GeneratorMustNotStart)
+
+    pipeline = VideoPipeline.from_workspace(workspace.path)
+    with pytest.raises(RuntimeError, match="本地物化或技术 QA 失败"):
+        await pipeline.run()
+
+
+@pytest.mark.asyncio
 async def test_completed_resume_returns_without_running_pipeline(tmp_path: Path, monkeypatch):
     workspace = RunWorkspace.create(tmp_path, RunOptions(request="5秒测试视频"))
     workspace.save_storyboard(storyboard())

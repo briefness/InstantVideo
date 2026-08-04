@@ -1,7 +1,10 @@
 # build output
 dist/
 output/
-docs/
+docs/*
+!docs/adr/
+docs/adr/*
+!docs/adr/0001-single-action-contract-owner.md
 # generated types
 .astro/
 

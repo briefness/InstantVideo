@@ -170,7 +170,7 @@ def test_generate_storyboard_applies_planned_duration_before_validation(
     }
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
     monkeypatch.setattr(
-        "pipeline.storyboard._call_llm_for_storyboard",
+        "pipeline.storyboard._generate_storyboard_draft",
         lambda *_args, **_kwargs: deepcopy(draft),
     )
     monkeypatch.setattr(
@@ -183,7 +183,7 @@ def test_generate_storyboard_applies_planned_duration_before_validation(
         target_duration=30,
     )
 
-    assert storyboard["shots"][0]["duration"] == 5
+    assert storyboard["shots"][0]["duration"] == 6
 
 
 def test_generate_storyboard_normalizes_misplaced_top_level_metadata(monkeypatch):
@@ -200,7 +200,7 @@ def test_generate_storyboard_normalizes_misplaced_top_level_metadata(monkeypatch
     }
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
     monkeypatch.setattr(
-        "pipeline.storyboard._call_llm_for_storyboard",
+        "pipeline.storyboard._generate_storyboard_draft",
         lambda *_args, **_kwargs: deepcopy(draft),
     )
     monkeypatch.setattr(
@@ -229,7 +229,7 @@ def test_generate_storyboard_replaces_llm_duration_with_executable_plan(monkeypa
     }
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
     monkeypatch.setattr(
-        "pipeline.storyboard._call_llm_for_storyboard",
+        "pipeline.storyboard._generate_storyboard_draft",
         lambda *_args, **_kwargs: deepcopy(draft),
     )
 
@@ -240,7 +240,7 @@ def test_generate_storyboard_replaces_llm_duration_with_executable_plan(monkeypa
 
     storyboard = generate_storyboard("制作一个30秒动作视频", target_duration=30)
 
-    assert storyboard["shots"][0]["duration"] == 5
+    assert storyboard["shots"][0]["duration"] == 6
 
 
 def test_action_density_correction_is_surgical_and_explicit():
@@ -254,6 +254,140 @@ def test_action_density_correction_is_surgical_and_explicit():
     assert "冲突中建立" in prompt
     assert "动作中收束" in prompt
     assert "至少 2 个镜头" in prompt
+
+
+def _long_story_spine() -> dict:
+    return {
+        "title": "robot cleanup",
+        "mood": "tense cinematic",
+        "music_style": "restrained industrial percussion",
+        "theme_elements": ["combat_robot", "zombie_horde"],
+        "story_arc": {
+            "goal": "secure the downtown route",
+            "stakes": "the route remains blocked",
+            "turning_point": "the robot breaks the advancing formation",
+            "resolution": "the route is visibly secured",
+        },
+        "characters": [
+            {
+                "name": "combat_robot",
+                "description": "tracked silver industrial robot",
+                "mobility": "tracked",
+                "reference_mode": "identity",
+            },
+            {
+                "name": "zombie_horde",
+                "description": "fictional hostile crowd",
+                "mobility": "bipedal",
+                "reference_mode": "group",
+            },
+        ],
+        "shot_intents": [
+            {
+                "shot_id": shot_id,
+                "scene_id": "downtown_route",
+                "narrative_function": function,
+                "state_before": f"state {shot_id - 1}",
+                "state_change": f"visible change {shot_id}",
+                "state_after": f"state {shot_id}",
+                "primary_action": f"action {shot_id}",
+                "characters": ["combat_robot", "zombie_horde"],
+            }
+            for shot_id, function in enumerate(
+                ("setup", "progress", "progress", "turn", "payoff"), start=1
+            )
+        ],
+    }
+
+
+def _long_detail_shot(shot_id: int) -> dict:
+    return {
+        "shot_id": shot_id,
+        "duration": 6,
+        "scene_id": "downtown_route",
+        "scene_description": f"shot {shot_id}",
+        "prompt_en": "cinematic physical action with clear spatial staging " * 12,
+        "primary_action": f"action {shot_id}",
+        "characters": ["combat_robot", "zombie_horde"],
+    }
+
+
+def test_long_storyboard_compiles_story_spine_and_bounded_shot_batches(
+    monkeypatch,
+):
+    spine = _long_story_spine()
+
+    responses = iter((
+        spine,
+        {"shots": [_long_detail_shot(1), _long_detail_shot(2), _long_detail_shot(3)]},
+        {"shots": [_long_detail_shot(4), _long_detail_shot(5)]},
+    ))
+    prompts = []
+
+    def fake_call(_client, _system_prompt, user_prompt, **_kwargs):
+        prompts.append(user_prompt)
+        return deepcopy(next(responses))
+
+    monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **_kwargs: object())
+    monkeypatch.setattr("pipeline.storyboard._call_llm_for_storyboard", fake_call)
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: ([], False),
+    )
+
+    storyboard = generate_storyboard(
+        "制作一个30秒的视频，机器人在末日城市清除丧尸",
+        target_duration=30,
+    )
+
+    assert [shot["shot_id"] for shot in storyboard["shots"]] == [1, 2, 3, 4, 5]
+    assert len(prompts) == 3
+    assert "STORY_SPINE" in prompts[0]
+    assert "Shot 1" in prompts[1] and "Shot 3" in prompts[1]
+    assert "Shot 4" in prompts[2] and "Shot 5" in prompts[2]
+    assert "Shot 4" not in prompts[1]
+
+
+def test_long_storyboard_correction_stays_inside_shot_batches(monkeypatch):
+    corrected_1 = [_long_detail_shot(shot_id) for shot_id in (1, 2, 3)]
+    corrected_2 = [_long_detail_shot(shot_id) for shot_id in (4, 5)]
+    corrected_1[1]["primary_action"] = "corrected action 2"
+    corrected_2[0]["primary_action"] = "corrected action 4"
+    responses = iter((
+        _long_story_spine(),
+        {"shots": [_long_detail_shot(1), _long_detail_shot(2), _long_detail_shot(3)]},
+        {"shots": [_long_detail_shot(4), _long_detail_shot(5)]},
+        {"shots": corrected_1},
+        {"shots": corrected_2},
+    ))
+    prompts = []
+
+    def fake_call(_client, _system_prompt, user_prompt, **_kwargs):
+        prompts.append(user_prompt)
+        return deepcopy(next(responses))
+
+    richness = iter(((
+        ['🚨 动作重心不足', '🚨 Shot 4 需要修正局部动作'],
+        True,
+    ), ([], False)))
+    monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **_kwargs: object())
+    monkeypatch.setattr("pipeline.storyboard._call_llm_for_storyboard", fake_call)
+    monkeypatch.setattr(
+        "pipeline.storyboard._validate_storyboard_richness",
+        lambda *_args, **_kwargs: next(richness),
+    )
+
+    storyboard = generate_storyboard(
+        "制作一个30秒的视频，机器人在末日城市清除丧尸",
+        target_duration=30,
+    )
+
+    assert storyboard["shots"][1]["primary_action"] == "corrected action 2"
+    assert storyboard["shots"][3]["primary_action"] == "corrected action 4"
+    assert len(prompts) == 5
+    assert "Shot 4" not in prompts[3]
+    assert "Shot 1" not in prompts[4]
+    assert "Shot 4 需要修正局部动作" in prompts[4]
 
 
 def test_missing_interaction_mode_routes_to_causality_correction():
@@ -355,10 +489,10 @@ def test_short_action_generation_receives_immutable_production_slots(monkeypatch
 
     assert result["shots"][0]["primary_action"] == "smoke drifts across the ruined street"
     assert result["shots"][2]["primary_action"] == "robot scans the cleared street"
-    assert all(
-        shot["interaction_geometry"]["effect_phase"] == "active"
+    assert [
+        shot["interaction_geometry"]["effect_phase"]
         for shot in result["shots"]
-    )
+    ] == ["active", "active", "aftermath"]
     assert "生产计划" in calls[0][0]
     assert "effect_phase=active" in calls[0][0]
     assert len(calls) == 1
@@ -444,13 +578,16 @@ def test_contract_correction_preserves_accepted_spatial_fields(monkeypatch):
         },
     })
     corrected["shots"][0].pop("blocking")
-    responses = iter((original, corrected))
     richness = iter(((['🚨 动作景别层次不足'], True), ([], False)))
 
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
     monkeypatch.setattr(
+        "pipeline.storyboard._generate_storyboard_draft",
+        lambda *_args, **_kwargs: deepcopy(original),
+    )
+    monkeypatch.setattr(
         "pipeline.storyboard._call_llm_for_storyboard",
-        lambda *_args, **_kwargs: deepcopy(next(responses)),
+        lambda *_args, **_kwargs: deepcopy(corrected),
     )
     monkeypatch.setattr(
         "pipeline.storyboard._validate_storyboard_richness",
@@ -458,14 +595,14 @@ def test_contract_correction_preserves_accepted_spatial_fields(monkeypatch):
     )
 
     storyboard = generate_storyboard(
-        "制作一个30秒的视频，机器人在末日城市清除丧尸",
-        target_duration=30,
+        "制作一个6秒的视频，机器人在末日城市清除丧尸",
+        target_duration=6,
     )
     shot = storyboard["shots"][0]
 
     assert shot["coverage_role"] == "interaction"
     assert shot["primary_action"] == "robot fires one burst at the zombies"
-    assert shot["camera"]["start_framing"] == "wide shot"
+    assert shot["camera"]["start_framing"] == "medium shot"
     assert shot["camera"]["screen_positions"] == original["shots"][0]["camera"]["screen_positions"]
     assert shot["camera"]["axis_change"] == "establish"
     assert shot["required_visible_entities"] == ["robot", "zombies"]
@@ -494,14 +631,19 @@ def test_storyboard_stops_after_one_failed_contract_correction(monkeypatch):
     }
     calls = []
 
+    def fake_draft(*args, **kwargs):
+        calls.append(1)
+        return json.loads(json.dumps(invalid))
+
     def fake_call(*args, **kwargs):
         calls.append(1)
         return json.loads(json.dumps(invalid))
 
     monkeypatch.setattr("pipeline.storyboard.OpenAI", lambda **kwargs: object())
+    monkeypatch.setattr("pipeline.storyboard._generate_storyboard_draft", fake_draft)
     monkeypatch.setattr("pipeline.storyboard._call_llm_for_storyboard", fake_call)
 
     with pytest.raises(ValueError, match="自动修正 1 次后仍未通过"):
-        generate_storyboard("制作一个测试视频")
+        generate_storyboard("制作一个5秒测试视频", target_duration=5)
 
     assert len(calls) == 2

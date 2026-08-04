@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -581,8 +582,113 @@ def test_structured_causal_evidence_overrides_aggregate_model_acceptance(
     assert review.accepted is False
     assert review.effect_path_valid is False
     assert review.reaction_causality_valid is False
-    assert "未与作用区域相交" in review.failure_reason
     assert "范围外目标发生反应" in review.failure_reason
+
+
+def test_complete_causal_evidence_overrides_false_aggregate_verdict(
+    tmp_path: Path, monkeypatch
+):
+    video = tmp_path / "precontact-block.mp4"
+    video.write_bytes(b"video")
+    base = {
+        "physical_effect_visible": False,
+        "reaction_visible": False,
+        "effect_intersects_reaction": False,
+        "out_of_scope_reaction_visible": False,
+        "contracted_outcome_visible": False,
+        "outcome_causally_connected": False,
+    }
+    evidence = [base, base, {**base, "physical_effect_visible": True}]
+    evidence.append({
+        **base,
+        "physical_effect_visible": True,
+        "reaction_visible": True,
+    })
+    evidence.extend([{
+        **base,
+        "physical_effect_visible": True,
+        "reaction_visible": True,
+        "effect_intersects_reaction": True,
+        "contracted_outcome_visible": True,
+        "outcome_causally_connected": True,
+    } for _ in range(5)])
+    response = {
+        "accepted": False,
+        "required_entities_visible": [True, True],
+        "action_geometry_valid": True,
+        "effect_path_valid": False,
+        "reaction_causality_valid": False,
+        "causal_sample_evidence": evidence,
+        "primary_action_completed": True,
+        "observed_end_state": {
+            "location": "generic arena",
+            "subject": "two subjects locked at the contact point",
+            "action_phase": "contact established",
+        },
+        "failure_reason": "sample 4 reacts before intersection",
+    }
+    completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+    ))
+    monkeypatch.setattr(
+        "pipeline.semantic_review.extract_frame",
+        lambda _video, output, timestamp=None: Path(output).write_bytes(b"frame"),
+    )
+    monkeypatch.setattr("pipeline.semantic_review.get_video_duration", lambda _path: 6.0)
+
+    review = SemanticTakeReviewer(
+        tmp_path,
+        client=SimpleNamespace(chat=SimpleNamespace(completions=completions)),
+        model="vision-test",
+    ).review(str(video), {
+        "shot_id": 1,
+        "required_visible_entities": ["source", "target"],
+        "interaction_geometry": {
+            "interaction_mode": "direct_contact",
+            "effect_phase": "active",
+            "outcome_scope": "single",
+            "effect_motion": "static",
+            "source": "visible source",
+            "effect_region": "contact point",
+            "reaction_scope": "contacted target",
+            "unaffected_behavior": "other subjects unchanged",
+        },
+    })
+
+    assert review.accepted is True
+    assert review.effect_path_valid is True
+    assert review.reaction_causality_valid is True
+    assert review.failure_reason == ""
+
+
+def test_causal_evidence_issue_owns_failure_reason_over_model_free_text():
+    from pipeline.causality import ACTION_EVIDENCE_FIELDS, compile_action_contract
+    from pipeline.semantic_review import _apply_causal_evidence_verdict
+
+    parsed = {
+        "accepted": True,
+        "effect_path_valid": True,
+        "reaction_causality_valid": True,
+        "failure_reason": "No failures",
+    }
+    contract = compile_action_contract({
+        "interaction_geometry": {
+            "effect_phase": "active",
+            "interaction_mode": "directed_path",
+            "outcome_scope": "single",
+            "effect_motion": "static",
+        },
+    })
+
+    _apply_causal_evidence_verdict(
+        parsed,
+        contract,
+        [{field: False for field in ACTION_EVIDENCE_FIELDS}],
+    )
+
+    assert parsed["effect_path_valid"] is False
+    assert parsed["reaction_causality_valid"] is False
+    assert parsed["failure_reason"] == "生效阶段未看到物理作用；生效阶段未看到物理作用到达目标；生效阶段未看到作用区域内目标的同步反应；active 阶段未看到约定的动作端点；active 阶段未看到约定结果（叙事结果）及其完整作用范围；active 阶段的约定结果与物理作用之间缺少可见因果过渡"
 
 
 def test_empty_semantic_response_retries_review_once_on_same_video(
@@ -613,6 +719,9 @@ def test_empty_semantic_response_retries_review_once_on_same_video(
 
     assert review.accepted is True
     assert len(completions.calls) == 2
+    response_format = completions.calls[0]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["strict"] is True
     assert all(call["max_completion_tokens"] >= 4096 for call in completions.calls)
 
 
@@ -648,6 +757,150 @@ def test_invalid_semantic_response_retry_is_bounded_and_diagnostic(
         })
 
     assert len(completions.calls) == 2
+
+
+def test_causal_evidence_schema_mismatch_retries_same_review_once(
+    tmp_path: Path, monkeypatch
+):
+    video = tmp_path / "setup-shot.mp4"
+    video.write_bytes(b"accepted-video-bytes")
+    sample = {
+        "preparation_state_visible": True,
+        "non_physical_cue_visible": True,
+        "physical_effect_visible": False,
+        "effect_reaches_target": False,
+        "target_reaction_visible": False,
+        "out_of_scope_reaction_visible": False,
+        "phase_endpoint_visible": True,
+        "narrative_outcome_visible": False,
+        "outcome_causally_connected": False,
+    }
+    valid_evidence = [dict(sample) for _ in range(9)]
+
+    def response(evidence):
+        return _completion(json.dumps({
+            "accepted": True,
+            "required_entities_visible": [True, True],
+            "action_geometry_valid": True,
+            "causal_sample_evidence": evidence,
+            "primary_action_completed": True,
+            "observed_end_state": {
+                "location": "ruined street",
+                "subject": "robot aiming at approaching targets",
+                "action_phase": "target lock complete",
+            },
+            "failure_reason": "",
+        }))
+
+    completions = SequencedCompletions([
+        response(valid_evidence[:-1]),
+        response(valid_evidence),
+    ])
+    monkeypatch.setattr(
+        "pipeline.semantic_review.extract_frame",
+        lambda _video, output, timestamp=None: Path(output).write_bytes(b"frame"),
+    )
+    monkeypatch.setattr(
+        "pipeline.semantic_review.get_video_duration", lambda _path: 5.0
+    )
+
+    review = SemanticTakeReviewer(
+        tmp_path,
+        client=SimpleNamespace(chat=SimpleNamespace(completions=completions)),
+        model="vision-test",
+    ).review(str(video), {
+        "shot_id": 1,
+        "required_visible_entities": ["combat_robot", "target_group"],
+        "interaction_geometry": {
+            "interaction_mode": "none",
+            "effect_phase": "setup",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+    })
+
+    assert review.accepted is True
+    assert len(completions.calls) == 2
+    response_format = completions.calls[0]["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["strict"] is True
+    response_schema = response_format["json_schema"]["schema"]
+    evidence_schema = response_schema["properties"]["causal_sample_evidence"]
+    assert evidence_schema["minItems"] == 9
+    assert evidence_schema["maxItems"] == 9
+    assert evidence_schema["items"]["type"] == "object"
+    assert evidence_schema["items"]["additionalProperties"] is False
+
+
+def test_cached_review_recomputes_verdict_from_causal_evidence(
+    tmp_path: Path, monkeypatch
+):
+    video = tmp_path / "setup-shot.mp4"
+    video.write_bytes(b"setup-video-with-targeting-cue")
+    sample = {
+        "preparation_state_visible": True,
+        "non_physical_cue_visible": True,
+        "physical_effect_visible": False,
+        "effect_reaches_target": True,
+        "target_reaction_visible": False,
+        "out_of_scope_reaction_visible": False,
+        "phase_endpoint_visible": True,
+        "narrative_outcome_visible": False,
+        "outcome_causally_connected": True,
+    }
+    response = _completion(json.dumps({
+        "accepted": False,
+        "required_entities_visible": [True, True],
+        "action_geometry_valid": True,
+        "causal_sample_evidence": [dict(sample) for _ in range(9)],
+        "primary_action_completed": True,
+        "observed_end_state": {
+            "location": "ruined street",
+            "subject": "robot aiming at targets",
+            "action_phase": "target lock complete",
+        },
+        "failure_reason": "准备阶段提前作用于目标",
+    }))
+    completions = SequencedCompletions([response])
+    monkeypatch.setattr(
+        "pipeline.semantic_review.extract_frame",
+        lambda _video, output, timestamp=None: Path(output).write_bytes(b"frame"),
+    )
+    monkeypatch.setattr(
+        "pipeline.semantic_review.get_video_duration", lambda _path: 5.0
+    )
+    reviewer = SemanticTakeReviewer(
+        tmp_path,
+        client=SimpleNamespace(chat=SimpleNamespace(completions=completions)),
+        model="vision-test",
+    )
+    shot = {
+        "shot_id": 1,
+        "required_visible_entities": ["robot", "target_group"],
+        "interaction_geometry": {
+            "interaction_mode": "none",
+            "effect_phase": "setup",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+    }
+
+    first = reviewer.review(str(video), shot)
+    cache_path = next((tmp_path / "semantic_reviews").glob("*.json"))
+    cached = json.loads(cache_path.read_text(encoding="utf-8"))
+    cached["review"].update({
+        "accepted": False,
+        "effect_path_valid": False,
+        "reaction_causality_valid": False,
+        "failure_reason": "准备阶段提前作用于目标",
+    })
+    cache_path.write_text(json.dumps(cached), encoding="utf-8")
+    second = reviewer.review(str(video), shot)
+
+    assert first.accepted is True
+    assert second.accepted is True
+    assert second.failure_reason == ""
+    assert len(completions.calls) == 1
 
 
 def test_semantic_refusal_stops_without_retry(tmp_path: Path, monkeypatch):
@@ -818,6 +1071,50 @@ def test_narrative_beat_is_part_of_review_contract():
     )
 
 
+def test_setup_review_contract_uses_action_contract_phase_projection():
+    contract = _review_contract({
+        "shot_id": 1,
+        "primary_action": "operator arms the inactive device",
+        "interaction_geometry": {
+            "actor": "operator",
+            "target": "marker",
+            "effect_phase": "setup",
+        },
+        "action_beats": [{
+            "phase": "trigger",
+            "actor": "operator",
+            "action": "arms the inactive device",
+            "target": "marker",
+            "visible_result": "RAW_TARGET_RESULT",
+        }],
+        "narrative_beat": {
+            "function": "setup",
+            "state_before": "before",
+            "state_change": "RAW_NARRATIVE_CHANGE",
+            "state_after": "RAW_NARRATIVE_OUTCOME",
+        },
+        "end_state": {
+            "subject": "operator",
+            "action_phase": "ready",
+            "open_motion": "RAW_TARGET_MOTION",
+        },
+    })
+
+    payload = json.dumps(contract, sort_keys=True)
+
+    assert contract["primary_action"] == (
+        "operator visibly prepares toward marker without a Physical Effect"
+    )
+    assert contract["action_beats"] == []
+    for leaked in (
+        "RAW_TARGET_RESULT",
+        "RAW_NARRATIVE_CHANGE",
+        "RAW_NARRATIVE_OUTCOME",
+        "RAW_TARGET_MOTION",
+    ):
+        assert leaked not in payload
+
+
 def test_production_slot_is_part_of_review_contract():
     slot = {
         "shot_id": 2,
@@ -866,6 +1163,43 @@ def test_identity_crop_boxes_are_normalized_by_character_id():
     assert review.identity_crop_boxes == {
         "combat_robot": (0.05, 0.1, 0.55, 0.95)
     }
+
+
+def test_accepted_identity_crop_boxes_require_exact_accepted_cache(tmp_path: Path):
+    video = tmp_path / "accepted.mp4"
+    video.write_bytes(b"accepted video")
+    reviewer = SemanticTakeReviewer(tmp_path, client=object(), model="vision-test")
+    video_hash = hashlib.sha256(video.read_bytes()).hexdigest()
+    cache_path = reviewer.cache_dir / f"{video_hash}.json"
+    cache_path.write_text(json.dumps({
+        "video_hash": video_hash,
+        "review": {
+            "accepted": True,
+            "identity_crop_boxes": {
+                "combat_cleaner_robot": [0.1, 0.2, 0.8, 0.9],
+            },
+        },
+    }), encoding="utf-8")
+
+    assert reviewer.accepted_identity_crop_boxes(video) == {
+        "combat_cleaner_robot": (0.1, 0.2, 0.8, 0.9),
+    }
+
+    cache_path.write_text(json.dumps({
+        "video_hash": video_hash,
+        "review": {"accepted": False, "identity_crop_boxes": {
+            "combat_cleaner_robot": [0.1, 0.2, 0.8, 0.9],
+        }},
+    }), encoding="utf-8")
+    assert reviewer.accepted_identity_crop_boxes(video) == {}
+
+    cache_path.write_text(json.dumps({
+        "video_hash": "mismatched-hash",
+        "review": {"accepted": True, "identity_crop_boxes": {
+            "combat_cleaner_robot": [0.1, 0.2, 0.8, 0.9],
+        }},
+    }), encoding="utf-8")
+    assert reviewer.accepted_identity_crop_boxes(video) == {}
 
 
 def test_semantic_cache_is_scoped_to_evaluator_and_reference_context(

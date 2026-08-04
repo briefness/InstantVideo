@@ -58,6 +58,7 @@ def apply_production_plan(storyboard: dict, plan: dict) -> None:
         narrative = dict(narrative) if isinstance(narrative, dict) else {}
         narrative["function"] = slot["narrative_function"]
         shot["narrative_beat"] = narrative
+        shot["coverage_role"] = slot["coverage_roles"][0]
 
         geometry = shot.get("interaction_geometry")
         geometry = dict(geometry) if isinstance(geometry, dict) else {}
@@ -66,6 +67,8 @@ def apply_production_plan(storyboard: dict, plan: dict) -> None:
             geometry["effect_phase"] = allowed_phases[0]
         elif geometry.get("effect_phase") not in allowed_phases:
             geometry["effect_phase"] = allowed_phases[0]
+        if slot.get("outcome_scope"):
+            geometry["outcome_scope"] = slot["outcome_scope"]
         shot["interaction_geometry"] = geometry
 
         reference_policy = slot["reference_policy"]
@@ -126,6 +129,11 @@ def production_plan_issues(storyboard: dict) -> list[str]:
                 f"Shot {shot_id}: effect_phase={phase} 不属于计划允许阶段 "
                 f"{slot.get('allowed_effect_phases')}"
             )
+        planned_scope = slot.get("outcome_scope")
+        if planned_scope and geometry.get("outcome_scope") != planned_scope:
+            issues.append(
+                f"Shot {shot_id}: outcome_scope 必须保持计划值 {planned_scope}"
+            )
 
         if shot.get("coverage_role") not in slot.get("coverage_roles", []):
             issues.append(
@@ -163,6 +171,7 @@ def format_production_plan(plan: dict) -> str:
             f"- Shot {slot['shot_id']}: {slot['duration']}s; "
             f"narrative={slot['narrative_function']}; "
             f"effect_phase={'/'.join(slot['allowed_effect_phases'])}; "
+            f"outcome_scope={slot.get('outcome_scope') or 'story-dependent'}; "
             f"coverage={'/'.join(slot['coverage_roles'])}; "
             f"framing={slot['framing_family']}; "
             f"visible_result={'required' if slot['requires_visible_result'] else 'when applicable'}; "
@@ -201,30 +210,19 @@ def _allocate_durations(target_duration: int, shot_count: int) -> list[int]:
         max(shot_count * config.MIN_SHOT_DURATION, target_duration),
     )
     base, remainder = divmod(target, shot_count)
-    durations = [base + (index < remainder) for index in range(shot_count)]
-    if shot_count >= 3 and len(set(durations)) == 1:
-        durations[0] -= 1
-        durations[shot_count // 2] += 1
-    return durations
+    return [base + (index < remainder) for index in range(shot_count)]
 
 
 def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
     action = focus == "action"
-    short_action = action and count <= 4
     allowed_phases = list(_ALL_EFFECT_PHASES)
     requires_visible_result = False
-    if short_action:
-        allowed_phases = ["active"]
-        requires_visible_result = True
-    elif action:
-        if index == 0:
-            allowed_phases = ["setup", "active"]
-        elif index == count - 1:
-            allowed_phases = ["active", "aftermath"]
-            requires_visible_result = True
-        else:
-            allowed_phases = ["active"]
-            requires_visible_result = True
+    outcome_scope: str | None = None
+    if action:
+        phase = _action_phase(index, count)
+        allowed_phases = [phase]
+        outcome_scope = "none" if phase == "setup" else "single"
+        requires_visible_result = phase != "setup"
 
     framing_families = _framing_families(count)
     return {
@@ -232,6 +230,7 @@ def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
         "duration": duration,
         "narrative_function": _narrative_function(index, count),
         "allowed_effect_phases": allowed_phases,
+        "outcome_scope": outcome_scope,
         "requires_visible_result": requires_visible_result,
         "coverage_roles": _coverage_roles(focus, index, count),
         "framing_family": framing_families[index],
@@ -257,13 +256,16 @@ def _narrative_function(index: int, count: int) -> str:
 
 def _coverage_roles(focus: str, index: int, count: int) -> list[str]:
     if focus == "action":
+        phase = _action_phase(index, count)
+        if phase == "setup":
+            return ["establish"]
+        if phase == "aftermath":
+            return ["aftermath"]
         if index == 0:
-            return ["interaction", "action_subject", "establish"]
-        if index == count - 1:
-            return ["target_reaction", "interaction", "aftermath"]
-        if index == count // 2:
-            return ["target_reaction", "insert", "interaction"]
-        return ["action_subject", "interaction"]
+            return ["interaction"]
+        if count >= 5 and index == count // 2:
+            return ["target_reaction"]
+        return ["action_subject" if index % 2 else "interaction"]
     if focus == "product":
         if index == 0:
             return ["establish", "action_subject"]
@@ -277,16 +279,25 @@ def _coverage_roles(focus: str, index: int, count: int) -> list[str]:
     return ["action_subject", "interaction", "insert", "target_reaction"]
 
 
+def _action_phase(index: int, count: int) -> str:
+    """Give action requests a deterministic cinematic progression by slot count."""
+    if count <= 2:
+        return "active"
+    if count == 3:
+        return "aftermath" if index == count - 1 else "active"
+    if index == 0:
+        return "setup"
+    if index == count - 1:
+        return "aftermath"
+    return "active"
+
+
 def _framing_families(count: int) -> list[str]:
     if count == 1:
         return ["medium"]
     if count == 2:
         return ["wide", "medium"]
-    if count == 3:
-        return ["wide", "wide", "medium"]
-    if count == 4:
-        return ["wide", "wide", "close_detail", "medium"]
-    cycle = ("wide", "wide", "medium", "medium", "close_detail", "close_detail")
+    cycle = ("wide", "medium", "close_detail")
     return [cycle[index % len(cycle)] for index in range(count)]
 
 

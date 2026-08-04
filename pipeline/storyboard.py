@@ -10,21 +10,30 @@ from pathlib import Path
 from openai import OpenAI
 
 import config
-from pipeline.models import validate_storyboard, validate_storyboard_draft
-from pipeline.participants import canonical_participant_id, visible_character_names
-from pipeline.narrative import normalize_narrative_handoffs, narrative_readiness_issues
+from pipeline.models import (
+    validate_story_spine,
+    validate_storyboard,
+    validate_storyboard_draft,
+)
+from pipeline.participants import (
+    canonical_entity_id,
+    canonical_participant_id,
+    canonical_target_id,
+    normalize_shot_participants,
+    normalize_structured_entity_references,
+    shot_entity_registry,
+    visible_character_names,
+)
+from pipeline.narrative import normalize_narrative_handoffs
 from pipeline.production_plan import (
     apply_production_plan,
     build_production_plan,
     classify_framing,
     format_production_plan,
-    production_plan_issues,
     reference_policy,
 )
 from pipeline.causality import (
     CAUSAL_INTERACTION_MODES,
-    blocking_geometry_issues,
-    causal_storyboard_issues,
     compile_interaction_blocking,
     normalize_causal_scope,
     with_causal_mode_invariants,
@@ -32,6 +41,38 @@ from pipeline.causality import (
 
 
 _STORYBOARD_MAX_COMPLETION_TOKENS = 16_384
+_STORYBOARD_SHOTS_PER_BATCH = 3
+_STORY_SPINE_SYSTEM_PROMPT = """你是影视故事规划器。只规划全局故事脊柱，不写完整视频提示词。
+只输出一个合法 JSON 对象，不要 Markdown、解释或未定义字段：
+{
+  "title": "中文标题",
+  "mood": "整体情绪",
+  "music_style": "音乐方向",
+  "theme_elements": ["stable_english_id"],
+  "story_arc": {
+    "goal": "可见目标",
+    "stakes": "未完成时仍存在的问题",
+    "turning_point": "改变局势的可见变化",
+    "resolution": "最终可见结果"
+  },
+  "characters": [{
+    "name": "stable_character_id",
+    "description": "跨镜稳定外观",
+    "mobility": "unspecified|bipedal|quadruped|tracked|wheeled|flying|stationary|other",
+    "reference_mode": "identity|group|none"
+  }],
+  "shot_intents": [{
+    "shot_id": 1,
+    "scene_id": "stable_location_id",
+    "narrative_function": "setup|progress|turn|payoff",
+    "state_before": "镜头前故事状态",
+    "state_change": "本镜可见变化",
+    "state_after": "镜头后故事状态",
+    "primary_action": "一个主体动作",
+    "characters": ["stable_character_id"]
+  }]
+}
+相邻 shot_intents 的 state_before 必须逐字复用前一项 state_after。严格按 ProductionPlan 的槽位数量与顺序输出；不要写 prompt_en、camera、blocking 或 interaction_geometry。"""
 _JSON_REPAIR_SYSTEM_PROMPT = (
     "你是 JSON 语法修复器。只修复 JSON 语法，保留所有字段和值；"
     "只输出一个完整 JSON 对象，不要解释、不要 Markdown、不要新增字段。"
@@ -263,7 +304,9 @@ def generate_storyboard(
 
 请生成完整的分镜脚本 (JSON 格式)。"""
 
-    storyboard = _call_llm_for_storyboard(client, system_prompt, user_prompt)
+    storyboard = _generate_storyboard_draft(
+        client, system_prompt, user_prompt, production_plan
+    )
     storyboard = _compile_storyboard_contract(
         storyboard, aspect_ratio, resolution, style, production_plan=production_plan
     )
@@ -281,15 +324,13 @@ def generate_storyboard(
 
     if is_critical:
         print("\n   [自动修正] 检测到严重问题, 重新生成分镜...")
-        correction_prompt = _build_correction_prompt(user_prompt, storyboard, warnings)
-        original_storyboard = deepcopy(storyboard)
-        storyboard = _call_llm_for_storyboard(
+        storyboard = _correct_storyboard_draft(
             client,
-            _CORRECTION_SYSTEM_PROMPT,
-            correction_prompt,
-            temperature=0.2,
+            user_prompt,
+            storyboard,
+            warnings,
+            production_plan,
         )
-        _preserve_correction_contract(original_storyboard, storyboard)
         storyboard = _compile_storyboard_contract(
             storyboard,
             aspect_ratio,
@@ -317,6 +358,252 @@ def generate_storyboard(
             print("   ✓ 修正后通过所有校验")
 
     return storyboard
+
+
+def _generate_storyboard_draft(
+    client,
+    system_prompt: str,
+    user_prompt: str,
+    production_plan: dict,
+) -> dict:
+    """Generate one bounded artifact at a time while keeping one global spine."""
+    slots = production_plan["slots"]
+    if len(slots) <= _STORYBOARD_SHOTS_PER_BATCH:
+        return _call_llm_for_storyboard(client, system_prompt, user_prompt)
+
+    spine_prompt = _build_story_spine_prompt(user_prompt, production_plan)
+    spine = validate_story_spine(
+        _call_llm_for_storyboard(
+            client,
+            _STORY_SPINE_SYSTEM_PROMPT,
+            spine_prompt,
+            temperature=0.3,
+        )
+    )
+    _project_spine_onto_plan(spine, production_plan)
+
+    shots: list[dict] = []
+    for start in range(0, len(slots), _STORYBOARD_SHOTS_PER_BATCH):
+        batch_slots = slots[start:start + _STORYBOARD_SHOTS_PER_BATCH]
+        batch_prompt = _build_shot_batch_prompt(
+            user_prompt, spine, production_plan, batch_slots
+        )
+        batch_result = _call_llm_for_storyboard(
+            client, system_prompt, batch_prompt, temperature=0.5
+        )
+        batch_shots = batch_result.get("shots")
+        if not isinstance(batch_shots, list) or len(batch_shots) != len(batch_slots):
+            expected = [slot["shot_id"] for slot in batch_slots]
+            raise ValueError(
+                f"分镜批次 {expected} 返回镜头数量不匹配；"
+                "已停止，未调用视频生成接口"
+            )
+        for shot, slot in zip(batch_shots, batch_slots):
+            if not isinstance(shot, dict):
+                raise ValueError(
+                    f"Shot {slot['shot_id']} 详情必须是 JSON 对象；"
+                    "已停止，未调用视频生成接口"
+                )
+            normalized = deepcopy(shot)
+            normalized["shot_id"] = slot["shot_id"]
+            normalized["duration"] = slot["duration"]
+            shots.append(normalized)
+
+    return {
+        key: deepcopy(value)
+        for key, value in spine.items()
+        if key != "shot_intents"
+    } | {"shots": shots}
+
+
+def _correct_storyboard_draft(
+    client,
+    user_prompt: str,
+    storyboard: dict,
+    warnings: list[str],
+    production_plan: dict,
+) -> dict:
+    """Correct one bounded artifact per call and merge it into the frozen story."""
+    slots = production_plan["slots"]
+    if len(slots) <= _STORYBOARD_SHOTS_PER_BATCH:
+        corrected = _call_llm_for_storyboard(
+            client,
+            _CORRECTION_SYSTEM_PROMPT,
+            _build_correction_prompt(user_prompt, storyboard, warnings),
+            temperature=0.2,
+        )
+        _preserve_correction_contract(storyboard, corrected)
+        return corrected
+
+    original_by_id = {
+        shot.get("shot_id"): shot
+        for shot in storyboard.get("shots", [])
+        if isinstance(shot, dict) and shot.get("shot_id") is not None
+    }
+    expected_ids = [slot["shot_id"] for slot in slots]
+    if len(original_by_id) != len(slots) or any(
+        shot_id not in original_by_id for shot_id in expected_ids
+    ):
+        raise ValueError(
+            "长分镜纠错前的镜头集合与 ProductionPlan 不一致；"
+            "已停止，未调用视频生成接口"
+        )
+
+    merged = deepcopy(storyboard)
+    merged["shots"] = []
+    frozen_story = {
+        key: deepcopy(value)
+        for key, value in storyboard.items()
+        if key != "shots"
+    }
+
+    for start in range(0, len(slots), _STORYBOARD_SHOTS_PER_BATCH):
+        batch_slots = slots[start:start + _STORYBOARD_SHOTS_PER_BATCH]
+        batch_ids = [slot["shot_id"] for slot in batch_slots]
+        batch_original = deepcopy(frozen_story) | {
+            "shots": [deepcopy(original_by_id[shot_id]) for shot_id in batch_ids]
+        }
+        batch_warnings = _correction_warnings_for_batch(warnings, set(batch_ids))
+        if not batch_warnings:
+            merged["shots"].extend(batch_original["shots"])
+            continue
+        correction_prompt = _build_batch_correction_prompt(
+            user_prompt,
+            batch_original,
+            batch_warnings,
+            production_plan,
+            batch_slots,
+        )
+        corrected = _call_llm_for_storyboard(
+            client,
+            _CORRECTION_SYSTEM_PROMPT,
+            correction_prompt,
+            temperature=0.2,
+        )
+        corrected_shots = corrected.get("shots")
+        if (
+            not isinstance(corrected_shots, list)
+            or len(corrected_shots) != len(batch_slots)
+        ):
+            raise ValueError(
+                f"分镜纠错批次 {batch_ids} 返回镜头数量不匹配；"
+                "已停止，未调用视频生成接口"
+            )
+
+        _preserve_correction_contract(batch_original, corrected)
+        for shot, slot in zip(corrected_shots, batch_slots):
+            if not isinstance(shot, dict):
+                raise ValueError(
+                    f"Shot {slot['shot_id']} 纠错结果必须是 JSON 对象；"
+                    "已停止，未调用视频生成接口"
+                )
+            normalized = deepcopy(shot)
+            normalized["shot_id"] = slot["shot_id"]
+            normalized["duration"] = slot["duration"]
+            merged["shots"].append(normalized)
+
+    return merged
+
+
+def _correction_warnings_for_batch(
+    warnings: list[str], batch_ids: set[int]
+) -> list[str]:
+    """Route local issues only to batches that own every referenced shot."""
+    scoped = []
+    for warning in warnings:
+        referenced_ids = {
+            int(value) for value in re.findall(r"\bShot\s+(\d+)\b", warning)
+        }
+        if not referenced_ids or referenced_ids.issubset(batch_ids):
+            scoped.append(warning)
+    return scoped
+
+
+def _build_batch_correction_prompt(
+    user_prompt: str,
+    storyboard: dict,
+    warnings: list[str],
+    production_plan: dict,
+    batch_slots: list[dict],
+) -> str:
+    batch_plan = deepcopy(production_plan)
+    batch_plan["slots"] = deepcopy(batch_slots)
+    batch_plan["planned_duration"] = sum(slot["duration"] for slot in batch_slots)
+    scoped_prompt = f"""[SHOT_CORRECTION_BATCH]
+{_storyboard_request_context(user_prompt)}
+
+本批次 ProductionPlan：
+{format_production_plan(batch_plan)}
+
+这是长分镜的一部分。只修正并返回本批次 shots；顶层故事、角色和其他批次均已冻结，
+不得生成、概述或改写其他批次镜头。调用方会按 ProductionPlan 合并结果。"""
+    return _build_correction_prompt(
+        scoped_prompt,
+        storyboard,
+        warnings,
+        batch_scoped=True,
+    )
+
+
+def _build_story_spine_prompt(user_prompt: str, production_plan: dict) -> str:
+    return f"""[STORY_SPINE]
+{_storyboard_request_context(user_prompt)}
+
+只生成紧凑全局故事脊柱。ProductionPlan 是不可改写的结构事实：
+{format_production_plan(production_plan)}
+"""
+
+
+def _build_shot_batch_prompt(
+    user_prompt: str,
+    spine: dict,
+    production_plan: dict,
+    batch_slots: list[dict],
+) -> str:
+    batch_ids = {slot["shot_id"] for slot in batch_slots}
+    batch_plan = deepcopy(production_plan)
+    batch_plan["slots"] = deepcopy(batch_slots)
+    batch_plan["planned_duration"] = sum(slot["duration"] for slot in batch_slots)
+    intents = [
+        intent for intent in spine["shot_intents"]
+        if intent["shot_id"] in batch_ids
+    ]
+    global_spine = {
+        key: value for key, value in spine.items() if key != "shot_intents"
+    }
+    return f"""[SHOT_DETAIL_BATCH]
+{_storyboard_request_context(user_prompt)}
+
+全局故事脊柱已经冻结，不得改写：
+{json.dumps(global_spine, ensure_ascii=False, indent=2)}
+
+只为下列 intent 生成完整镜头字段：
+{json.dumps(intents, ensure_ascii=False, indent=2)}
+
+本批次 ProductionPlan：
+{format_production_plan(batch_plan)}
+
+输出一个 JSON 对象，shots 只能包含本批次镜头。可以重复冻结的顶层字段，
+但不得输出其他批次的镜头。调用方会按 shot_id 合并全部批次。
+"""
+
+
+def _project_spine_onto_plan(spine: dict, production_plan: dict) -> None:
+    intents = spine["shot_intents"]
+    slots = production_plan["slots"]
+    if len(intents) != len(slots):
+        raise ValueError(
+            f"Story Spine 计划 {len(slots)} 个镜头，实际返回 {len(intents)} 个；"
+            "已停止，未调用视频生成接口"
+        )
+    for intent, slot in zip(intents, slots):
+        intent["shot_id"] = slot["shot_id"]
+        intent["narrative_function"] = slot["narrative_function"]
+
+
+def _storyboard_request_context(user_prompt: str) -> str:
+    """Remove the full embedded plan before adding one scoped plan."""
+    return user_prompt.split("\n生产计划（", 1)[0].rstrip()
 
 
 def _call_llm_for_storyboard(
@@ -479,6 +766,36 @@ def _boundary_framing(shot: dict, boundary: str) -> int | None:
     return None
 
 
+def _identity_reference_issue(
+    shot: dict,
+    character_modes: dict[str, str],
+) -> str | None:
+    """Return why this shot cannot safely become an identity reference."""
+    shot_characters = visible_character_names(shot, list(character_modes))
+    identity_characters = [
+        name
+        for name in shot_characters
+        if character_modes.get(name, "identity") == "identity"
+    ]
+    if len(shot_characters) != 1 or len(identity_characters) != 1:
+        return (
+            "角色参考归属不明确: 只能从单一 identity 角色镜头提取身份参考，"
+            "群体和多人整帧不可复用"
+        )
+
+    ranks = [
+        _boundary_framing(shot, "start"),
+        _boundary_framing(shot, "end"),
+    ]
+    known_ranks = [rank for rank in ranks if rank is not None]
+    if known_ranks and max(known_ranks) <= 1:
+        return (
+            "角色参考镜头只有特写，无法稳定锚定完整外观；"
+            "必须使用清晰无遮挡的中景、全身或全景"
+        )
+    return None
+
+
 def _seamless_cut_reason(
     previous: dict,
     current: dict,
@@ -551,9 +868,22 @@ def _infer_composition_change(previous: dict, current: dict) -> str:
     return "large"
 
 
-def _apply_coverage_defaults(shots: list[dict]) -> None:
+def _apply_coverage_defaults(
+    shots: list[dict],
+    character_names: list[str] | None = None,
+    theme_elements: list[str] | None = None,
+) -> None:
     """Compile LLM action fields into one deterministic production contract."""
+    character_names = character_names or list(dict.fromkeys(
+        str(name).strip()
+        for shot in shots
+        for name in shot.get("characters", [])
+        if str(name).strip()
+    ))
+    theme_elements = theme_elements or []
     for index, shot in enumerate(shots):
+        registry = shot_entity_registry(shot, character_names, theme_elements)
+        normalize_structured_entity_references(shot, registry)
         if index == 0:
             shot.setdefault("composition_change", "large")
         elif shot.get("continuity_from_previous") == "seamless":
@@ -582,16 +912,6 @@ def _apply_coverage_defaults(shots: list[dict]) -> None:
         shot["camera"] = camera
 
         beats = [beat for beat in shot.get("action_beats", []) if isinstance(beat, dict)]
-        actors = [str(beat.get("actor", "")).strip() for beat in beats]
-        targets = [str(beat.get("target", "")).strip() for beat in beats]
-        participants = list(dict.fromkeys(
-            name for name in actors + targets
-            if name and name.casefold() != "none"
-        ))
-        if not shot.get("required_visible_entities"):
-            shot["required_visible_entities"] = (
-                participants or list(shot.get("characters", []))
-            )
 
         interaction = next(
             (
@@ -635,18 +955,59 @@ def _apply_coverage_defaults(shots: list[dict]) -> None:
             shot.get("interaction_geometry")
         )
         geometry = shot["interaction_geometry"]
-        entity_ids = list(shot.get("characters", []))
-        actor = canonical_participant_id(geometry.get("actor"), entity_ids)
-        target = canonical_participant_id(
+        registry = shot_entity_registry(shot, character_names, theme_elements)
+        actor = canonical_entity_id(geometry.get("actor"), registry.characters)
+        target = canonical_target_id(
             geometry.get("target"),
-            entity_ids,
+            registry,
             exclude=[actor],
-            fallback_to_single=True,
         )
         if actor:
             geometry["actor"] = actor
         if target:
             geometry["target"] = target
+        if (
+            str(geometry.get("effect_phase", "")).strip() == "active"
+            and str(geometry.get("interaction_mode", "")).strip() == "directed_path"
+            and str(geometry.get("effect_motion", "")).strip() == "sweep"
+            and str(geometry.get("outcome_scope", "")).strip() in {"subset", "all"}
+            and isinstance(shot.get("duration"), (int, float))
+            and not isinstance(shot.get("duration"), bool)
+            and shot["duration"] < 6
+        ):
+            geometry["outcome_scope"] = "single"
+            geometry["effect_motion"] = "static"
+            print(
+                f"   [因果负载校正] Shot {shot.get('shot_id', '?')} "
+                "短镜头多目标扫掠改为 single/static"
+            )
+        canonical_actor = actor if actor in registry.characters else ""
+        canonical_target = target if target in registry.target_ids else ""
+        for beat in beats:
+            beat_actor = canonical_entity_id(beat.get("actor"), registry.characters)
+            if beat_actor in registry.characters:
+                beat["actor"] = beat_actor
+            elif canonical_actor:
+                beat["actor"] = canonical_actor
+            beat_target = canonical_target_id(
+                beat.get("target"),
+                registry,
+                exclude=[str(beat.get("actor", "")).strip()],
+            )
+            if beat_target in registry.target_ids:
+                beat["target"] = beat_target
+            elif canonical_target:
+                beat["target"] = canonical_target
+        actors = [str(beat.get("actor", "")).strip() for beat in beats]
+        targets = [str(beat.get("target", "")).strip() for beat in beats]
+        participants = list(dict.fromkeys(
+            name for name in actors + targets
+            if name and name.casefold() != "none"
+        ))
+        if not shot.get("required_visible_entities"):
+            shot["required_visible_entities"] = (
+                participants or list(shot.get("characters", []))
+            )
         compile_interaction_blocking(shot)
         if str(geometry.get("effect_phase", "")).strip() == "active":
             mode = str(geometry.get("interaction_mode", "none")).strip()
@@ -704,6 +1065,11 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
         shot.setdefault("start_state", {})
         shot.setdefault("end_state", {})
         shot.setdefault("blocking", {})
+        normalize_shot_participants(
+            shot,
+            character_names,
+            storyboard.get("theme_elements", []),
+        )
         visible_characters = visible_character_names(shot, character_names)
         if visible_characters != shot.get("characters", []):
             added = [
@@ -717,21 +1083,21 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
                     f"补充结构化字段中的可见角色: {', '.join(added)}"
                 )
         if shot.get("extract_character_ref"):
-            shot_characters = visible_characters
-            identity_characters = [
-                name for name in shot_characters
-                if character_modes.get(name, "identity") == "identity"
-            ]
-            if len(shot_characters) != 1 or len(identity_characters) != 1:
+            reference_issue = _identity_reference_issue(shot, character_modes)
+            if reference_issue:
                 shot["extract_character_ref"] = False
                 print(
                     f"   [角色参考校正] Shot {shot.get('shot_id', index + 1)} "
-                    "不是单一 identity 角色镜头，已禁用身份参考提取"
+                    f"{reference_issue}，已禁用身份参考提取"
                 )
 
     for correction in _normalize_continuity_contract(storyboard["shots"]):
         print(f"   [连续性校正] {correction}，改为 intentional_cut")
-    _apply_coverage_defaults(storyboard["shots"])
+    _apply_coverage_defaults(
+        storyboard["shots"],
+        character_names,
+        storyboard.get("theme_elements", []),
+    )
     for shot_id, previous_id in normalize_narrative_handoffs(storyboard):
         print(
             f"   [故事状态校正] Shot {shot_id} state_before "
@@ -779,13 +1145,23 @@ def _normalize_positive_duration(value):
     )
 
 
-def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: list[str]) -> str:
+def _build_correction_prompt(
+    original_prompt: str,
+    storyboard: dict,
+    warnings: list[str],
+    *,
+    batch_scoped: bool = False,
+) -> str:
     """构建修正 prompt — 将校验问题作为 feedback 让 LLM 修正"""
     issues_text = "\n".join(f"- {w}" for w in warnings)
     storyboard_json = json.dumps(storyboard, ensure_ascii=False, indent=2)
     action_repair = ""
     if any("动作重心不足" in warning for warning in warnings):
         action_repair = """
+- 本批次只按 ProductionPlan 中的 narrative_function、allowed_effect_phases、coverage_roles 和 requires_visible_result 修正动作职责；不得引用或补写批次外镜头
+- primary_action 必须直接执行该槽位的冲突推进或可见结果，运镜、扫描和准备不得代替槽位职责
+- 每镜仍只保留一个主动作，对手反应写入 visible_result，不得把全片动作配额机械塞进每个批次
+""" if batch_scoped else """
 - 至少 2 个镜头的 primary_action 必须直接攻击、防守、受击、反击或追逐，并在 action_beats 写明 actor、target 和 visible_result
 - 纯建立与纯收尾只能保留一个：若 Shot 1 是纯环境、扫描或准备，最后一镜必须“动作中收束”；若最后一镜保留简短余韵，Shot 1 必须“冲突中建立”
 - 每镜仍只保留一个主动作，不得把动作配额塞进同一镜头
@@ -836,6 +1212,20 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 - 明确 source、effect_region、reaction_scope、unaffected_behavior；只有作用区域内主体可产生结果，范围外主体必须保持契约指定的行为
 - 不得把 area_effect 强制改成直线命中，也不得用武器名或具体题材代替作用范围描述
 """
+    participant_repair = ""
+    if any(
+        marker in warning
+        for warning in warnings
+        for marker in (
+            "未定义角色",
+            "characters 未包含实际可见角色",
+            "引用未注册实体",
+        )
+    ):
+        participant_repair = """
+- actor 和角色 target 必须逐字复用顶层 characters.name，包括 characters、action_beats、interaction_geometry 与 blocking 的角色引用
+- 物件 target 必须逐字复用本镜 key_props/continuity_props；阶段性角色描述只能写入动作或画面的自然语言字段，不得创建新的结构化角色 ID
+"""
     narrative_repair = ""
     if any(
         marker in warning
@@ -862,6 +1252,7 @@ def _build_correction_prompt(original_prompt: str, storyboard: dict, warnings: l
 {action_repair}
 {coverage_repair}
 {causality_repair}
+{participant_repair}
 {narrative_repair}
 
 上次生成的分镜 (需要修正):
@@ -1034,7 +1425,6 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 7. 每个镜头时长 4-15 秒 (整数)
 8. 物件连续性: key_props 描述可见元素; continuity_props 只追踪同场景跨镜持续的可移动叙事道具, 新增持久道具必须有引入动作或前镜铺垫
 9. 环境一致性: 同场景连续镜头的天气/光线/背景物不得突变
-10. 时长分配: 禁止所有镜头时长相同, 开场 4s, 高潮最长 6-8s, insert 4-5s
 11. 镜头数量: 10s=2镜, 15s=3镜, 20s=3-4镜, 30s=4-6镜, 60s=8-10镜
 12. 动作契约: 每镜只有一个 primary_action, 最多包含两个紧密因果动作动词; 多次接触/破坏动作必须拆镜, 并填写 start_state/end_state
 13. 题材适配: 动作请求用多个主体攻防节拍推进; 运镜只写入 camera, 不得充当 primary_action
@@ -1048,6 +1438,7 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 21. 交互因果: 每镜 interaction_geometry 必须填写 effect_phase/outcome_scope/effect_motion；setup 不得产生物理作用，active 才能选择 direct_contact/directed_path/area_effect/indirect_effect，aftermath 不得扩大上一镜已建立的结果范围
 22. 作用守恒: 静止 directed_path 只能影响路径相交的 single/subset；要影响 all 必须清楚展示 sweep，只有作用范围内主体可反应
 23. 故事状态: 顶层 story_arc 填写 goal/stakes/turning_point/resolution；每镜 narrative_beat 填写 function/state_before/state_change/state_after，后镜 state_before 必须逐字复用前镜 state_after
+24. 实体目录: actor 和角色 target 必须逐字复用顶层 characters.name，包括 characters、action_beats、interaction_geometry 与 blocking 的角色引用；物件 target 必须逐字复用本镜 key_props/continuity_props；阶段性角色描述只能写入自然语言字段，不得创建新 ID
 
 ## Seedance 模型局限 (必须规避)
 
@@ -1358,19 +1749,9 @@ def _validate_storyboard_richness(
     critical_count = 0  # 严重问题计数
     content_focus = _infer_content_focus(user_request)
 
-    for issue in production_plan_issues(storyboard):
-        warnings.append(f"🚨 {issue}")
-        critical_count += 1
+    from pipeline.readiness import storyboard_readiness_issues
 
-    for issue in narrative_readiness_issues(
-        storyboard, required=require_narrative_contract
-    ):
-        warnings.append(f"🚨 {issue}")
-        critical_count += 1
-
-    for issue in causal_storyboard_issues(
-        storyboard, required=require_narrative_contract
-    ):
+    for issue in storyboard_readiness_issues(storyboard):
         warnings.append(f"🚨 {issue}")
         critical_count += 1
 
@@ -1534,58 +1915,6 @@ def _validate_storyboard_richness(
 
     # --- 10. 动作场景空间轴 ---
     if content_focus == "action":
-        for shot in shots:
-            shot_characters = shot.get("characters", [])
-            if len(shot_characters) < 2:
-                continue
-            camera = shot.get("camera", {})
-            positions = camera.get("screen_positions", {}) if isinstance(camera, dict) else {}
-            if not all(name in positions for name in shot_characters):
-                warnings.append(
-                    f"🚨 Shot {shot.get('shot_id', '?')} 空间轴未定义: "
-                    "多角色动作镜头必须在 camera.screen_positions 标明每个角色的左右/前后位置"
-                )
-                critical_count += 1
-
-            blocking = shot.get("blocking", {})
-            required_blocking = (
-                "frame_position",
-                "body_orientation",
-                "facing_target",
-                "eyeline_target",
-                "action_target",
-            )
-            incomplete = []
-            for name in shot_characters:
-                character_blocking = (
-                    blocking.get(name, {}) if isinstance(blocking, dict) else {}
-                )
-                if not isinstance(character_blocking, dict) or any(
-                    not str(character_blocking.get(field, "")).strip()
-                    for field in required_blocking
-                ):
-                    incomplete.append(name)
-            if incomplete:
-                warnings.append(
-                    f"🚨 Shot {shot.get('shot_id', '?')} 角色调度不完整: "
-                    f"{', '.join(incomplete)} 缺少位置、身体朝向、视线或动作目标；"
-                    "不能只声明左右位置，否则攻击方向可能背离目标"
-                )
-                critical_count += 1
-
-            for issue in blocking_geometry_issues(shot):
-                warnings.append(f"🚨 {issue}")
-                critical_count += 1
-
-            if _shot_advances_action_conflict(shot):
-                action_beats = shot.get("action_beats", [])
-                if not isinstance(action_beats, list) or not action_beats:
-                    warnings.append(
-                        f"🚨 Shot {shot.get('shot_id', '?')} 缺少结构化动作阶段: "
-                        "动作镜头必须用 action_beats 明确执行者、目标和可见结果"
-                    )
-                    critical_count += 1
-
         for previous, current in zip(shots, shots[1:]):
             if _scene_id(previous) != _scene_id(current):
                 continue
@@ -1673,52 +2002,22 @@ def _validate_storyboard_richness(
                 )
                 critical_count += 1
 
-    # --- 12. 时长均匀性检测 ---
-    durations = [s.get("duration", 5) for s in shots]
-    if len(set(durations)) == 1 and len(shots) >= 3:
-        warnings.append(
-            f"🚨 时长全部相同: 所有镜头都是 {durations[0]}s, "
-            f"缺乏节奏变化, 必须为不同叙事位置分配不同时长"
-        )
-        critical_count += 1
-
-    # --- 13. 角色参考镜头可用性 ---
+    # --- 12. 角色参考镜头可用性 ---
     character_modes = {
         character.get("name"): character.get("reference_mode", "identity")
         for character in storyboard.get("characters", [])
     }
-    character_names = list(character_modes)
     for shot in shots:
         if not shot.get("extract_character_ref"):
             continue
-        shot_characters = visible_character_names(shot, character_names)
-        identity_characters = [
-            name for name in shot_characters
-            if character_modes.get(name, "identity") == "identity"
-        ]
-        if len(shot_characters) != 1 or len(identity_characters) != 1:
+        reference_issue = _identity_reference_issue(shot, character_modes)
+        if reference_issue:
             warnings.append(
-                f"🚨 Shot {shot.get('shot_id', '?')} 角色参考归属不明确: "
-                "只能从单一 identity 角色镜头提取身份参考，群体和多人整帧不可复用"
+                f"🚨 Shot {shot.get('shot_id', '?')} {reference_issue}"
             )
             critical_count += 1
 
-    for shot in shots:
-        if not shot.get("extract_character_ref"):
-            continue
-        ranks = [
-            _boundary_framing(shot, "start"),
-            _boundary_framing(shot, "end"),
-        ]
-        known_ranks = [rank for rank in ranks if rank is not None]
-        if known_ranks and max(known_ranks) <= 1:
-            warnings.append(
-                f"🚨 Shot {shot.get('shot_id', '?')} 角色参考镜头只有特写，"
-                "无法稳定锚定完整外观；必须使用清晰无遮挡的中景、全身或全景"
-            )
-            critical_count += 1
-
-    # --- 14. Seedance 快动作预算 ---
+    # --- 13. Seedance 快动作预算 ---
     for shot in shots:
         speed = str(shot.get("camera", {}).get("speed", "")).lower()
         movement = str(
@@ -1732,17 +2031,6 @@ def _validate_storyboard_richness(
                 f"🚨 Shot {shot.get('shot_id', '?')} fast 动作时长为 {duration}s, "
                 "超过 Seedance 稳定预算 5s, 必须缩短或降速"
             )
-            critical_count += 1
-
-    # --- 15. 可拍摄性与交互构图契约 ---
-    from pipeline.readiness import coverage_readiness_issues
-
-    for shot in shots:
-        for issue in coverage_readiness_issues(
-            shot,
-            require_causality_contract=require_narrative_contract,
-        ):
-            warnings.append(f"🚨 {issue}")
             critical_count += 1
 
     # 判定是否达到「严重」阈值 (≥1 个严重问题触发重试)

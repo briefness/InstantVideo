@@ -158,3 +158,69 @@ async def test_checkpoint_failure_never_submits_a_second_task():
 
     assert tasks.created == 1
     assert tasks.polled == []
+
+
+@pytest.mark.asyncio
+async def test_poll_preserves_structured_copyright_policy_error():
+    api, tasks = api_with_fake_tasks()
+    tasks.get = lambda **_kwargs: SimpleNamespace(
+        status="failed",
+        error=SimpleNamespace(
+            code="OutputVideoSensitiveContentDetected.PolicyViolation",
+            message=(
+                "The request failed because the output video may be related "
+                "to copyright restrictions."
+            ),
+        ),
+    )
+
+    result = await api.generate(
+        prompt="original fictional scene",
+        timeout=1,
+        task_id="ark-task-copyright",
+    )
+
+    assert result["status"] == "failed"
+    assert result["error_type"] == "copyright_policy"
+    assert result["error_locus"] == "output_video"
+    assert result["error_code"] == (
+        "OutputVideoSensitiveContentDetected.PolicyViolation"
+    )
+    assert "copyright restrictions" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_sensitive_content_policy_is_moderation_not_privacy():
+    api, tasks = api_with_fake_tasks()
+    tasks.get = lambda **_kwargs: SimpleNamespace(
+        status="failed",
+        error=SimpleNamespace(
+            code="InputTextSensitiveContentDetected.PolicyViolation",
+            message="The request violates the content policy.",
+        ),
+    )
+
+    result = await api.generate(
+        prompt="test",
+        timeout=1,
+        task_id="ark-task-moderation",
+    )
+
+    assert result["error_type"] == "moderation"
+    assert result["error_locus"] == "input_text"
+    assert result["error_code"] == (
+        "InputTextSensitiveContentDetected.PolicyViolation"
+    )
+
+
+def test_submission_error_preserves_structured_provider_fields():
+    class ProviderError(Exception):
+        code = "PrivacyInformation.PolicyViolation"
+        message = "The reference contains privacy information."
+
+    result = SeedanceAPI._failure_from_error(ProviderError())
+
+    assert result["error_type"] == "privacy"
+    assert result["error_locus"] == "input_reference"
+    assert result["error_code"] == "PrivacyInformation.PolicyViolation"
+    assert result["error"] == "The reference contains privacy information."

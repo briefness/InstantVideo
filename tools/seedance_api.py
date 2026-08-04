@@ -19,6 +19,72 @@ from enum import Enum
 import config
 
 
+def _provider_error_field(error: object, field: str) -> str:
+    if isinstance(error, dict):
+        value = error.get(field)
+    else:
+        value = getattr(error, field, None)
+    return "" if value is None else str(value).strip()
+
+
+def _classify_provider_error(code: str, message: str) -> str:
+    """Classify provider failures without conflating policy families."""
+    code_low = code.casefold()
+    message_low = message.casefold()
+    combined = f"{code_low} {message_low}"
+    if "copyright" in combined:
+        return "copyright_policy"
+    if any(marker in combined for marker in (
+        "privacyinformation", "privacy information", "privacy",
+        "realperson", "real person", "personal data", "likeness",
+        "人脸", "真人", "肖像",
+    )):
+        return "privacy"
+    if any(marker in combined for marker in (
+        "ratelimit", "rate limit", "quotaexceeded", "toomanyrequests", "429",
+    )):
+        return "rate_limit"
+    if any(marker in code_low for marker in (
+        "sensitivecontentdetected", "policyviolation", "moderation",
+        "contentfilter", "contentmoderation",
+    )) or "content policy" in message_low:
+        return "moderation"
+    if any(marker in combined for marker in (
+        "serviceunavailable", "internalserviceerror", "temporarily unavailable",
+        "connection error", "connection reset", "timed out", "timeout",
+    )):
+        return "transient_provider"
+    return "unknown"
+
+
+def _classify_provider_error_locus(code: str) -> str:
+    """Locate a provider failure from its structured code family."""
+    code_low = code.casefold()
+    if "inputtext" in code_low:
+        return "input_text"
+    if any(marker in code_low for marker in (
+        "inputimage", "inputreference", "referenceimage",
+        "privacyinformation", "realperson",
+    )):
+        return "input_reference"
+    if "outputvideo" in code_low:
+        return "output_video"
+    return "unknown"
+
+
+def _provider_failure_payload(error: object) -> dict[str, str]:
+    code = _provider_error_field(error, "code")
+    message = _provider_error_field(error, "message") or str(error).strip()
+    payload = {
+        "error": message,
+        "error_type": _classify_provider_error(code, message),
+        "error_locus": _classify_provider_error_locus(code),
+    }
+    if code:
+        payload["error_code"] = code
+    return payload
+
+
 class SubmittedTaskCheckpointError(RuntimeError):
     """A remote task exists, but its identity could not be persisted locally."""
 
@@ -111,7 +177,7 @@ class SeedanceAPI:
 
         Returns:
             {"status": "succeeded", "video_url": "...", "last_frame_url": "...", ...}
-            {"status": "failed", "error": "...", "error_type": "moderation|timeout|unknown"}
+            {"status": "failed", "error": "...", "error_code": "...", "error_type": "..."}
         """
         if resolution not in config.SUPPORTED_RESOLUTIONS:
             raise ValueError(f"Seedance 2.0 Mini 不支持分辨率: {resolution}")
@@ -138,6 +204,12 @@ class SeedanceAPI:
             task_id=task_id,
             on_submitted=on_submitted,
         )
+
+    async def poll_task(self, task_id: str, *, timeout: int) -> dict:
+        """Poll an existing Ark task without rebuilding or resubmitting content."""
+        if not str(task_id).strip():
+            raise ValueError("恢复远端任务必须提供 task_id")
+        return await self._poll_ark(str(task_id), timeout)
 
     # ─── Volcengine Ark 路径 ───
 
@@ -215,21 +287,10 @@ class SeedanceAPI:
                     }
                 elif status in ("failed", "expired", "cancelled"):
                     error_msg = getattr(result, "error", status)
-                    msg_low = str(error_msg).lower()
-                    if any(kw in msg_low for kw in [
-                        "real person", "privacy", "sensitive",
-                        "privacyinformation", "人脸", "真人", "肖像",
-                    ]):
-                        error_type = "privacy"
-                    elif "content" in msg_low:
-                        error_type = "moderation"
-                    else:
-                        error_type = "unknown"
                     return {
                         "status": "failed",
                         "provider_task_id": task_id,
-                        "error": str(error_msg),
-                        "error_type": error_type,
+                        **_provider_failure_payload(error_msg),
                     }
 
             except Exception as exc:
@@ -256,20 +317,7 @@ class SeedanceAPI:
 
     @staticmethod
     def _failure_from_error(exc: Exception) -> dict:
-        error = str(exc)
-        lowered = error.lower()
-        if any(kw in lowered for kw in [
-            "real person", "privacy", "sensitive",
-            "privacyinformation", "人脸", "真人", "肖像",
-        ]):
-            error_type = "privacy"
-        elif "content" in lowered and "moderation" in lowered:
-            error_type = "moderation"
-        elif "429" in error or "quotaexceeded" in lowered or "toomanyrequests" in lowered:
-            error_type = "rate_limit"
-        else:
-            error_type = "unknown"
-        return {"status": "failed", "error": error, "error_type": error_type}
+        return {"status": "failed", **_provider_failure_payload(exc)}
 
     # ─── fal.ai 路径 ───
 

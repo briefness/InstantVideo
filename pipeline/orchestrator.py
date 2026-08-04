@@ -143,12 +143,42 @@ class VideoPipeline:
 
         # ─── Stage 2: 视频生成 ───
         ensure_storyboard_ready(storyboard)
+        unresolved_legacy_tasks = self.run_workspace.unresolved_legacy_provider_tasks()
+        if unresolved_legacy_tasks:
+            shot_ids = ", ".join(str(shot_id) for shot_id in sorted(unresolved_legacy_tasks))
+            raise RuntimeError(
+                "恢复运行包含缺少不可变提交描述的历史远端任务 "
+                f"(Shot {shot_ids})；为避免重复付费生成，已停止且不会轮询或重新提交。"
+            )
+        terminal_materialization_tasks = self.run_workspace.terminal_materialization_tasks()
+        if terminal_materialization_tasks:
+            shot_ids = ", ".join(
+                str(shot_id) for shot_id in sorted(terminal_materialization_tasks)
+            )
+            raise RuntimeError(
+                "恢复运行包含已返回但本地物化或技术 QA 失败的远端镜头 "
+                f"(Shot {shot_ids})；为避免重复付费生成，已停止且不会重新提交。"
+            )
         console.print("\n[bold cyan]🎥 Stage 2: 生成视频片段...[/bold cyan]")
         def record_progress(result: ShotResult) -> None:
             self.run_workspace.record_shot(
                 shot_id=result.shot_id,
                 status=result.status,
                 provider_task_id=result.provider_task_id,
+                provider_error_type=result.provider_error_type,
+                provider_error_code=result.provider_error_code,
+                provider_error_message=result.provider_error_message,
+                provider_error_locus=result.provider_error_locus,
+                prompt_profile=result.prompt_profile,
+                prompt_fingerprint=result.prompt_fingerprint,
+                compiled_contract_version=result.compiled_contract_version,
+                compiled_contract_fingerprint=result.compiled_contract_fingerprint,
+                accepted_contract_version=result.accepted_contract_version,
+                accepted_contract_fingerprint=result.accepted_contract_fingerprint,
+                semantic_evaluator_version=result.semantic_evaluator_version,
+                acceptance_policy=result.acceptance_policy,
+                recovery_actions=result.recovery_actions,
+                prompt_attempts=result.prompt_attempts,
                 local_path=result.local_path,
                 last_frame_url=result.last_frame_url,
                 quality_score=result.quality_score,
@@ -164,7 +194,7 @@ class VideoPipeline:
         generator = VideoGenerator(
             str(self.workspace),
             on_progress=record_progress,
-            resume_task_ids=self.run_workspace.resumable_provider_tasks(),
+            resume_tasks=self.run_workspace.resumable_pending_tasks(),
             accepted_shot_artifacts=self.run_workspace.accepted_shot_artifacts(),
         )
         results = await generator.generate_all(storyboard)

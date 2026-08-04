@@ -11,9 +11,11 @@ from typing import Any
 from pipeline.models import (
     RunManifest,
     RunOptions,
+    PendingTaskDescriptor,
     RunStatus,
     ShotStatus,
     ShotTaskState,
+    TakeRecordState,
     validate_storyboard,
 )
 
@@ -24,6 +26,55 @@ STORYBOARD_FILENAME = "storyboard.json"
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _merge_prompt_attempts(
+    previous: list[dict[str, Any]], current: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Replace a pending checkpoint with the terminal state of the same request."""
+    merged: list[dict[str, Any]] = []
+    positions: dict[tuple[object, object, object], int] = {}
+    for attempt in (*previous, *current):
+        key = (
+            attempt.get("attempt"),
+            attempt.get("fingerprint"),
+            attempt.get("provider_task_id"),
+        )
+        if key in positions:
+            merged[positions[key]] = attempt
+        else:
+            positions[key] = len(merged)
+            merged.append(attempt)
+    return merged
+
+
+def _merge_take_history(
+    previous: list[TakeRecordState],
+    current: TakeRecordState | None,
+) -> list[TakeRecordState]:
+    history = list(previous)
+    if current is None:
+        return history
+    for index, take in enumerate(history):
+        if take.take_id == current.take_id:
+            history[index] = current
+            break
+    else:
+        history.append(current)
+    return history
+
+
+def _canonical_take(state: ShotTaskState) -> TakeRecordState | None:
+    if not state.canonical_take_id:
+        return None
+    return next(
+        (
+            take for take in state.take_history
+            if take.take_id == state.canonical_take_id
+            and take.disposition == "accepted"
+        ),
+        None,
+    )
 
 
 class RunWorkspace:
@@ -87,11 +138,18 @@ class RunWorkspace:
         _apply_coverage_defaults(validated["shots"])
         for shot in validated["shots"]:
             state = self.manifest.shots.get(str(shot["shot_id"]))
-            if not state or state.status != ShotStatus.success:
+            if not state:
+                continue
+            canonical = _canonical_take(state)
+            if canonical is not None:
+                observed_state = canonical.observed_end_state
+            elif state.status == ShotStatus.success:
+                observed_state = state.observed_end_state
+            else:
                 continue
             observed = {
                 key: value
-                for key, value in state.observed_end_state.items()
+                for key, value in observed_state.items()
                 if str(value).strip()
             }
             if observed:
@@ -123,6 +181,20 @@ class RunWorkspace:
         shot_id: int,
         status: str,
         provider_task_id: str | None = None,
+        provider_error_type: str | None = None,
+        provider_error_code: str | None = None,
+        provider_error_message: str | None = None,
+        provider_error_locus: str | None = None,
+        prompt_profile: str | None = None,
+        prompt_fingerprint: str | None = None,
+        compiled_contract_version: str | None = None,
+        compiled_contract_fingerprint: str | None = None,
+        accepted_contract_version: str | None = None,
+        accepted_contract_fingerprint: str | None = None,
+        semantic_evaluator_version: str | None = None,
+        acceptance_policy: str | None = None,
+        recovery_actions: list[str] | None = None,
+        prompt_attempts: list[dict[str, Any]] | None = None,
         local_path: str | None = None,
         last_frame_url: str | None = None,
         quality_score: int = 0,
@@ -141,12 +213,117 @@ class RunWorkspace:
         merged_errors = previous_errors + [
             error for error in (errors or []) if error not in previous_errors
         ]
+        previous_recovery = list(previous.recovery_actions) if previous else []
+        merged_recovery = previous_recovery + [
+            action for action in (recovery_actions or [])
+            if action not in previous_recovery
+        ]
+        previous_attempts = (
+            [
+                attempt.model_dump(mode="json", exclude_none=True)
+                for attempt in previous.prompt_attempts
+            ]
+            if previous else []
+        )
+        merged_attempts = _merge_prompt_attempts(
+            previous_attempts, prompt_attempts or []
+        )
+        relative_last_frame = self._relative_to_workspace(last_frame_url)
+        pending_task = None
+        if status == ShotStatus.running.value and provider_task_id:
+            descriptor_fields = (
+                prompt_profile,
+                prompt_fingerprint,
+                compiled_contract_version,
+                compiled_contract_fingerprint,
+            )
+            if all(descriptor_fields):
+                pending_task = PendingTaskDescriptor(
+                    task_id=provider_task_id,
+                    prompt_profile=prompt_profile,
+                    prompt_fingerprint=prompt_fingerprint,
+                    compiled_contract_version=compiled_contract_version,
+                    compiled_contract_fingerprint=compiled_contract_fingerprint,
+                )
+        disposition = None
+        if relative_path and semantic_accepted is False:
+            disposition = "rejected"
+        elif relative_path and ShotStatus(status) == ShotStatus.success:
+            disposition = "accepted"
+        take = None
+        if disposition:
+            take = TakeRecordState(
+                take_id=f"{shot_id}:{relative_path}",
+                disposition=disposition,
+                local_path=relative_path,
+                last_frame_url=relative_last_frame,
+                semantic_accepted=semantic_accepted,
+                observed_end_state=observed_end_state or {},
+                quality_score=quality_score,
+                technical_quality_score=technical_quality_score,
+                model_used=model_used,
+                resolution_used=resolution_used,
+                prompt_fingerprint=prompt_fingerprint,
+                compiled_contract_version=compiled_contract_version,
+                compiled_contract_fingerprint=compiled_contract_fingerprint,
+                accepted_contract_version=accepted_contract_version,
+                accepted_contract_fingerprint=accepted_contract_fingerprint,
+                semantic_evaluator_version=semantic_evaluator_version,
+                acceptance_policy=acceptance_policy,
+                errors=merged_errors,
+            )
+        take_history = _merge_take_history(
+            list(previous.take_history) if previous else [],
+            take,
+        )
+        canonical_take_id = previous.canonical_take_id if previous else None
+        if take and take.disposition == "accepted":
+            canonical_take_id = take.take_id
         self.manifest.shots[key] = ShotTaskState(
             shot_id=shot_id,
             status=ShotStatus(status),
             provider_task_id=provider_task_id,
+            pending_task=pending_task,
+            provider_error_type=provider_error_type,
+            provider_error_code=provider_error_code,
+            provider_error_message=provider_error_message,
+            provider_error_locus=provider_error_locus,
+            prompt_profile=(
+                prompt_profile or (previous.prompt_profile if previous else None)
+            ),
+            prompt_fingerprint=(
+                prompt_fingerprint or (previous.prompt_fingerprint if previous else None)
+            ),
+            compiled_contract_version=(
+                compiled_contract_version
+                or (previous.compiled_contract_version if previous else None)
+            ),
+            compiled_contract_fingerprint=(
+                compiled_contract_fingerprint
+                or (previous.compiled_contract_fingerprint if previous else None)
+            ),
+            accepted_contract_version=(
+                accepted_contract_version
+                or (previous.accepted_contract_version if previous else None)
+            ),
+            accepted_contract_fingerprint=(
+                accepted_contract_fingerprint
+                or (previous.accepted_contract_fingerprint if previous else None)
+            ),
+            semantic_evaluator_version=(
+                semantic_evaluator_version
+                or (previous.semantic_evaluator_version if previous else None)
+            ),
+            acceptance_policy=(
+                acceptance_policy
+                or (previous.acceptance_policy if previous else None)
+            ),
+            recovery_actions=merged_recovery,
+            prompt_attempts=merged_attempts,
+            take_history=take_history,
+            canonical_take_id=canonical_take_id,
             local_path=relative_path or (previous.local_path if previous else None),
-            last_frame_url=self._relative_to_workspace(last_frame_url),
+            last_frame_url=relative_last_frame,
             quality_score=quality_score,
             technical_quality_score=technical_quality_score,
             semantic_accepted=semantic_accepted,
@@ -161,32 +338,123 @@ class RunWorkspace:
         self._save_manifest()
 
     def resumable_provider_tasks(self) -> dict[int, str]:
+        """Legacy task-id view; callers must prefer resumable_pending_tasks()."""
         return {
             state.shot_id: state.provider_task_id
             for state in self.manifest.shots.values()
             if state.status == ShotStatus.running and state.provider_task_id
         }
 
+    def resumable_pending_tasks(self) -> dict[int, dict[str, Any]]:
+        """Return only fully identified submissions that may be polled safely."""
+        return {
+            state.shot_id: state.pending_task.model_dump(mode="json")
+            for state in self.manifest.shots.values()
+            if state.status == ShotStatus.running and state.pending_task is not None
+        }
+
+    def unresolved_legacy_provider_tasks(self) -> dict[int, str]:
+        """Return old running submissions that lack immutable poll provenance.
+
+        These task IDs cannot be safely resumed: polling requires proof of the
+        exact submitted prompt and action contract, while submitting again would
+        create a second paid provider task.  Callers must stop before generation.
+        """
+        return {
+            state.shot_id: state.provider_task_id
+            for state in self.manifest.shots.values()
+            if (
+                state.status == ShotStatus.running
+                and state.provider_task_id
+                and state.pending_task is None
+            )
+        }
+
+    def terminal_materialization_tasks(self) -> dict[int, str]:
+        """Return downloaded provider takes that failed local QA/materialization.
+
+        The provider task has already consumed budget and returned footage. It
+        is not an authorization to silently create another task on ``--resume``.
+        """
+        return {
+            state.shot_id: state.provider_task_id
+            for state in self.manifest.shots.values()
+            if (
+                state.status == ShotStatus.failed
+                and state.provider_task_id
+                and state.local_path
+            )
+        }
+
     def accepted_shot_artifacts(self) -> dict[int, dict[str, Any]]:
         """Return successful local takes as authoritative resume inputs."""
         accepted: dict[int, dict[str, Any]] = {}
         for state in self.manifest.shots.values():
-            if state.status != ShotStatus.success or not state.local_path:
+            canonical = _canonical_take(state)
+            if canonical is not None:
+                local_value = canonical.local_path
+                last_frame_value = canonical.last_frame_url
+                semantic_accepted = canonical.semantic_accepted
+                observed_end_state = canonical.observed_end_state
+                quality_score = canonical.quality_score
+                technical_quality_score = canonical.technical_quality_score
+                model_used = canonical.model_used
+                resolution_used = canonical.resolution_used
+                prompt_fingerprint = canonical.prompt_fingerprint
+                compiled_contract_version = canonical.compiled_contract_version
+                compiled_contract_fingerprint = canonical.compiled_contract_fingerprint
+                accepted_contract_version = canonical.accepted_contract_version
+                accepted_contract_fingerprint = canonical.accepted_contract_fingerprint
+                semantic_evaluator_version = canonical.semantic_evaluator_version
+                acceptance_policy = canonical.acceptance_policy
+                errors = canonical.errors
+            elif state.status == ShotStatus.success and state.local_path:
+                local_value = state.local_path
+                last_frame_value = state.last_frame_url
+                semantic_accepted = state.semantic_accepted
+                observed_end_state = state.observed_end_state
+                quality_score = state.quality_score
+                technical_quality_score = state.technical_quality_score
+                model_used = state.model_used
+                resolution_used = state.resolution_used
+                prompt_fingerprint = state.prompt_fingerprint
+                compiled_contract_version = state.compiled_contract_version
+                compiled_contract_fingerprint = state.compiled_contract_fingerprint
+                accepted_contract_version = state.accepted_contract_version
+                accepted_contract_fingerprint = state.accepted_contract_fingerprint
+                semantic_evaluator_version = state.semantic_evaluator_version
+                acceptance_policy = state.acceptance_policy
+                errors = state.errors
+            else:
                 continue
-            local_path = self._resolve_artifact(state.local_path)
+            local_path = self._resolve_artifact(local_value)
             if not local_path or not Path(local_path).is_file():
                 continue
             accepted[state.shot_id] = {
                 "local_path": local_path,
-                "last_frame_url": self._resolve_artifact(state.last_frame_url),
-                "quality_score": state.quality_score,
-                "technical_quality_score": state.technical_quality_score,
-                "semantic_accepted": state.semantic_accepted,
-                "observed_end_state": dict(state.observed_end_state),
-                "model_used": state.model_used,
-                "resolution_used": state.resolution_used,
+                "last_frame_url": self._resolve_artifact(last_frame_value),
+                "quality_score": quality_score,
+                "technical_quality_score": technical_quality_score,
+                "semantic_accepted": semantic_accepted,
+                "observed_end_state": dict(observed_end_state),
+                "model_used": model_used,
+                "resolution_used": resolution_used,
                 "attempts": state.attempts,
-                "errors": list(state.errors),
+                "errors": list(errors),
+                "provider_error_locus": state.provider_error_locus,
+                "prompt_profile": state.prompt_profile,
+                "prompt_fingerprint": prompt_fingerprint,
+                "compiled_contract_version": compiled_contract_version,
+                "compiled_contract_fingerprint": compiled_contract_fingerprint,
+                "accepted_contract_version": accepted_contract_version,
+                "accepted_contract_fingerprint": accepted_contract_fingerprint,
+                "semantic_evaluator_version": semantic_evaluator_version,
+                "acceptance_policy": acceptance_policy,
+                "recovery_actions": list(state.recovery_actions),
+                "prompt_attempts": [
+                    attempt.model_dump(mode="json", exclude_none=True)
+                    for attempt in state.prompt_attempts
+                ],
             }
         return accepted
 
@@ -217,8 +485,6 @@ class RunWorkspace:
         if not value:
             return None
         path = Path(value)
-        if not path.is_absolute():
-            return value
         try:
             return str(path.resolve().relative_to(self.path))
         except ValueError:

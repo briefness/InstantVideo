@@ -315,6 +315,7 @@ class ProductionSlotSpec(BaseModel):
     allowed_effect_phases: list[
         Literal["none", "setup", "active", "aftermath"]
     ] = Field(min_length=1)
+    outcome_scope: Literal["none", "single", "subset", "all"] | None = None
     requires_visible_result: bool
     coverage_roles: list[
         Literal[
@@ -445,6 +446,42 @@ class ShotSpec(BaseModel):
     @classmethod
     def strip_required_text(cls, value: Any) -> Any:
         return value.strip() if isinstance(value, str) else value
+
+
+class StorySpineShotSpec(BaseModel):
+    """Compact global intent for one production slot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shot_id: int = Field(gt=0)
+    scene_id: str = Field(min_length=1)
+    narrative_function: Literal["setup", "progress", "turn", "payoff"]
+    state_before: str = Field(min_length=1)
+    state_change: str = Field(min_length=1)
+    state_after: str = Field(min_length=1)
+    primary_action: str = Field(min_length=1)
+    characters: list[str] = Field(default_factory=list)
+
+
+class StorySpineSpec(BaseModel):
+    """Global story authority compiled before detailed shot payloads."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = ""
+    mood: str = "cinematic"
+    music_style: str = "cinematic orchestral"
+    theme_elements: list[str] = Field(default_factory=list)
+    story_arc: StoryArcSpec
+    characters: list[CharacterSpec] = Field(default_factory=list)
+    shot_intents: list[StorySpineShotSpec] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_ordered_shot_ids(self) -> "StorySpineSpec":
+        ids = [intent.shot_id for intent in self.shot_intents]
+        if ids != sorted(set(ids)):
+            raise ValueError("shot_intents shot_id 必须唯一且递增")
+        return self
 
 
 def _normalize_action_phase(value: Any, *, index: int, count: int) -> str:
@@ -578,12 +615,96 @@ class RunOptions(BaseModel):
         return value
 
 
+class PromptAttemptState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attempt: int = Field(gt=0)
+    profile: Literal["normal", "policy_safe"]
+    fingerprint: str = Field(
+        min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    outcome: Literal["pending", "succeeded", "failed"]
+    provider_task_id: str | None = None
+    provider_error_locus: str | None = None
+    provider_error_code: str | None = None
+
+
+class PendingTaskDescriptor(BaseModel):
+    """Immutable identity of one already-submitted provider request."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    task_id: str = Field(min_length=1)
+    prompt_profile: Literal["normal", "policy_safe"]
+    prompt_fingerprint: str = Field(
+        min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    compiled_contract_version: str = Field(min_length=1)
+    compiled_contract_fingerprint: str = Field(
+        min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+
+
+class TakeRecordState(BaseModel):
+    """Immutable observation record for one generated Take."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    take_id: str = Field(min_length=1)
+    disposition: Literal["accepted", "rejected"]
+    local_path: str = Field(min_length=1)
+    last_frame_url: str | None = None
+    semantic_accepted: bool | None = None
+    observed_end_state: dict[str, str] = Field(default_factory=dict)
+    quality_score: int = 0
+    technical_quality_score: int = 0
+    model_used: str = ""
+    resolution_used: str = ""
+    prompt_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    compiled_contract_version: str | None = None
+    compiled_contract_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    accepted_contract_version: str | None = None
+    accepted_contract_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    semantic_evaluator_version: str | None = None
+    acceptance_policy: Literal["semantic_reviewed", "technical_only"] | None = None
+    errors: list[str] = Field(default_factory=list)
+
+
 class ShotTaskState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     shot_id: int = Field(gt=0)
     status: ShotStatus = ShotStatus.pending
     provider_task_id: str | None = None
+    pending_task: PendingTaskDescriptor | None = None
+    provider_error_type: str | None = None
+    provider_error_code: str | None = None
+    provider_error_message: str | None = None
+    provider_error_locus: str | None = None
+    prompt_profile: Literal["normal", "policy_safe"] | None = None
+    prompt_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    compiled_contract_version: str | None = None
+    compiled_contract_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    accepted_contract_version: str | None = None
+    accepted_contract_fingerprint: str | None = Field(
+        default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+    )
+    semantic_evaluator_version: str | None = None
+    acceptance_policy: Literal["semantic_reviewed", "technical_only"] | None = None
+    recovery_actions: list[str] = Field(default_factory=list)
+    prompt_attempts: list[PromptAttemptState] = Field(default_factory=list)
+    take_history: list[TakeRecordState] = Field(default_factory=list)
+    canonical_take_id: str | None = None
     local_path: str | None = None
     last_frame_url: str | None = None
     quality_score: int = 0
@@ -622,3 +743,8 @@ def validate_storyboard_draft(data: dict[str, Any]) -> dict[str, Any]:
         data,
         extra="ignore",
     ).model_dump(mode="json", exclude_none=True)
+
+
+def validate_story_spine(data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the compact global artifact before requesting shot details."""
+    return StorySpineSpec.model_validate(data).model_dump(mode="json")

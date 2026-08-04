@@ -1,5 +1,6 @@
 """角色一致性 + 画面衔接逻辑测试"""
 
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -8,17 +9,37 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import config
 from pipeline.generator import (
     RemoteTaskPendingError,
     ShotResult,
     VideoGenerator,
 )
-from pipeline.semantic_review import SemanticReview
+from pipeline.models import RunOptions
+from pipeline.run_state import RunWorkspace
+from pipeline.semantic_review import SEMANTIC_REVIEW_VERSION, SemanticReview
 
 
 @pytest.fixture
 def generator():
     return VideoGenerator(tempfile.mkdtemp())
+
+
+def _record_progress(workspace: RunWorkspace):
+    def record(result: ShotResult) -> None:
+        workspace.record_shot(
+            shot_id=result.shot_id,
+            status=result.status,
+            provider_task_id=result.provider_task_id,
+            prompt_profile=result.prompt_profile,
+            prompt_fingerprint=result.prompt_fingerprint,
+            compiled_contract_version=result.compiled_contract_version,
+            compiled_contract_fingerprint=result.compiled_contract_fingerprint,
+            prompt_attempts=result.prompt_attempts,
+            attempts=result.attempts,
+            errors=result.errors,
+        )
+    return record
 
 
 class TestShotHasCharacter:
@@ -402,6 +423,545 @@ async def test_resume_provenance_mismatch_stops_without_paid_generation(
 
 
 @pytest.mark.asyncio
+async def test_pending_task_with_missing_compiled_contract_stops_before_api_poll(
+    generator,
+):
+    class NoPollAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            pytest.fail("mismatched pending task must not be polled or resubmitted")
+
+    generator.api = NoPollAPI()
+    generator.resume_task_ids = {1: "old-remote-task"}
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A neutral legacy shot.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 0
+    assert "未轮询、未提交" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_normal_pending_descriptor_polls_same_task_without_new_submission(
+    generator,
+):
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral legacy shot."}
+    fingerprint = "a" * 64
+    descriptor = {
+        "task_id": "normal-pending-task",
+        "prompt_profile": "normal",
+        "prompt_fingerprint": fingerprint,
+        "compiled_contract_version": "action-contract-v2",
+        "compiled_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+    }
+    provenance = generator._generation_provenance(
+        shot, [], None, prompt_profile="normal", prompt_fingerprint=fingerprint
+    )
+    generator._write_generation_provenance(1, provenance, descriptor["task_id"])
+
+    class PollOnlyAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.task_ids = []
+            self.creates = 0
+
+        async def generate(self, **kwargs):
+            self.task_ids.append(kwargs["task_id"])
+            if kwargs["task_id"] is None:
+                self.creates += 1
+                pytest.fail("pending resume must not create a task")
+            return {
+                "status": "failed",
+                "error_type": "poll_timeout",
+                "provider_task_id": kwargs["task_id"],
+                "error": "still pending",
+            }
+
+    generator.api = PollOnlyAPI()
+    generator.semantic_reviewer = None
+    generator.resume_tasks = {1: descriptor}
+
+    result = await generator._generate_single_shot(
+        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    )
+
+    assert result.status == "running"
+    assert generator.api.task_ids == ["normal-pending-task"]
+    assert generator.api.creates == 0
+
+
+@pytest.mark.asyncio
+async def test_pending_descriptor_uses_poll_api_without_submitting_prompt(generator):
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral legacy shot."}
+    fingerprint = "d" * 64
+    descriptor = {
+        "task_id": "poll-only-task",
+        "prompt_profile": "normal",
+        "prompt_fingerprint": fingerprint,
+        "compiled_contract_version": "action-contract-v2",
+        "compiled_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+    }
+    generator._write_generation_provenance(
+        1,
+        generator._generation_provenance(
+            shot, [], None, prompt_profile="normal", prompt_fingerprint=fingerprint
+        ),
+        descriptor["task_id"],
+    )
+
+    class PollOnlyAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.task_ids = []
+
+        async def poll_task(self, task_id, *, timeout):
+            self.task_ids.append((task_id, timeout))
+            return {
+                "status": "failed",
+                "error_type": "poll_timeout",
+                "provider_task_id": task_id,
+                "error": "still pending",
+            }
+
+        async def generate(self, **_kwargs):
+            pytest.fail("an existing task must not enter the submit API")
+
+    generator.resume_tasks = {1: descriptor}
+    generator.api = PollOnlyAPI()
+    generator.semantic_reviewer = None
+
+    result = await generator._generate_single_shot(
+        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    )
+
+    assert result.status == "running"
+    assert generator.api.task_ids == [("poll-only-task", config.GENERATION_TIMEOUT)]
+
+
+@pytest.mark.asyncio
+async def test_download_outage_resumes_the_same_succeeded_task_without_resubmit(
+    tmp_path: Path, monkeypatch
+):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    storyboard = workspace.save_storyboard({
+        "title": "Test",
+        "aspect_ratio": "16:9",
+        "resolution": "480p",
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "A neutral scene",
+            "prompt_en": "A neutral scene",
+        }],
+    })
+    shot = storyboard["shots"][0]
+
+    class SubmitThenDownloadOutage:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.creates = 0
+
+        async def generate(self, **kwargs):
+            assert kwargs["task_id"] is None
+            self.creates += 1
+            return {
+                "status": "succeeded",
+                "provider_task_id": "succeeded-task",
+                "video_url": "remote-video",
+            }
+
+        async def download_video(self, _url, _path):
+            raise OSError("temporary local storage outage")
+
+    first = VideoGenerator(str(workspace.path), on_progress=_record_progress(workspace))
+    first.api = SubmitThenDownloadOutage()
+    first.semantic_reviewer = None
+    first_result = await first._generate_single_shot(shot, None, None, storyboard)
+
+    assert first_result.status == "running"
+    assert first.api.creates == 1
+    descriptor = RunWorkspace.resume(workspace.path).resumable_pending_tasks()[1]
+    assert descriptor["task_id"] == "succeeded-task"
+
+    class PollThenDownload:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.polls = []
+
+        async def poll_task(self, task_id, *, timeout):
+            self.polls.append((task_id, timeout))
+            return {
+                "status": "succeeded",
+                "provider_task_id": task_id,
+                "video_url": "remote-video",
+            }
+
+        async def generate(self, **_kwargs):
+            pytest.fail("download recovery must not submit a second task")
+
+        async def download_video(self, _url, path):
+            Path(path).write_bytes(b"video")
+
+    tail = workspace.path / "shots" / "shot_001_lastframe.jpg"
+    tail.write_bytes(b"tail")
+    second = VideoGenerator(
+        str(workspace.path),
+        on_progress=_record_progress(workspace),
+        resume_tasks=RunWorkspace.resume(workspace.path).resumable_pending_tasks(),
+    )
+    second.api = PollThenDownload()
+    second.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(second, "_extract_local_tail_frame", lambda *_args: str(tail))
+
+    resumed = await second._generate_single_shot(shot, None, None, storyboard)
+
+    assert resumed.status == "success"
+    assert second.api.polls == [("succeeded-task", config.GENERATION_TIMEOUT)]
+
+
+@pytest.mark.asyncio
+async def test_policy_safe_pending_descriptor_round_trips_workspace_without_resubmit(
+    tmp_path: Path,
+    monkeypatch,
+):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    storyboard = {
+        "title": "Test",
+        "aspect_ratio": "16:9",
+        "resolution": "480p",
+        "shots": [{
+            "shot_id": 1,
+            "duration": 5,
+            "scene_description": "A neutral test scene",
+            "prompt_en": "A neutral test scene",
+        }],
+    }
+    storyboard = workspace.save_storyboard(storyboard)
+    shot = storyboard["shots"][0]
+
+    class SubmitThenTimeoutAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            if len(self.calls) == 1:
+                return {
+                    "status": "failed",
+                    "error_type": "moderation",
+                    "error_locus": "input_text",
+                    "error": "moderated",
+                }
+            kwargs["on_submitted"]("policy-pending-task")
+            return {
+                "status": "failed",
+                "error_type": "poll_timeout",
+                "provider_task_id": "policy-pending-task",
+                "error": "still pending",
+            }
+
+    first = VideoGenerator(str(workspace.path), on_progress=_record_progress(workspace))
+    first.api = SubmitThenTimeoutAPI()
+    first.semantic_reviewer = None
+    first_result = await first._generate_single_shot(
+        shot, None, None, storyboard
+    )
+
+    assert first_result.status == "running"
+    descriptor = RunWorkspace.resume(workspace.path).resumable_pending_tasks()[1]
+    assert descriptor["prompt_profile"] == "policy_safe"
+
+    class PollOnlyAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            assert kwargs["task_id"] == "policy-pending-task"
+            return {
+                "status": "failed",
+                "error_type": "poll_timeout",
+                "provider_task_id": "policy-pending-task",
+                "error": "still pending",
+            }
+
+    second = VideoGenerator(
+        str(workspace.path),
+        resume_tasks=RunWorkspace.resume(workspace.path).resumable_pending_tasks(),
+    )
+    second.api = PollOnlyAPI()
+    second.semantic_reviewer = None
+    resumed = await second._generate_single_shot(shot, None, None, storyboard)
+
+    assert resumed.status == "running"
+    assert len(second.api.calls) == 1
+    assert second.api.calls[0]["task_id"] == "policy-pending-task"
+
+
+@pytest.mark.asyncio
+async def test_tampered_pending_descriptor_stops_before_poll_or_submit(generator):
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral legacy shot."}
+    descriptor = {
+        "task_id": "tampered-pending-task",
+        "prompt_profile": "normal",
+        "prompt_fingerprint": "f" * 64,
+        "compiled_contract_version": "action-contract-v2",
+        "compiled_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+    }
+
+    class NoAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            pytest.fail("tampered descriptor must not poll or submit")
+
+    generator.api = NoAPI()
+    generator.resume_tasks = {1: descriptor}
+    result = await generator._generate_single_shot(
+        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 0
+    assert "提交描述符" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_unbound_accepted_take_stops_without_paid_generation(generator):
+    accepted = generator.output_dir / "shots" / "shot_001.mp4"
+    accepted.write_bytes(b"accepted")
+
+    class NoGenerationAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            pytest.fail("unbound accepted take must not authorize a generation")
+
+    generator.api = NoGenerationAPI()
+    generator.semantic_reviewer = None
+    generator.accepted_shot_artifacts = {
+        1: {
+            "local_path": str(accepted),
+            "semantic_accepted": True,
+        },
+    }
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A neutral legacy shot.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 0
+    assert "编译合同、有效提示词" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_offline_revalidated_take_is_reused_on_next_resume_with_tail(
+    generator, monkeypatch
+):
+    accepted = generator.output_dir / "shots" / "shot_001.mp4"
+    accepted.write_bytes(b"accepted")
+    (generator.output_dir / "shots" / "shot_001_generation.json").write_text(
+        json.dumps({
+            "image_role": None,
+            "reference_fingerprints": [],
+        }),
+        encoding="utf-8",
+    )
+
+    class NoGenerationAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            pytest.fail("local revalidation must not submit a video task")
+
+    class AcceptingReviewer:
+        def __init__(self):
+            self.calls = 0
+
+        def review(self, *_args, **_kwargs):
+            self.calls += 1
+            return SemanticReview(
+                accepted=True,
+                required_entities_visible={},
+                action_geometry_valid=True,
+                primary_action_completed=True,
+                observed_end_state={"action_phase": "accepted"},
+            )
+
+        def accepted_identity_crop_boxes(self, _path):
+            return {}
+
+    def persist_tail(shot_id, _path):
+        tail = generator.output_dir / "shots" / f"shot_{shot_id:03d}_lastframe.jpg"
+        tail.write_bytes(b"tail")
+        return str(tail)
+
+    generator.api = NoGenerationAPI()
+    reviewer = AcceptingReviewer()
+    generator.semantic_reviewer = reviewer
+    generator.accepted_shot_artifacts = {
+        1: {"local_path": str(accepted), "semantic_accepted": True},
+    }
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(generator, "_extract_local_tail_frame", persist_tail)
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral legacy shot."}
+    storyboard = {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+
+    first = await generator._generate_single_shot(shot, None, None, storyboard)
+
+    assert first.status == "success"
+    assert reviewer.calls == 1
+    assert generator.api.calls == 0
+    assert Path(first.last_frame_url).is_file()
+
+    second_generator = VideoGenerator(str(generator.output_dir))
+    second_generator.api = NoGenerationAPI()
+    second_reviewer = AcceptingReviewer()
+    second_generator.semantic_reviewer = second_reviewer
+    second_generator.accepted_shot_artifacts = {
+        1: {
+            "local_path": first.local_path,
+            "last_frame_url": first.last_frame_url,
+            "semantic_accepted": first.semantic_accepted,
+            "accepted_contract_version": first.accepted_contract_version,
+            "accepted_contract_fingerprint": first.accepted_contract_fingerprint,
+            "semantic_evaluator_version": first.semantic_evaluator_version,
+            "acceptance_policy": first.acceptance_policy,
+        },
+    }
+
+    second = await second_generator._generate_single_shot(shot, None, None, storyboard)
+
+    assert second.status == "success"
+    assert second_reviewer.calls == 0
+    assert second_generator.api.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_accepted_resume_restores_cached_identity_crops_without_review(
+    generator,
+    monkeypatch,
+):
+    accepted = generator.output_dir / "shots" / "shot_001.mp4"
+    accepted.write_bytes(b"accepted-take")
+    crop_boxes = {"combat_cleaner_robot": (0.1, 0.2, 0.8, 0.9)}
+    registered = []
+
+    class CachedCropReviewer:
+        def __init__(self):
+            self.cache_reads = []
+
+        def accepted_identity_crop_boxes(self, video_path):
+            self.cache_reads.append(video_path)
+            return crop_boxes
+
+        def review(self, *_args, **_kwargs):
+            pytest.fail("accepted resume must not re-review its local video")
+
+    reviewer = CachedCropReviewer()
+    generator.semantic_reviewer = reviewer
+    generator.accepted_shot_artifacts = {
+        1: {"local_path": str(accepted), "semantic_accepted": True}
+    }
+    monkeypatch.setattr(
+        generator,
+        "_extract_local_tail_frame",
+        lambda *_args: "accepted-tail.jpg",
+    )
+    monkeypatch.setattr(
+        generator,
+        "_register_identity_crops",
+        lambda **kwargs: registered.append(kwargs),
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "The cleaner clears the marked area.",
+        "characters": ["combat_cleaner_robot"],
+    }
+    (generator.output_dir / "shots" / "shot_001_generation.json").write_text(
+        json.dumps({
+            "image_role": None,
+            "reference_fingerprints": [],
+            "acceptance_context": generator._acceptance_context(shot, [], None),
+        }),
+        encoding="utf-8",
+    )
+    generator.accepted_shot_artifacts[1].update({
+        "accepted_contract_version": "action-contract-v2",
+        "accepted_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+        "semantic_evaluator_version": SEMANTIC_REVIEW_VERSION,
+        "acceptance_policy": "semantic_reviewed",
+    })
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "success"
+    assert reviewer.cache_reads == [str(accepted)]
+    assert registered == [{
+        "shot_id": 1,
+        "video_path": str(accepted),
+        "crop_boxes": crop_boxes,
+    }]
+
+
+@pytest.mark.asyncio
 async def test_observed_end_state_does_not_replace_planned_contract(
     generator, monkeypatch
 ):
@@ -706,6 +1266,516 @@ async def test_semantic_retake_is_bounded_across_resume(generator, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_rejected_cached_take_submits_new_provider_task(generator, monkeypatch):
+    cached = generator.output_dir / "shots" / "shot_001.mp4"
+    cached.write_bytes(b"rejected-cached-take")
+    generator.resume_task_ids = {1: "rejected-provider-task"}
+
+    class RejectThenAcceptReviewer:
+        def __init__(self):
+            self.calls = 0
+
+        def review(self, _video_path, _shot, **_context):
+            self.calls += 1
+            accepted = self.calls == 2
+            return SemanticReview(
+                accepted=accepted,
+                required_entities_visible={"robot": True},
+                action_geometry_valid=accepted,
+                primary_action_completed=accepted,
+                observed_end_state={"action_phase": "complete"} if accepted else {},
+                failure_reason="target effect appears during setup" if not accepted else "",
+            )
+
+    class CapturingAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "status": "succeeded",
+                "provider_task_id": "new-provider-task",
+                "video_url": "new-take",
+            }
+
+        async def download_video(self, video_url, save_path):
+            Path(save_path).write_bytes(video_url.encode())
+
+    generator.api = CapturingAPI()
+    generator.semantic_reviewer = RejectThenAcceptReviewer()
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A robot holds position while its sensor activates.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "success"
+    assert generator.api.calls[0]["task_id"] is None
+    assert result.provider_task_id == "new-provider-task"
+    assert result.prompt_attempts[-1]["provider_task_id"] == "new-provider-task"
+
+
+@pytest.mark.asyncio
+async def test_rejected_downloaded_pending_take_consumes_descriptor_before_retake(
+    generator, monkeypatch
+):
+    """A rejected local result turns its pending remote task into a new retake."""
+    cached = generator.output_dir / "shots" / "shot_001.mp4"
+    cached.write_bytes(b"downloaded-pending-take")
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A machine pauses before a marked obstacle.",
+    }
+    fingerprint = "b" * 64
+    descriptor = {
+        "task_id": "completed-but-rejected-task",
+        "prompt_profile": "normal",
+        "prompt_fingerprint": fingerprint,
+        "compiled_contract_version": "action-contract-v2",
+        "compiled_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+    }
+    generator._write_generation_provenance(
+        1,
+        generator._generation_provenance(
+            shot, [], None, prompt_profile="normal", prompt_fingerprint=fingerprint
+        ),
+        descriptor["task_id"],
+    )
+
+    class RejectThenAcceptReviewer:
+        def __init__(self):
+            self.calls = 0
+
+        def review(self, _video_path, _shot, **_context):
+            self.calls += 1
+            accepted = self.calls == 2
+            return SemanticReview(
+                accepted=accepted,
+                required_entities_visible={},
+                action_geometry_valid=accepted,
+                primary_action_completed=accepted,
+                observed_end_state={},
+                failure_reason="endpoint is not visibly established" if not accepted else "",
+            )
+
+    class RetakeOnlyAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "status": "succeeded",
+                "provider_task_id": "retake-task",
+                "video_url": "retake-video",
+            }
+
+        async def download_video(self, _video_url, save_path):
+            Path(save_path).write_bytes(b"retake-video")
+
+    generator.resume_tasks = {1: descriptor}
+    generator.api = RetakeOnlyAPI()
+    generator.semantic_reviewer = RejectThenAcceptReviewer()
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+
+    result = await generator._generate_single_shot(
+        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    )
+
+    assert result.status == "success"
+    assert len(generator.api.calls) == 1
+    assert generator.api.calls[0]["task_id"] is None
+    assert generator.api.calls[0]["prompt"] != "Resume the already submitted provider task."
+    assert "endpoint is not visibly established" in generator.api.calls[0]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_offline_revalidation_persists_latest_acceptance_context_for_resume(
+    generator, monkeypatch
+):
+    """An accepted re-review binds to the current boundary without rewriting lineage."""
+    old_tail = generator.output_dir / "old_tail.jpg"
+    new_tail = generator.output_dir / "new_tail.jpg"
+    accepted_tail = generator.output_dir / "accepted_tail.jpg"
+    old_tail.write_bytes(b"old boundary")
+    new_tail.write_bytes(b"new boundary")
+    accepted_tail.write_bytes(b"accepted boundary")
+    video = generator.output_dir / "shots" / "shot_002.mp4"
+    video.write_bytes(b"accepted local take")
+    shot = {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "same_scene",
+        "prompt_en": "Continue from the observed starting state.",
+        "continuity_from_previous": "seamless",
+    }
+    storyboard = {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    fingerprint = "c" * 64
+    generator._write_generation_provenance(
+        2,
+        generator._generation_provenance(
+            shot,
+            [str(old_tail)],
+            "first_frame",
+            prompt_profile="normal",
+            prompt_fingerprint=fingerprint,
+        ),
+        "original-task",
+    )
+    artifact = {
+        "local_path": str(video),
+        "last_frame_url": str(accepted_tail),
+        "semantic_accepted": True,
+        "accepted_contract_version": "action-contract-v2",
+        "accepted_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+        "semantic_evaluator_version": SEMANTIC_REVIEW_VERSION,
+        "acceptance_policy": "semantic_reviewed",
+    }
+
+    class AcceptCurrentBoundaryReviewer:
+        calls = 0
+
+        def review(self, _video_path, _shot, **_context):
+            self.calls += 1
+            return SemanticReview(
+                accepted=True,
+                required_entities_visible={},
+                action_geometry_valid=True,
+                primary_action_completed=True,
+                observed_end_state={"boundary": "current"},
+            )
+
+    reviewer = AcceptCurrentBoundaryReviewer()
+    generator.accepted_shot_artifacts = {2: artifact}
+    generator.semantic_reviewer = reviewer
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: str(accepted_tail)
+    )
+
+    revalidated = await generator._generate_single_shot(
+        shot,
+        str(new_tail),
+        {"shot_id": 1, "scene_id": "same_scene"},
+        storyboard,
+    )
+
+    stored = json.loads(
+        (generator.output_dir / "shots" / "shot_002_generation.json").read_text()
+    )
+    assert reviewer.calls == 1
+    assert stored["reference_fingerprints"] == [
+        generator._reference_fingerprint(str(old_tail))
+    ]
+    assert stored["acceptance_context"]["reference_fingerprints"] == [
+        generator._reference_fingerprint(str(new_tail))
+    ]
+
+    class MustNotReview:
+        def review(self, *_args, **_kwargs):
+            pytest.fail("latest acceptance context must be reusable without review")
+
+        def accepted_identity_crop_boxes(self, _video_path):
+            return []
+
+    class MustNotGenerate:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            pytest.fail("latest accepted take must not create or poll a task")
+
+    resumed = VideoGenerator(
+        str(generator.output_dir),
+        accepted_shot_artifacts={
+            2: {
+                **artifact,
+                "last_frame_url": revalidated.last_frame_url,
+                "semantic_accepted": revalidated.semantic_accepted,
+                "observed_end_state": revalidated.observed_end_state,
+                "accepted_contract_version": revalidated.accepted_contract_version,
+                "accepted_contract_fingerprint": revalidated.accepted_contract_fingerprint,
+                "semantic_evaluator_version": revalidated.semantic_evaluator_version,
+            }
+        },
+    )
+    resumed.semantic_reviewer = MustNotReview()
+    resumed.api = MustNotGenerate()
+
+    restored = await resumed._generate_single_shot(
+        shot,
+        str(new_tail),
+        {"shot_id": 1, "scene_id": "same_scene"},
+        storyboard,
+    )
+
+    assert restored.status == "success"
+
+
+@pytest.mark.asyncio
+async def test_technical_only_take_is_reusable_without_claiming_semantic_acceptance(
+    generator, monkeypatch
+):
+    """Disabled semantic review has a distinct, durable acceptance policy."""
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral test shot."}
+    storyboard = {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    tail = generator.output_dir / "shots" / "shot_001_lastframe.jpg"
+    tail.write_bytes(b"tail")
+
+    class SuccessfulAPI:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            return {"status": "succeeded", "video_url": "technical-only"}
+
+        async def download_video(self, _url, path):
+            Path(path).write_bytes(b"video")
+
+    generator.api = SuccessfulAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: str(tail)
+    )
+
+    first = await generator._generate_single_shot(shot, None, None, storyboard)
+
+    assert first.status == "success"
+    assert first.semantic_accepted is None
+    assert first.acceptance_policy == "technical_only"
+    assert first.semantic_evaluator_version is None
+
+    class MustNotGenerate:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            pytest.fail("technical-only accepted take must not submit or poll")
+
+    resumed = VideoGenerator(
+        str(generator.output_dir),
+        accepted_shot_artifacts={
+            1: {
+                "local_path": first.local_path,
+                "last_frame_url": first.last_frame_url,
+                "semantic_accepted": first.semantic_accepted,
+                "accepted_contract_version": first.accepted_contract_version,
+                "accepted_contract_fingerprint": first.accepted_contract_fingerprint,
+                "semantic_evaluator_version": first.semantic_evaluator_version,
+                "acceptance_policy": first.acceptance_policy,
+            }
+        },
+    )
+    resumed.api = MustNotGenerate()
+    resumed.semantic_reviewer = None
+
+    restored = await resumed._generate_single_shot(shot, None, None, storyboard)
+
+    assert restored.status == "success"
+    assert restored.semantic_accepted is None
+    assert restored.acceptance_policy == "technical_only"
+
+
+def test_local_cache_acceptance_context_is_persisted_without_generation_lineage(
+    generator,
+):
+    video = generator.output_dir / "shots" / "shot_001.mp4"
+    video.write_bytes(b"local-cache")
+    shot = {
+        "shot_id": 1,
+        "interaction_geometry": {"effect_phase": "none"},
+    }
+
+    generator._write_acceptance_context(
+        1,
+        str(video),
+        shot,
+        [],
+        None,
+        policy="technical_only",
+    )
+
+    sidecar = video.with_name("shot_001_generation.json")
+    stored = json.loads(sidecar.read_text(encoding="utf-8"))
+    assert stored["version"] == "acceptance-only-v1"
+    assert stored["acceptance_context"]["policy"] == "technical_only"
+    assert generator._restored_provenance_matches(
+        {
+            "acceptance_policy": "technical_only",
+            "accepted_contract_version": "action-contract-v2",
+            "accepted_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+        },
+        str(video),
+        shot,
+        [],
+        None,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("resume_task_id", "expected_api_task_id"),
+    [
+        ("rejected-provider-task", None),
+        ("already-submitted-retake-task", "already-submitted-retake-task"),
+    ],
+)
+async def test_duplicate_rejected_files_consume_one_take_budget(
+    generator, monkeypatch, resume_task_id, expected_api_task_id
+):
+    shots_dir = generator.output_dir / "shots"
+    first = shots_dir / "shot_001_rejected_1.mp4"
+    duplicate = shots_dir / "shot_001_rejected_2.mp4"
+    first.write_bytes(b"same-provider-take")
+    duplicate.write_bytes(b"same-provider-take")
+    (shots_dir / "shot_001_rejected_1_generation.json").write_text(
+        json.dumps({"provider_task_id": "rejected-provider-task"}),
+        encoding="utf-8",
+    )
+    (shots_dir / "shot_001_rejected_2_generation.json").write_text(
+        json.dumps({"provider_task_id": None}),
+        encoding="utf-8",
+    )
+    generator.resume_task_ids = {1: resume_task_id}
+
+    class RejectHistoryAcceptRetakeReviewer:
+        def review(self, video_path, _shot, **_context):
+            accepted = "_rejected_" not in video_path
+            return SemanticReview(
+                accepted=accepted,
+                required_entities_visible={"robot": True},
+                action_geometry_valid=accepted,
+                primary_action_completed=accepted,
+                observed_end_state={"action_phase": "complete"} if accepted else {},
+                failure_reason="physical result begins before the active phase"
+                if not accepted else "",
+            )
+
+    class OneRetakeAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "status": "succeeded",
+                "provider_task_id": "actual-retake-task",
+                "video_url": "actual-retake",
+            }
+
+        async def download_video(self, video_url, save_path):
+            Path(save_path).write_bytes(video_url.encode())
+
+    generator.api = OneRetakeAPI()
+    generator.semantic_reviewer = RejectHistoryAcceptRetakeReviewer()
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A robot holds position while its sensor activates.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    if expected_api_task_id:
+        assert result.status == "failed"
+        assert generator.api.calls == []
+        assert "待恢复远端任务" in result.errors[-1]
+    else:
+        assert result.status == "success"
+        assert len(generator.api.calls) == 1
+        assert generator.api.calls[0]["task_id"] is None
+        assert "physical result begins before the active phase" in generator.api.calls[0]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_provider_success_result_restores_provider_identity(generator, monkeypatch):
+    class ProviderIdentityAPI:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            return {
+                "status": "succeeded",
+                "provider_task_id": "provider-task-from-result",
+                "video_url": "take",
+            }
+
+        async def download_video(self, video_url, save_path):
+            Path(save_path).write_bytes(video_url.encode())
+
+    generator.api = ProviderIdentityAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A quiet city street."}
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    provenance = json.loads(
+        (generator.output_dir / "shots" / "shot_001_generation.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert result.status == "success"
+    assert result.provider_task_id == "provider-task-from-result"
+    assert result.prompt_attempts[-1]["provider_task_id"] == "provider-task-from-result"
+    assert provenance["provider_task_id"] == "provider-task-from-result"
+
+
+@pytest.mark.asyncio
 async def test_privacy_rejection_without_references_stops_without_duplicate_requests(
     generator,
 ):
@@ -740,6 +1810,281 @@ async def test_privacy_rejection_without_references_stops_without_duplicate_requ
     assert result.status == "failed"
     assert generator.api.calls == 1
     assert "停止重试" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_copyright_policy_retries_once_without_changing_reference_duties(
+    generator, monkeypatch
+):
+    class CopyrightThenSuccessAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            if len(self.calls) == 1:
+                return {
+                    "status": "failed",
+                    "error_type": "copyright_policy",
+                    "error_code": (
+                        "OutputVideoSensitiveContentDetected.PolicyViolation"
+                    ),
+                    "error": "The output may be related to copyright restrictions.",
+                }
+            return {"status": "succeeded", "video_url": "accepted-take"}
+
+        async def download_video(self, _video_url, save_path):
+            Path(save_path).write_bytes(b"accepted")
+
+    generator.api = CopyrightThenSuccessAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "Two original fictional travelers cross a mountain pass.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "success"
+    assert len(generator.api.calls) == 2
+    assert generator.api.calls[0]["image_urls"] is None
+    assert generator.api.calls[1]["image_urls"] is None
+    assert "Copyright boundary clarification" in generator.api.calls[1]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_repeated_copyright_policy_rejection_stops_after_one_safe_retry(
+    generator,
+):
+    class CopyrightRejectingAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            return {
+                "status": "failed",
+                "error_type": "copyright_policy",
+                "error_code": "OutputVideoSensitiveContentDetected.PolicyViolation",
+                "error": "The output may be related to copyright restrictions.",
+            }
+
+    generator.api = CopyrightRejectingAPI()
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "An original abstract kinetic sculpture rotates.",
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 2
+    assert "版权策略" in result.errors[-1]
+    assert "隐私" not in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_input_text_moderation_recompiles_once_without_changing_contract(
+    generator, monkeypatch
+):
+    class InputModerationThenSuccessAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = []
+
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            if len(self.calls) == 1:
+                return {
+                    "status": "failed",
+                    "error_type": "moderation",
+                    "error_locus": "input_text",
+                    "error_code": "InputTextSensitiveContentDetected",
+                    "error": "The input text may contain sensitive information.",
+                }
+            return {"status": "succeeded", "video_url": "accepted-take"}
+
+        async def download_video(self, _video_url, save_path):
+            Path(save_path).write_bytes(b"accepted")
+
+    generator.api = InputModerationThenSuccessAPI()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.check_video_quality",
+        lambda _path: {"pass": True, "quality_score": 100, "issues": []},
+    )
+    monkeypatch.setattr(
+        generator, "_extract_local_tail_frame", lambda *_args: "tail.jpg"
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "RAW_FREEFORM_PROMPT rejected by the provider.",
+        "primary_action": "RAW_PRIMARY_ACTION",
+        "required_visible_entities": ["combat_robot", "zombie_horde"],
+        "camera": {
+            "start_framing": "wide shot",
+            "primary_movement": "fixed",
+            "screen_positions": {
+                "combat_robot": "left foreground",
+                "zombie_horde": "right background",
+            },
+        },
+        "action_beats": [{
+            "phase": "peak",
+            "actor": "combat_robot",
+            "action": "RAW_BEAT_ACTION",
+            "target": "zombie_horde",
+            "visible_result": "RAW_VISIBLE_RESULT",
+        }],
+        "interaction_geometry": {
+            "actor": "combat_robot",
+            "target": "zombie_horde",
+            "effect_phase": "active",
+            "interaction_mode": "directed_path",
+            "outcome_scope": "single",
+            "effect_motion": "static",
+            "source": "RAW_EFFECT_SOURCE",
+            "effect_region": "RAW_EFFECT_REGION",
+            "reaction_scope": "RAW_REACTION_SCOPE",
+            "unaffected_behavior": "RAW_UNAFFECTED_BEHAVIOR",
+            "must_share_frame": True,
+            "line_of_action_visible": True,
+        },
+        "narrative_beat": {
+            "function": "setup",
+            "state_before": "RAW_NARRATIVE_BEFORE",
+            "state_change": "RAW_NARRATIVE_CHANGE",
+            "state_after": "RAW_NARRATIVE_AFTER",
+        },
+        "negative_prompt": "RAW_NEGATIVE_PROMPT",
+    }
+    storyboard = {
+        "resolution": "480p",
+        "aspect_ratio": "16:9",
+        "style": "cinematic",
+        "characters": [{
+            "name": "combat_robot",
+            "description": "brushed steel shell with an amber optical sensor",
+        }],
+        "shots": [shot],
+    }
+
+    result = await generator._generate_single_shot(
+        shot, None, None, storyboard
+    )
+
+    assert result.status == "success"
+    assert len(generator.api.calls) == 2
+    first_prompt = generator.api.calls[0]["prompt"]
+    safe_prompt = generator.api.calls[1]["prompt"]
+    assert "RAW_PRIMARY_ACTION" in first_prompt
+    assert "RAW_BEAT_ACTION" in first_prompt
+    assert "RAW_FREEFORM_PROMPT" not in first_prompt
+    assert "RAW_VISIBLE_RESULT" in first_prompt
+    assert "RAW_NARRATIVE_BEFORE" not in first_prompt
+    assert "RAW_NARRATIVE_CHANGE" not in first_prompt
+    assert "RAW_NARRATIVE_AFTER" not in first_prompt
+    assert "RAW_NEGATIVE_PROMPT" not in first_prompt
+    assert "brushed steel shell with an amber optical sensor" in first_prompt
+    assert "directed_path" in safe_prompt
+    assert "combat robot, zombie horde" in safe_prompt
+    for raw_marker in (
+        "RAW_FREEFORM_PROMPT",
+        "RAW_PRIMARY_ACTION",
+        "RAW_BEAT_ACTION",
+        "RAW_EFFECT_SOURCE",
+        "RAW_EFFECT_REGION",
+        "RAW_REACTION_SCOPE",
+        "RAW_UNAFFECTED_BEHAVIOR",
+        "RAW_NARRATIVE_BEFORE",
+        "RAW_NARRATIVE_CHANGE",
+        "RAW_NARRATIVE_AFTER",
+        "RAW_NEGATIVE_PROMPT",
+        "RAW_CHARACTER_DESCRIPTION",
+    ):
+        assert raw_marker not in safe_prompt
+    assert "brushed steel shell with an amber optical sensor" in safe_prompt
+    assert "RAW_VISIBLE_RESULT" in safe_prompt
+    assert generator.api.calls[0]["image_urls"] == generator.api.calls[1]["image_urls"]
+    assert result.prompt_profile == "policy_safe"
+    assert result.prompt_fingerprint
+    assert result.recovery_actions == ["recompile_input_text_policy_safe"]
+    assert [attempt["profile"] for attempt in result.prompt_attempts] == [
+        "normal",
+        "policy_safe",
+    ]
+    assert [attempt["outcome"] for attempt in result.prompt_attempts] == [
+        "failed",
+        "succeeded",
+    ]
+    assert len({attempt["fingerprint"] for attempt in result.prompt_attempts}) == 2
+
+
+@pytest.mark.asyncio
+async def test_repeated_input_text_moderation_stops_after_one_recompile(generator):
+    class InputModerationAPI:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            return {
+                "status": "failed",
+                "error_type": "moderation",
+                "error_locus": "input_text",
+                "error_code": "InputTextSensitiveContentDetected",
+                "error": "The input text may contain sensitive information.",
+            }
+
+    generator.api = InputModerationAPI()
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A fictional scene.",
+        "primary_action": "subject crosses the room",
+        "required_visible_entities": ["subject"],
+    }
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 2
+    assert "已停止重试" in result.errors[-1]
+    assert result.provider_error_locus == "input_text"
+    assert result.recovery_actions == ["recompile_input_text_policy_safe"]
+    assert len(result.prompt_attempts) == 2
 
 
 @pytest.mark.asyncio
@@ -1034,6 +2379,59 @@ class TestContinuityContract:
         assert "facing zombies" in result
         assert "action directed at zombies" in result
         assert "peak: robot fires one burst toward zombies" in result
+
+    def test_setup_shot_contract_does_not_reinject_forbidden_target_outcomes(
+        self, generator
+    ):
+        shot = {
+            "primary_action": "RAW_PRIMARY_ACTION",
+            "interaction_geometry": {
+                "actor": "robot",
+                "target": "target_group",
+                "effect_phase": "setup",
+                "interaction_mode": "none",
+                "outcome_scope": "none",
+                "effect_motion": "none",
+                "unaffected_behavior": "TARGETS_KEEP_PRIOR_MOTION",
+            },
+            "action_beats": [{
+                "phase": "trigger",
+                "actor": "robot",
+                "action": "RAW_BEAT_ACTION",
+                "target": "target_group",
+                "visible_result": "RAW_TARGET_RESULT",
+            }],
+            "narrative_beat": {
+                "function": "setup",
+                "state_before": "RAW_BEFORE",
+                "state_change": "RAW_CHANGE",
+                "state_after": "RAW_OUTCOME",
+            },
+            "end_state": {
+                "subject": "robot",
+                "action_phase": "RAW_ACTION_PHASE",
+                "pose_and_gaze": "ROBOT_READY_POSE",
+                "prop_state": "RAW_PROP_STATE",
+                "open_motion": "RAW_TARGET_MOTION",
+            },
+        }
+
+        result = generator._inject_shot_contract("A restrained setup shot.", shot)
+
+        assert "robot visibly prepares toward target_group" in result
+        assert "ROBOT_READY_POSE" in result
+        assert "TARGETS_KEEP_PRIOR_MOTION" in result
+        for leaked in (
+            "RAW_TARGET_RESULT",
+            "RAW_PRIMARY_ACTION",
+            "RAW_BEAT_ACTION",
+            "RAW_ACTION_PHASE",
+            "RAW_PROP_STATE",
+            "RAW_CHANGE",
+            "RAW_OUTCOME",
+            "RAW_TARGET_MOTION",
+        ):
+            assert leaked not in result
 
     def test_shot_contract_compiles_generic_causal_scope(self, generator):
         shot = {

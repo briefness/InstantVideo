@@ -243,6 +243,101 @@ def test_workspace_persists_resumable_provider_task_atomically(tmp_path: Path):
     assert resumed.manifest.shots["1"].last_frame_url is None
 
 
+def test_workspace_normalizes_prefixed_relative_artifact_path(
+    tmp_path: Path, monkeypatch
+):
+    workspace = RunWorkspace.create(
+        tmp_path / "runs",
+        RunOptions(request="A test video"),
+    )
+    workspace.save_storyboard(storyboard())
+    video = workspace.path / "shots" / "shot_001.mp4"
+    video.parent.mkdir(exist_ok=True)
+    video.write_bytes(b"video")
+    monkeypatch.chdir(tmp_path)
+
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        local_path=str(video.relative_to(tmp_path)),
+        semantic_accepted=True,
+    )
+
+    assert workspace.manifest.shots["1"].local_path == "shots/shot_001.mp4"
+    assert workspace.accepted_shot_artifacts()[1]["local_path"] == str(video)
+
+
+def test_workspace_round_trips_prompt_recovery_ledger(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    workspace.save_storyboard(storyboard())
+    attempts = [
+        {
+            "attempt": 1,
+            "profile": "normal",
+            "fingerprint": "a" * 64,
+            "outcome": "failed",
+            "provider_error_locus": "input_text",
+            "provider_error_code": "InputTextSensitiveContentDetected",
+        },
+        {
+            "attempt": 2,
+            "profile": "policy_safe",
+            "fingerprint": "b" * 64,
+            "outcome": "succeeded",
+        },
+    ]
+
+    workspace.record_shot(
+        shot_id=1,
+        status="running",
+        prompt_profile="normal",
+        prompt_fingerprint="a" * 64,
+        prompt_attempts=[{**attempts[0], "outcome": "pending"}],
+        attempts=1,
+    )
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        provider_error_locus=None,
+        prompt_profile="policy_safe",
+        prompt_fingerprint="b" * 64,
+        recovery_actions=["recompile_input_text_policy_safe"],
+        prompt_attempts=attempts,
+        attempts=2,
+    )
+
+    state = RunWorkspace.resume(workspace.path).manifest.shots["1"]
+    assert state.prompt_profile == "policy_safe"
+    assert state.prompt_fingerprint == "b" * 64
+    assert state.recovery_actions == ["recompile_input_text_policy_safe"]
+    assert [attempt.outcome for attempt in state.prompt_attempts] == [
+        "failed",
+        "succeeded",
+    ]
+
+
+def test_workspace_persists_structured_provider_outcome(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    workspace.save_storyboard(storyboard())
+
+    workspace.record_shot(
+        shot_id=1,
+        status="failed",
+        provider_task_id="ark-task-policy",
+        provider_error_type="copyright_policy",
+        provider_error_code="OutputVideoSensitiveContentDetected.PolicyViolation",
+        provider_error_message="The output may be related to copyright restrictions.",
+        attempts=1,
+    )
+
+    state = RunWorkspace.resume(workspace.path).manifest.shots["1"]
+    assert state.provider_error_type == "copyright_policy"
+    assert state.provider_error_code == (
+        "OutputVideoSensitiveContentDetected.PolicyViolation"
+    )
+    assert "copyright restrictions" in state.provider_error_message
+
+
 def test_workspace_restores_accepted_shot_artifacts_as_canonical_state(
     tmp_path: Path,
 ):
@@ -291,6 +386,66 @@ def test_resume_keeps_planned_and_observed_end_states_separate(tmp_path: Path):
 
     assert restored["end_state"]["prop_state"] == "door remains closed"
     assert restored["observed_end_state"]["prop_state"] == "door is visibly open"
+
+
+def test_rejected_take_is_retained_without_replacing_canonical_take(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    workspace.save_storyboard(storyboard())
+    accepted_path = workspace.path / "shots" / "shot_001.mp4"
+    rejected_path = workspace.path / "shots" / "shot_001_rejected_01.mp4"
+    accepted_path.parent.mkdir(exist_ok=True)
+    accepted_path.write_bytes(b"accepted")
+    rejected_path.write_bytes(b"rejected")
+
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        local_path=str(accepted_path),
+        semantic_accepted=True,
+        observed_end_state={"action_phase": "door opened"},
+    )
+    workspace.record_shot(
+        shot_id=1,
+        status="failed",
+        local_path=str(rejected_path),
+        semantic_accepted=False,
+        observed_end_state={"action_phase": "door closed again"},
+        errors=["state reversal"],
+    )
+
+    resumed = RunWorkspace.resume(workspace.path)
+    state = resumed.manifest.shots["1"]
+    artifacts = resumed.accepted_shot_artifacts()
+
+    assert [take.disposition for take in state.take_history] == [
+        "accepted",
+        "rejected",
+    ]
+    assert state.canonical_take_id == state.take_history[0].take_id
+    assert artifacts[1]["local_path"] == str(accepted_path)
+    assert artifacts[1]["observed_end_state"]["action_phase"] == "door opened"
+
+
+def test_rejected_only_take_never_becomes_resume_input(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    workspace.save_storyboard(storyboard())
+    rejected_path = workspace.path / "shots" / "shot_001_rejected_01.mp4"
+    rejected_path.parent.mkdir(exist_ok=True)
+    rejected_path.write_bytes(b"rejected")
+
+    workspace.record_shot(
+        shot_id=1,
+        status="failed",
+        local_path=str(rejected_path),
+        semantic_accepted=False,
+        observed_end_state={"action_phase": "invalid result"},
+    )
+
+    resumed = RunWorkspace.resume(workspace.path)
+
+    assert resumed.manifest.shots["1"].canonical_take_id is None
+    assert resumed.manifest.shots["1"].take_history[0].disposition == "rejected"
+    assert resumed.accepted_shot_artifacts() == {}
 
 
 def test_completed_workspace_reuses_existing_final_video(tmp_path: Path):

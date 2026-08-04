@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+from dataclasses import dataclass
+
+from pipeline.narrative import narrative_prompt_constraint
+
 
 CAUSAL_INTERACTION_MODES = frozenset({
     "direct_contact",
@@ -12,7 +17,30 @@ CAUSAL_INTERACTION_MODES = frozenset({
 EFFECT_PHASES = frozenset({"none", "setup", "active", "aftermath"})
 OUTCOME_SCOPES = frozenset({"none", "single", "subset", "all"})
 EFFECT_MOTIONS = frozenset({"none", "static", "sweep", "expand", "propagate"})
+ACTION_CONTRACT_VERSION = "action-contract-v2"
 _SCOPE_RANK = {"none": 0, "single": 1, "subset": 2, "all": 3}
+_NONE_LIKE_VALUES = frozenset({
+    "", "none", "none yet", "n/a", "na", "not applicable", "no reaction",
+})
+ACTION_EVIDENCE_FIELDS = (
+    "preparation_state_visible",
+    "non_physical_cue_visible",
+    "physical_effect_visible",
+    "effect_reaches_target",
+    "target_reaction_visible",
+    "out_of_scope_reaction_visible",
+    "phase_endpoint_visible",
+    "narrative_outcome_visible",
+    "outcome_causally_connected",
+)
+LEGACY_ACTION_EVIDENCE_FIELDS = (
+    "physical_effect_visible",
+    "reaction_visible",
+    "effect_intersects_reaction",
+    "out_of_scope_reaction_visible",
+    "contracted_outcome_visible",
+    "outcome_causally_connected",
+)
 PHYSICAL_EFFECT_EVIDENCE_RULE = (
     "physical_effect_visible is true only when the contracted effect visibly "
     "leaves its source, travels through its effect region, makes contact, or "
@@ -21,20 +49,188 @@ PHYSICAL_EFFECT_EVIDENCE_RULE = (
 )
 
 
+@dataclass(frozen=True)
+class CompiledActionContract:
+    """One authoritative action interpretation for every downstream caller."""
+
+    phase: str
+    mode: str
+    outcome_scope: str
+    effect_motion: str
+    requires_evidence: bool
+    prompt_constraint: str
+    review_instruction: str
+    prompt_parts: tuple[str, ...]
+    review_projection: dict[str, object]
+    canonical_geometry: dict[str, object]
+    prompt_start_state: str
+    contracted_visible_result: str
+    evidence_fields: tuple[str, ...] = ACTION_EVIDENCE_FIELDS
+
+    def evidence_prompt(self, sample_count: int) -> str:
+        fields = ", ".join(self.evidence_fields)
+        return (
+            f"Return causal_sample_evidence as exactly {sample_count} objects in "
+            f"current-sample order. Every object must contain strict booleans {fields}. "
+            "preparation_state_visible means the contracted preparation visibly advances. "
+            "non_physical_cue_visible means a guidance light, aim indicator, charge signal, "
+            "sensor display, or other visible cue communicates intent without physically "
+            "changing a target. physical_effect_visible follows this rule: "
+            f"{PHYSICAL_EFFECT_EVIDENCE_RULE}. effect_reaches_target is true only when the "
+            "same target visibly lies on the path, inside the region, at contact, or in the "
+            "contracted intermediary chain in the current sample. target_reaction_visible means "
+            "that target visibly changes state because of the Physical Effect; it may remain true "
+            "when the reaction continues after a prior reach. Anticipation, aiming, defensive "
+            "preparation, ordinary motion, disappearance, smoke, a cut, or a later empty frame "
+            "is not a reaction. out_of_scope_reaction_visible is true only when an entity "
+            "outside reaction_scope undergoes impact, injury, damage, forced displacement, "
+            "or contracted outcome because of the Physical Effect. Continuing or beginning "
+            "the contracted unaffected behavior, including independent approach, retreat, or "
+            "ordinary motion, is false. phase_endpoint_visible means the endpoint of this phase is "
+            "visible; it does not by itself imply impact or story payoff. "
+            "narrative_outcome_visible means the full contracted story consequence and scope "
+            "are visible; a preparation endpoint, flash, camera change, or partial result does "
+            "not satisfy it. outcome_causally_connected is cumulative across current-sample "
+            "order: it becomes true once ordered visible evidence from Physical Effect through "
+            "target intersection and target reaction to Narrative Outcome has appeared at or "
+            "before the current sample."
+        )
+
+    def evidence_issues(self, samples: object) -> list[str]:
+        return _action_evidence_issues(self, samples)
+
+    def evidence_schema_issues(
+        self,
+        samples: object,
+        sample_count: int,
+    ) -> list[str]:
+        if not isinstance(samples, list):
+            return ["causal_sample_evidence 必须是数组"]
+        issues = []
+        if len(samples) != sample_count:
+            issues.append(
+                f"causal_sample_evidence 应有 {sample_count} 项，实际 {len(samples)} 项"
+            )
+        for index, sample in enumerate(samples, start=1):
+            if not isinstance(sample, dict):
+                issues.append(f"因果证据第 {index} 项必须是对象")
+                continue
+            current_valid = all(
+                isinstance(sample.get(field), bool)
+                for field in self.evidence_fields
+            )
+            legacy_valid = all(
+                isinstance(sample.get(field), bool)
+                for field in LEGACY_ACTION_EVIDENCE_FIELDS
+            )
+            if not current_valid and not legacy_valid:
+                invalid = [
+                    field
+                    for field in self.evidence_fields
+                    if not isinstance(sample.get(field), bool)
+                ]
+                issues.append(
+                    f"因果证据第 {index} 项缺少布尔字段: " + ", ".join(invalid)
+                )
+        return issues
+
+    def evidence_json_schema(self, sample_count: int) -> dict:
+        sample_schema = {
+            "type": "object",
+            "properties": {
+                field: {"type": "boolean"}
+                for field in self.evidence_fields
+            },
+            "required": list(self.evidence_fields),
+            "additionalProperties": False,
+        }
+        return {
+            "type": "array",
+            "items": sample_schema,
+            "minItems": sample_count,
+            "maxItems": sample_count,
+        }
+
+    def retake_instruction(self, reason: str) -> str:
+        mode = self.mode if self.mode in CAUSAL_INTERACTION_MODES else "non-effect"
+        detail = str(reason or "the take did not satisfy its visible evidence").strip()
+        return (
+            f"[Targeted retake — enforce the {self.phase} {mode} contract. "
+            f"The previous take failed only because: {detail}. Correct only that evidence "
+            "failure while preserving accepted identity, environment, composition, and action "
+            "state; do not add new actions.]"
+        )
+
+    def safe_retake_instruction(self) -> str:
+        """Bounded retry direction for moderated prompts; never repeats failure prose."""
+        mode = self.mode if self.mode in CAUSAL_INTERACTION_MODES else "non-effect"
+        return (
+            f"Targeted retake: enforce the contracted {self.phase} {mode} evidence only; "
+            "preserve accepted scene state and do not add another action"
+        )
+
+
 def interaction_geometry(shot: dict) -> dict:
     value = shot.get("interaction_geometry")
     return value if isinstance(value, dict) else {}
+
+
+def _is_none_like(value: object) -> bool:
+    return str(value or "").strip().casefold().replace("_", " ") in _NONE_LIKE_VALUES
 
 
 def interaction_mode(shot: dict) -> str:
     return str(interaction_geometry(shot).get("interaction_mode", "none")).strip()
 
 
-def requires_causal_review(shot: dict) -> bool:
-    phase = str(interaction_geometry(shot).get("effect_phase", "none")).strip()
-    return phase in {"setup", "active", "aftermath"} or (
-        interaction_mode(shot) in CAUSAL_INTERACTION_MODES
+def compile_action_contract(shot: dict) -> CompiledActionContract:
+    """Compile one shot into the only action semantics consumed downstream."""
+    raw_geometry = interaction_geometry(shot)
+    raw_phase = str(raw_geometry.get("effect_phase", "")).strip()
+    geometry = (
+        with_causal_mode_invariants(raw_geometry)
+        if raw_phase in EFFECT_PHASES
+        else deepcopy(raw_geometry)
     )
+    phase = str(geometry.get("effect_phase", "none")).strip()
+    mode = str(geometry.get("interaction_mode", "none")).strip()
+    scope = str(geometry.get("outcome_scope", "none")).strip()
+    motion = str(geometry.get("effect_motion", "none")).strip()
+    prompt_constraint = _compile_action_prompt(
+        shot,
+        geometry=geometry,
+        phase=phase,
+        mode=mode,
+        scope=scope,
+        motion=motion,
+    )
+    return CompiledActionContract(
+        phase=phase,
+        mode=mode,
+        outcome_scope=scope,
+        effect_motion=motion,
+        requires_evidence=phase in {"setup", "active", "aftermath"},
+        prompt_constraint=prompt_constraint,
+        review_instruction=_compile_action_review_instruction(phase, mode),
+        prompt_parts=_compile_phase_prompt_parts(
+            shot,
+            phase=phase,
+            prompt_constraint=prompt_constraint,
+        ),
+        review_projection=_compile_phase_review_projection(shot, phase, geometry),
+        canonical_geometry=deepcopy(geometry),
+        prompt_start_state=(
+            _setup_state_summary(shot.get("start_state"))
+            if phase == "setup"
+            else _state_summary(shot.get("start_state"), include_open_motion=True)
+        ),
+        contracted_visible_result=_contracted_visible_result(shot, phase),
+    )
+
+
+def requires_causal_review(shot: dict) -> bool:
+    contract = compile_action_contract(shot)
+    return contract.requires_evidence or contract.mode in CAUSAL_INTERACTION_MODES
 
 
 def with_causal_mode_invariants(value: object) -> dict:
@@ -62,9 +258,37 @@ def with_causal_mode_invariants(value: object) -> dict:
     mode = str(geometry.get("interaction_mode", "none")).strip()
     scope = str(geometry.get("outcome_scope", "")).strip()
     effect_motion = str(geometry.get("effect_motion", "")).strip()
+    if mode not in CAUSAL_INTERACTION_MODES:
+        if geometry.get("line_of_action_visible"):
+            mode = "directed_path"
+            geometry["interaction_mode"] = mode
+        elif geometry.get("must_share_frame"):
+            mode = "direct_contact"
+            geometry["interaction_mode"] = mode
+    target = str(geometry.get("target", "")).strip()
+    if not scope or scope in {"unspecified", "none"}:
+        if target and target.casefold() != "none":
+            scope = "single"
+            geometry["outcome_scope"] = scope
+    if not str(geometry.get("source", "")).strip():
+        actor = str(geometry.get("actor", "")).strip()
+        if actor:
+            geometry["source"] = actor
+    if not str(geometry.get("effect_region", "")).strip() and target:
+        geometry["effect_region"] = target
+    if not str(geometry.get("reaction_scope", "")).strip() and target:
+        geometry["reaction_scope"] = target
+    if not str(geometry.get("unaffected_behavior", "")).strip() and target:
+        geometry["unaffected_behavior"] = (
+            "entities outside the reaction scope remain unchanged"
+        )
     if phase == "active" and mode == "directed_path" and scope == "all":
         geometry["effect_motion"] = "sweep"
-    elif phase == "active" and effect_motion in {"", "unspecified"}:
+    elif phase == "active" and scope == "single" and mode in {
+        "direct_contact", "directed_path",
+    }:
+        geometry["effect_motion"] = "static"
+    elif phase == "active" and effect_motion in {"", "unspecified", "none"}:
         if mode in {"direct_contact", "directed_path"}:
             geometry["effect_motion"] = "sweep" if scope == "all" else "static"
         elif mode == "area_effect":
@@ -75,6 +299,15 @@ def with_causal_mode_invariants(value: object) -> dict:
         geometry["line_of_action_visible"] = True
     elif mode == "direct_contact":
         geometry["must_share_frame"] = True
+    if phase == "active" and scope == "single":
+        # A target may be a collection identifier.  "single" is a relation in
+        # the visible effect geometry, never an alias for that collection.
+        geometry["reaction_scope"] = (
+            "one clearly isolated intended target within the visible effect region"
+        )
+        geometry["unaffected_behavior"] = (
+            "all entities outside that one intended target continue their prior motion"
+        )
     return geometry
 
 
@@ -142,6 +375,20 @@ def causality_readiness_issues(
         issues.append(f"Shot {shot_id}: directed_path 必须让作用路径可见")
     if mode == "direct_contact" and not geometry.get("must_share_frame"):
         issues.append(f"Shot {shot_id}: direct_contact 必须让执行者与目标同框接触")
+    duration = shot.get("duration")
+    if (
+        str(geometry.get("effect_phase", "")).strip() == "active"
+        and mode == "directed_path"
+        and str(geometry.get("effect_motion", "")).strip() == "sweep"
+        and str(geometry.get("outcome_scope", "")).strip() in {"subset", "all"}
+        and isinstance(duration, (int, float))
+        and not isinstance(duration, bool)
+        and duration < 6
+    ):
+        issues.append(
+            f"Shot {shot_id}: 短镜头多目标定向扫掠过载；改为 "
+            "outcome_scope=single 且 effect_motion=static，或将 duration 提高到至少 6 秒"
+        )
     return issues
 
 
@@ -177,7 +424,11 @@ def causal_storyboard_issues(
                 issues.append(
                     f"Shot {shot_id}: interaction_geometry.{field} 必须显式声明"
                 )
-        if phase not in EFFECT_PHASES or scope not in OUTCOME_SCOPES or motion not in EFFECT_MOTIONS:
+        if (
+            phase not in EFFECT_PHASES
+            or scope not in OUTCOME_SCOPES
+            or motion not in EFFECT_MOTIONS
+        ):
             continue
 
         if phase in {"none", "setup"}:
@@ -196,6 +447,10 @@ def causal_storyboard_issues(
         if phase == "active":
             if mode not in CAUSAL_INTERACTION_MODES:
                 issues.append(f"Shot {shot_id}: 生效阶段必须声明物理 interaction_mode")
+            if _is_none_like(geometry.get("reaction_scope")):
+                issues.append(
+                    f"Shot {shot_id}: 生效阶段 reaction_scope 必须声明实际可反应范围"
+                )
             if scope == "none":
                 issues.append(f"Shot {shot_id}: 生效阶段 outcome_scope 不能为 none")
             if motion == "none":
@@ -229,78 +484,191 @@ def causal_storyboard_issues(
 
 
 def causal_evidence_issues(shot: dict, samples: object) -> list[str]:
-    """Validate per-sample visual evidence instead of trusting one aggregate verdict."""
-    phase = str(interaction_geometry(shot).get("effect_phase", "none")).strip()
-    if phase not in {"setup", "active", "aftermath"}:
+    """Compatibility entry point for the deep Action Contract interface."""
+    return compile_action_contract(shot).evidence_issues(samples)
+
+
+def _action_evidence_issues(
+    contract: CompiledActionContract,
+    samples: object,
+) -> list[str]:
+    if not contract.requires_evidence:
         return []
     if not isinstance(samples, list) or not samples:
         return ["缺少逐采样因果证据"]
 
+    normalized: list[dict[str, bool]] = []
     issues: list[str] = []
-    physical_effect_seen = False
-    in_scope_reaction_seen = False
-    contracted_outcome_seen = False
-    connected_outcome_seen = False
-    first_effect_sample: int | None = None
-    first_outcome_sample: int | None = None
-    required_fields = (
-        "physical_effect_visible",
-        "reaction_visible",
-        "effect_intersects_reaction",
-        "out_of_scope_reaction_visible",
-        "contracted_outcome_visible",
-        "outcome_causally_connected",
-    )
     for index, sample in enumerate(samples, start=1):
-        if not isinstance(sample, dict) or any(
-            not isinstance(sample.get(field), bool) for field in required_fields
-        ):
+        evidence = _normalize_action_evidence_sample(contract.phase, sample)
+        if evidence is None:
             issues.append(f"采样 {index} 因果证据字段缺失或类型无效")
-            continue
-        physical_effect_seen |= sample["physical_effect_visible"]
-        contracted_outcome_seen |= sample["contracted_outcome_visible"]
-        if sample["contracted_outcome_visible"]:
-            if sample["outcome_causally_connected"]:
-                connected_outcome_seen = True
-            elif phase == "active":
-                issues.append(
-                    f"采样 {index} 的约定结果与物理作用之间缺少可见因果过渡"
-                )
-        if sample["physical_effect_visible"] and first_effect_sample is None:
-            first_effect_sample = index
-        if sample["contracted_outcome_visible"] and first_outcome_sample is None:
-            first_outcome_sample = index
-        if phase == "active" and sample["reaction_visible"]:
-            if sample["effect_intersects_reaction"]:
-                in_scope_reaction_seen = True
-            else:
-                issues.append(f"采样 {index} 的反应目标未与作用区域相交")
-        if phase != "setup" and sample["out_of_scope_reaction_visible"]:
-            issues.append(f"采样 {index} 出现范围外目标发生反应")
+        else:
+            normalized.append(evidence)
+    if issues:
+        return issues
 
-    if phase == "setup" and (
-        physical_effect_seen
-        or contracted_outcome_seen
-    ):
-        issues.append("准备阶段提前出现物理作用或约定结果")
-    if phase == "active" and not physical_effect_seen:
-        issues.append("生效阶段未看到物理作用")
-    if phase == "active" and not in_scope_reaction_seen:
-        issues.append("生效阶段未看到作用区域内目标的同步反应")
-    if phase in {"active", "aftermath"} and not contracted_outcome_seen:
-        issues.append(f"{phase} 阶段未看到约定结果及其完整作用范围")
-    if phase == "active" and not connected_outcome_seen:
-        issues.append("active 阶段未看到作用到约定结果的完整可见因果过渡")
-    if (
-        phase == "active"
-        and first_effect_sample is not None
-        and first_outcome_sample is not None
-        and first_outcome_sample < first_effect_sample
-    ):
-        issues.append("active 阶段的约定结果先于物理原因出现")
-    if phase == "aftermath" and physical_effect_seen:
+    seen = {field: False for field in ACTION_EVIDENCE_FIELDS}
+    first: dict[str, int | None] = {
+        "physical_effect_visible": None,
+        "effect_reaches_target": None,
+        "target_reaction_visible": None,
+        "narrative_outcome_visible": None,
+    }
+    has_reached_target = False
+    for index, sample in enumerate(normalized, start=1):
+        for field in ACTION_EVIDENCE_FIELDS:
+            seen[field] |= sample[field]
+        for field in first:
+            legacy_precontact_reaction = (
+                field == "target_reaction_visible"
+                and sample.get("_legacy_evidence", False)
+                and not sample["effect_reaches_target"]
+            )
+            if (
+                sample[field]
+                and first[field] is None
+                and not legacy_precontact_reaction
+            ):
+                first[field] = index
+
+        if contract.phase == "active" and sample["target_reaction_visible"]:
+            if (
+                not sample["effect_reaches_target"]
+                and not has_reached_target
+                and (
+                    not sample.get("_legacy_evidence", False)
+                    or sample["out_of_scope_reaction_visible"]
+                )
+            ):
+                issues.append(f"采样 {index} 的反应目标未与作用区域相交")
+        if contract.phase != "setup" and sample["out_of_scope_reaction_visible"]:
+            issues.append(f"采样 {index} 出现范围外目标发生反应")
+        has_reached_target |= sample["effect_reaches_target"]
+
+    narrative_index = first["narrative_outcome_visible"]
+    valid_connection_index = next(
+        (
+            index
+            for index, sample in enumerate(normalized, start=1)
+            if narrative_index is not None
+            and index >= narrative_index
+            and sample["outcome_causally_connected"]
+        ),
+        None,
+    )
+    if contract.phase == "setup":
+        if seen["physical_effect_visible"]:
+            issues.append("准备阶段提前出现物理作用")
+        if seen["effect_reaches_target"] or seen["target_reaction_visible"]:
+            issues.append("准备阶段提前作用于目标")
+        if seen["narrative_outcome_visible"]:
+            issues.append("准备阶段提前出现约定结果（叙事结果）")
+        if not seen["phase_endpoint_visible"]:
+            issues.append("准备阶段未看到约定的准备端点")
+        return issues
+
+    if contract.phase == "active":
+        if not seen["physical_effect_visible"]:
+            issues.append("生效阶段未看到物理作用")
+        if not seen["effect_reaches_target"]:
+            issues.append("生效阶段未看到物理作用到达目标")
+        if not seen["target_reaction_visible"] or not seen["effect_reaches_target"]:
+            issues.append("生效阶段未看到作用区域内目标的同步反应")
+        if not seen["phase_endpoint_visible"]:
+            issues.append("active 阶段未看到约定的动作端点")
+        if not seen["narrative_outcome_visible"]:
+            issues.append("active 阶段未看到约定结果（叙事结果）及其完整作用范围")
+        if valid_connection_index is None:
+            issues.append(
+                "active 阶段的约定结果与物理作用之间缺少可见因果过渡"
+            )
+        if (
+            first["physical_effect_visible"] is not None
+            and first["narrative_outcome_visible"] is not None
+            and first["narrative_outcome_visible"] < first["physical_effect_visible"]
+        ):
+            issues.append("active 阶段的叙事结果先于物理原因出现")
+        if (
+            first["effect_reaches_target"] is not None
+            and first["physical_effect_visible"] is not None
+            and first["effect_reaches_target"] < first["physical_effect_visible"]
+        ):
+            issues.append("active 阶段的接触先于物理作用出现")
+        if (
+            first["target_reaction_visible"] is not None
+            and (
+                first["effect_reaches_target"] is None
+                or first["target_reaction_visible"] < first["effect_reaches_target"]
+            )
+        ):
+            issues.append("active 阶段的目标反应先于可见接触出现")
+        if (
+            first["narrative_outcome_visible"] is not None
+            and (
+                first["target_reaction_visible"] is None
+                or first["narrative_outcome_visible"] < first["target_reaction_visible"]
+            )
+        ):
+            issues.append("active 阶段的叙事结果先于可见接触或目标反应出现")
+        return issues
+
+    if seen["physical_effect_visible"] or seen["effect_reaches_target"]:
         issues.append("aftermath 阶段出现新物理作用")
+    if not seen["phase_endpoint_visible"]:
+        issues.append("aftermath 阶段未看到约定的结果端点")
+    if not seen["narrative_outcome_visible"]:
+        issues.append("aftermath 阶段未看到约定结果（叙事结果）及其完整作用范围")
     return issues
+
+
+def _normalize_action_evidence_sample(
+    phase: str,
+    sample: object,
+) -> dict[str, bool] | None:
+    if not isinstance(sample, dict):
+        return None
+    if all(isinstance(sample.get(field), bool) for field in ACTION_EVIDENCE_FIELDS):
+        evidence = {
+            **{field: sample[field] for field in ACTION_EVIDENCE_FIELDS},
+            "_legacy_evidence": False,
+        }
+        return _apply_evidence_invariants(evidence)
+
+    if not all(
+        isinstance(sample.get(field), bool)
+        for field in LEGACY_ACTION_EVIDENCE_FIELDS
+    ):
+        return None
+    preparation_only = (
+        phase == "setup"
+        and not sample["physical_effect_visible"]
+        and not sample["contracted_outcome_visible"]
+    )
+    evidence = {
+        "preparation_state_visible": preparation_only,
+        "non_physical_cue_visible": False,
+        "physical_effect_visible": sample["physical_effect_visible"],
+        "effect_reaches_target": sample["effect_intersects_reaction"],
+        "target_reaction_visible": (
+            sample["reaction_visible"] if phase != "setup" else False
+        ),
+        "out_of_scope_reaction_visible": sample["out_of_scope_reaction_visible"],
+        "phase_endpoint_visible": (
+            preparation_only or sample["contracted_outcome_visible"]
+        ),
+        "narrative_outcome_visible": sample["contracted_outcome_visible"],
+        "outcome_causally_connected": sample["outcome_causally_connected"],
+        "_legacy_evidence": True,
+    }
+    return _apply_evidence_invariants(evidence)
+
+
+def _apply_evidence_invariants(evidence: dict[str, bool]) -> dict[str, bool]:
+    """Enforce causal prerequisites before phase-specific verdicts consume evidence."""
+    if not evidence["physical_effect_visible"]:
+        evidence["effect_reaches_target"] = False
+    return evidence
 
 
 def _effect_target_key(shot: dict, geometry: dict) -> tuple[str, str] | None:
@@ -411,7 +779,12 @@ def compile_interaction_blocking(shot: dict) -> None:
     camera["screen_positions"] = positions
     shot["camera"] = camera
 
+    characters = {
+        str(name).strip() for name in shot.get("characters", []) if str(name).strip()
+    }
     for subject, counterpart in ((actor, target), (target, actor)):
+        if subject not in characters:
+            continue
         intent = blocking.get(subject)
         intent = dict(intent) if isinstance(intent, dict) else {}
         subject_position = str(
@@ -511,7 +884,11 @@ def _has_visible_interaction(shot: dict) -> bool:
     phase = str(geometry.get("effect_phase", "")).strip()
     if phase not in {"", "unspecified"}:
         return phase == "active"
-    if geometry.get("must_share_frame") and geometry.get("actor") and geometry.get("target"):
+    if (
+        geometry.get("must_share_frame")
+        and geometry.get("actor")
+        and geometry.get("target")
+    ):
         return True
     return any(
         isinstance(beat, dict)
@@ -523,50 +900,333 @@ def _has_visible_interaction(shot: dict) -> bool:
 
 
 def causality_prompt_constraints(shot: dict) -> str:
-    """Compile the validated causal geometry without guessing from subject matter."""
-    geometry = interaction_geometry(shot)
-    phase = str(geometry.get("effect_phase", "none")).strip()
-    scope = str(geometry.get("outcome_scope", "none")).strip()
-    motion = str(geometry.get("effect_motion", "none")).strip()
+    """Compatibility entry point for the deep Action Contract interface."""
+    return compile_action_contract(shot).prompt_constraint
+
+
+def _compile_action_prompt(
+    shot: dict,
+    *,
+    geometry: dict,
+    phase: str,
+    mode: str,
+    scope: str,
+    motion: str,
+) -> str:
+    parts: list[str] = []
+    actor = str(geometry.get("actor", "")).strip()
+    target = str(geometry.get("target", "")).strip()
+    if actor and target:
+        geometry_parts = [f"interaction geometry {actor} toward {target}"]
+        if geometry.get("must_share_frame"):
+            geometry_parts.append("actor and target must share the frame")
+        if geometry.get("line_of_action_visible"):
+            geometry_parts.append("keep the line of action clearly visible")
+        if geometry.get("occlusion_policy") == "none":
+            geometry_parts.append("neither subject may be occluded")
+        parts.append(", ".join(geometry_parts))
+
+    contracted_result = _contracted_visible_result(shot, phase)
     if phase == "setup":
-        return (
+        parts.append(
             "effect phase setup: show preparation, aiming, or charging only; "
-            "no emitted physical effect, impact, damage, or target reaction"
+            "a non-physical cue such as a guidance light, targeting indicator, charge "
+            "signal, or sensor display may visibly confirm the preparation and phase "
+            "endpoint; no emitted Physical Effect, impact, damage, target reaction, or "
+            "Narrative Outcome"
         )
-    if phase == "aftermath":
-        return (
+        unaffected = str(geometry.get("unaffected_behavior", "")).strip()
+        if unaffected and not _is_none_like(unaffected):
+            parts.append(
+                "target motion is independent of the preparation and may only continue "
+                f"this prior behavior: {unaffected}"
+            )
+    elif phase == "aftermath":
+        parts.append(
             f"effect phase aftermath: show only the already established {scope} outcome; "
             "do not create a new effect or expand the affected scope"
         )
-    mode = interaction_mode(shot)
-    if mode not in CAUSAL_INTERACTION_MODES:
+        if contracted_result:
+            parts.append(
+                "only the permitted scope may show this exact contracted result: "
+                f"{contracted_result}"
+            )
+    elif mode in CAUSAL_INTERACTION_MODES:
+        fields = [
+            ("source", "show the cause originating from"),
+            ("effect_region", "confine the Physical Effect to"),
+        ]
+        if scope == "single":
+            fields.extend([
+                ("reaction_scope", "only the single intended target"),
+                ("unaffected_behavior", "outside that single target"),
+            ])
+        else:
+            fields.extend([
+                ("reaction_scope", "only this reaction scope may respond"),
+                ("unaffected_behavior", "outside that scope"),
+            ])
+        details = [
+            f"{label} {str(geometry.get(field, '')).strip()}"
+            for field, label in fields
+            if str(geometry.get(field, "")).strip()
+        ]
+        parts.append(
+            f"effect phase {phase}, outcome scope {scope}, effect motion {motion}; "
+            f"{mode} cause-and-effect: " + ", ".join(details)
+        )
+        if contracted_result:
+            parts.append(
+                "only the permitted scope may show this exact contracted result: "
+                f"{contracted_result}"
+            )
+
+    if phase not in {"setup", "aftermath"}:
+        compiled_beats = []
+        for beat in shot.get("action_beats", []):
+            if not isinstance(beat, dict):
+                continue
+            text = f"{beat.get('phase')}: {beat.get('actor')} {beat.get('action')}"
+            if beat.get("target"):
+                text += f" toward {beat['target']}"
+            compiled_beats.append(text)
+        if compiled_beats:
+            parts.append("causal action phases " + "; ".join(compiled_beats))
+    return "; ".join(parts)
+
+
+def _contracted_visible_result(shot: dict, phase: str) -> str:
+    """Select the one structured endpoint owned by an active/aftermath Contract."""
+    if phase not in {"active", "aftermath"}:
         return ""
-    fields = (
-        ("source", "show the cause originating from"),
-        ("effect_region", "confine the physical effect to"),
-        ("reaction_scope", "only this reaction scope may respond"),
-        ("unaffected_behavior", "outside that scope"),
-    )
-    details = [
-        f"{label} {str(geometry.get(field, '')).strip()}"
-        for field, label in fields
-        if str(geometry.get(field, "")).strip()
+    results = [
+        str(beat.get("visible_result", "")).strip()
+        for beat in shot.get("action_beats", [])
+        if isinstance(beat, dict) and str(beat.get("visible_result", "")).strip()
     ]
-    return (
-        f"effect phase {phase}, outcome scope {scope}, effect motion {motion}; "
-        f"{mode} cause-and-effect: " + ", ".join(details)
+    return results[-1] if results else ""
+
+
+def _compile_phase_prompt_parts(
+    shot: dict,
+    *,
+    phase: str,
+    prompt_constraint: str,
+) -> tuple[str, ...]:
+    """Project free-form shot fields through the selected Action Contract phase."""
+    primary_action = str(shot.get("primary_action", "")).strip()
+    parts: list[str] = []
+
+    if phase == "setup":
+        geometry = interaction_geometry(shot)
+        actor = str(geometry.get("actor", "the primary subject")).strip()
+        target = str(geometry.get("target", "the intended subject")).strip()
+        parts.append(
+            f"perform only this non-physical preparation: {actor} visibly prepares toward {target}"
+        )
+        if prompt_constraint:
+            parts.append(prompt_constraint)
+        endpoint = _setup_state_summary(shot.get("end_state"))
+        if endpoint:
+            parts.append(f"finish at this preparation phase endpoint: {endpoint}")
+        return tuple(parts)
+
+    if phase == "aftermath":
+        if prompt_constraint:
+            parts.append(prompt_constraint)
+        parts.append("finish with only the already established contracted outcome")
+        return tuple(parts)
+
+    if primary_action:
+        parts.append(f"perform only this primary action: {primary_action}")
+    if prompt_constraint:
+        parts.append(prompt_constraint)
+    if phase == "active":
+        narrative = shot.get("narrative_beat")
+        if isinstance(narrative, dict) and str(narrative.get("function", "")).strip():
+            parts.append(
+                "narrative "
+                f"{str(narrative['function']).strip()}: visibly advance only the contracted outcome"
+            )
+        parts.append("finish with only the contracted outcome and its permitted scope")
+    else:
+        narrative_constraint = narrative_prompt_constraint(shot)
+        if narrative_constraint:
+            parts.append(narrative_constraint)
+        endpoint = _state_summary(shot.get("end_state"), include_open_motion=True)
+        if endpoint:
+            parts.append(f"finish with {endpoint}")
+    return tuple(parts)
+
+
+def _compile_phase_review_projection(
+    shot: dict,
+    phase: str,
+    geometry: dict,
+) -> dict[str, object]:
+    """Return the only phase-sensitive fields the reviewer may consume."""
+    projection = {
+        key: deepcopy(shot.get(key))
+        for key in (
+            "primary_action", "action_beats", "narrative_beat", "start_state", "end_state",
+        )
+    }
+    projection["interaction_geometry"] = deepcopy(geometry)
+    if phase == "setup":
+        actor = str(interaction_geometry(shot).get("actor", "the actor")).strip()
+        target = str(interaction_geometry(shot).get("target", "the intended subject")).strip()
+        start_state = _setup_visual_state(shot.get("start_state"))
+        end_state = _setup_visual_state(shot.get("end_state"))
+        end_state["prop_state"] = "a non-physical preparation cue is active"
+        endpoint = _setup_state_summary(end_state)
+        projection.update({
+            "primary_action": (
+                f"{actor} visibly prepares toward {target} without a Physical Effect"
+            ),
+            "action_beats": [],
+            "start_state": start_state,
+            "narrative_beat": {
+                "function": "setup",
+                "state_before": "the preparation is not yet complete",
+                "state_change": (
+                    f"{actor} reaches the contracted non-physical preparation endpoint"
+                ),
+                "state_after": endpoint or f"{actor} is visibly prepared",
+            },
+            "end_state": end_state,
+        })
+    elif phase == "active":
+        actor = str(geometry.get("actor", "the actor")).strip()
+        target = str(geometry.get("target", "the intended target")).strip()
+        contracted_result = _contracted_visible_result(shot, phase)
+        beats = []
+        for beat in shot.get("action_beats", []):
+            if not isinstance(beat, dict):
+                continue
+            canonical_beat = {
+                key: deepcopy(value)
+                for key, value in beat.items()
+                if key != "visible_result"
+            }
+            if contracted_result:
+                canonical_beat["visible_result"] = contracted_result
+            beats.append(canonical_beat)
+        narrative = shot.get("narrative_beat")
+        narrative = narrative if isinstance(narrative, dict) else {}
+        projection.update({
+            "action_beats": beats,
+            "narrative_beat": {
+                "function": str(narrative.get("function", "progress")),
+                "state_before": "the contracted action has not yet completed",
+                "state_change": (
+                    f"{actor} produces the exact contracted result on only the permitted target scope"
+                ),
+                "state_after": (
+                    contracted_result
+                    if contracted_result
+                    else f"the contracted result is visible only for {target} within the permitted scope"
+                ),
+            },
+            "end_state": {
+                "action_phase": (
+                    contracted_result
+                    if contracted_result
+                    else "only the contracted outcome and permitted scope are visible"
+                )
+            },
+        })
+    elif phase == "aftermath":
+        end_state = _filtered_state(shot.get("end_state"), include_open_motion=False)
+        endpoint = _state_summary(end_state, include_open_motion=False)
+        narrative = shot.get("narrative_beat")
+        narrative = narrative if isinstance(narrative, dict) else {}
+        projection.update({
+            "primary_action": "show only the already established result",
+            "action_beats": [],
+            "start_state": _filtered_state(
+                shot.get("start_state"), include_open_motion=False
+            ),
+            "narrative_beat": {
+                "function": str(narrative.get("function", "payoff")),
+                "state_before": str(narrative.get("state_before", "")),
+                "state_change": "the already established result remains visible",
+                "state_after": endpoint,
+            },
+            "end_state": end_state,
+        })
+    return projection
+
+
+_STATE_PROMPT_KEYS = (
+    "location",
+    "subject",
+    "action_phase",
+    "camera",
+    "screen_direction",
+    "pose_and_gaze",
+    "prop_state",
+    "open_motion",
+)
+
+
+def _filtered_state(state: object, *, include_open_motion: bool) -> dict[str, object]:
+    if not isinstance(state, dict):
+        return {}
+    allowed = set(_STATE_PROMPT_KEYS)
+    if not include_open_motion:
+        allowed.remove("open_motion")
+    return {
+        key: deepcopy(value)
+        for key, value in state.items()
+        if key in allowed
+    }
+
+
+_SETUP_VISUAL_STATE_KEYS = (
+    "location", "subject", "camera", "screen_direction", "pose_and_gaze",
+)
+
+
+def _setup_visual_state(state: object) -> dict[str, object]:
+    """Preserve visual continuity without allowing state text to define an effect."""
+    if not isinstance(state, dict):
+        return {}
+    return {
+        key: deepcopy(value)
+        for key, value in state.items()
+        if key in _SETUP_VISUAL_STATE_KEYS
+    }
+
+
+def _setup_state_summary(state: object) -> str:
+    filtered = _setup_visual_state(state)
+    return ", ".join(
+        str(filtered.get(key, "")).strip()
+        for key in _SETUP_VISUAL_STATE_KEYS
+        if str(filtered.get(key, "")).strip()
     )
+
+
+def _state_summary(state: object, *, include_open_motion: bool) -> str:
+    filtered = _filtered_state(state, include_open_motion=include_open_motion)
+    values = [str(filtered.get(key, "")).strip() for key in _STATE_PROMPT_KEYS]
+    return ", ".join(value for value in values if value)
 
 
 def causality_review_instruction(shot: dict) -> str:
-    geometry = interaction_geometry(shot)
-    phase = str(geometry.get("effect_phase", "none")).strip()
+    """Compatibility entry point for the deep Action Contract interface."""
+    return compile_action_contract(shot).review_instruction
+
+
+def _compile_action_review_instruction(phase: str, mode: str) -> str:
     if phase == "setup":
         return (
-            f"This is a setup phase. {PHYSICAL_EFFECT_EVIDENCE_RULE}. "
-            "Reject effect_path_valid and "
-            "reaction_causality_valid if a physical effect leaves its source, an impact "
-            "occurs, or any target reacts before the active phase. "
+            "This is a setup phase. A visible preparation state, non-physical cue, and "
+            "phase endpoint are permitted and do not count as a Physical Effect or "
+            "narrative outcome. "
+            f"{PHYSICAL_EFFECT_EVIDENCE_RULE}. Reject effect_path_valid and "
+            "reaction_causality_valid if a Physical Effect reaches a target, an impact "
+            "occurs, a target reacts, or a narrative outcome appears before active phase. "
         )
     if phase == "aftermath":
         return (
@@ -574,7 +1234,6 @@ def causality_review_instruction(shot: dict) -> str:
             "established by the prior active phase; reject any new unexplained effect or "
             "larger affected population. "
         )
-    mode = interaction_mode(shot)
     if mode not in CAUSAL_INTERACTION_MODES:
         return ""
     mode_rule = {

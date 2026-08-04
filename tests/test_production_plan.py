@@ -1,5 +1,10 @@
 """Deterministic production topology shared by planning and execution."""
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from pipeline.production_plan import (
     apply_production_plan,
     build_production_plan,
@@ -9,26 +14,45 @@ from pipeline.production_plan import (
 from pipeline.storyboard import _should_use_previous_tail_reference
 
 
-def test_short_action_plan_reserves_execution_and_result_in_every_slot():
+def test_short_action_plan_reserves_execution_then_aftermath():
     plan = build_production_plan("action", 15)
 
     assert len(plan["slots"]) == 3
     assert sum(slot["duration"] for slot in plan["slots"]) == 15
-    assert len({slot["duration"] for slot in plan["slots"]}) > 1
-    assert all(slot["allowed_effect_phases"] == ["active"] for slot in plan["slots"])
+    assert [slot["duration"] for slot in plan["slots"]] == [5, 5, 5]
+    assert [slot["allowed_effect_phases"] for slot in plan["slots"]] == [
+        ["active"], ["active"], ["aftermath"],
+    ]
+    assert [slot["outcome_scope"] for slot in plan["slots"]] == [
+        "single", "single", "single",
+    ]
     assert all(slot["requires_visible_result"] for slot in plan["slots"])
+    assert [slot["coverage_roles"] for slot in plan["slots"]] == [
+        ["interaction"], ["action_subject"], ["aftermath"],
+    ]
 
 
-def test_longer_action_plan_keeps_editorial_breathing_room_around_active_core():
+def test_longer_action_plan_uses_setup_active_aftermath_topology():
     plan = build_production_plan("action", 30)
     slots = plan["slots"]
 
     assert len(slots) == 5
     assert sum(slot["duration"] for slot in slots) == 30
     assert all(4 <= slot["duration"] <= 15 for slot in slots)
-    assert slots[0]["allowed_effect_phases"] == ["setup", "active"]
-    assert slots[-1]["allowed_effect_phases"] == ["active", "aftermath"]
-    assert sum(slot["allowed_effect_phases"] == ["active"] for slot in slots) >= 3
+    assert [slot["allowed_effect_phases"] for slot in slots] == [
+        ["setup"], ["active"], ["active"], ["active"], ["aftermath"],
+    ]
+    assert [slot["requires_visible_result"] for slot in slots] == [
+        False, True, True, True, True,
+    ]
+    assert [slot["outcome_scope"] for slot in slots] == [
+        "none", "single", "single", "single", "single",
+    ]
+    assert all(len(slot["coverage_roles"]) == 1 for slot in slots)
+    assert all(
+        previous["framing_family"] != current["framing_family"]
+        for previous, current in zip(slots, slots[1:])
+    )
 
 
 def test_balanced_plan_does_not_force_action_semantics():
@@ -49,8 +73,25 @@ def test_every_supported_request_duration_compiles_to_executable_slots():
         assert all(4 <= duration <= 15 for duration in durations)
         assert plan["planned_duration"] == sum(durations)
         assert abs(plan["planned_duration"] - target_duration) <= 1
-        if len(durations) >= 3:
-            assert len(set(durations)) > 1
+        phases = [slot["allowed_effect_phases"] for slot in plan["slots"]]
+        if len(plan["slots"]) <= 2:
+            assert phases == [["active"]] * len(plan["slots"])
+        elif len(plan["slots"]) == 3:
+            assert phases == [["active"], ["active"], ["aftermath"]]
+        else:
+            assert phases[0] == ["setup"]
+            assert phases[-1] == ["aftermath"]
+            assert all(phase == ["active"] for phase in phases[1:-1])
+        expected_scopes = [
+            "none" if phase == ["setup"] else "single"
+            for phase in phases
+        ]
+        assert [slot["outcome_scope"] for slot in plan["slots"]] == expected_scopes
+        assert all(len(slot["coverage_roles"]) == 1 for slot in plan["slots"])
+        assert all(
+            previous["framing_family"] != current["framing_family"]
+            for previous, current in zip(plan["slots"], plan["slots"][1:])
+        )
 
 
 def test_framing_vocabulary_has_one_shared_classifier():
@@ -80,14 +121,22 @@ def test_plan_compiler_owns_duration_phase_and_reference_topology():
     apply_production_plan(storyboard, plan)
 
     assert [shot["shot_id"] for shot in storyboard["shots"]] == [1, 2, 3]
-    assert [shot["duration"] for shot in storyboard["shots"]] == [4, 6, 5]
+    assert [shot["duration"] for shot in storyboard["shots"]] == [5, 5, 5]
+    assert [
+        shot["interaction_geometry"]["effect_phase"]
+        for shot in storyboard["shots"]
+    ] == ["active", "active", "aftermath"]
+    assert storyboard["shots"][1]["continuity_from_previous"] == "intentional_cut"
+    assert storyboard["shots"][1]["composition_change"] == "medium"
+    assert storyboard["shots"][1]["camera"]["start_framing"] == "medium shot"
     assert all(
-        shot["interaction_geometry"]["effect_phase"] == "active"
+        shot["coverage_role"] == shot["production_slot"]["coverage_roles"][0]
         for shot in storyboard["shots"]
     )
-    assert storyboard["shots"][1]["continuity_from_previous"] == "intentional_cut"
-    assert storyboard["shots"][1]["composition_change"] == "small"
-    assert storyboard["shots"][1]["camera"]["start_framing"] == "wide shot"
+    assert all(
+        shot["interaction_geometry"]["outcome_scope"] == "single"
+        for shot in storyboard["shots"]
+    )
     topology_issues = production_plan_issues(storyboard)
     assert not any(
         marker in issue

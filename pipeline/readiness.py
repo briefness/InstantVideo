@@ -12,7 +12,10 @@ from pipeline.causality import (
     interaction_mode,
 )
 from pipeline.narrative import narrative_readiness_issues
-from pipeline.participants import visible_character_names
+from pipeline.participants import (
+    structured_entity_reference_issues,
+    visible_character_names,
+)
 from pipeline.production_plan import production_plan_issues
 
 
@@ -38,6 +41,7 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
         if character.get("name")
     }
     character_names = list(characters)
+    theme_elements = storyboard.get("theme_elements", [])
     shots = storyboard.get("shots", [])
     for shot in shots:
         shot_id = shot.get("shot_id", "?")
@@ -47,6 +51,12 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
             issues.append(f"Shot {shot_id}: prompt_en 为空")
         if isinstance(duration, bool) or not isinstance(duration, int) or not 4 <= duration <= 15:
             issues.append(f"Shot {shot_id}: duration 必须是 4-15 秒整数")
+
+        issues.extend(structured_entity_reference_issues(
+            shot,
+            character_names,
+            theme_elements,
+        ))
 
         declared_characters = shot.get("characters", [])
         visible_characters = visible_character_names(shot, character_names)
@@ -58,10 +68,6 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
                 f"Shot {shot_id}: characters 未包含实际可见角色 "
                 f"{', '.join(hidden_characters)}"
             )
-
-        unknown = sorted(set(declared_characters) - set(characters))
-        if unknown and characters:
-            issues.append(f"Shot {shot_id}: 未定义角色 {', '.join(unknown)}")
 
         if shot.get("extract_character_ref"):
             identity_characters = [
@@ -88,7 +94,9 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
                 if not isinstance(intent, dict) or any(
                     not str(intent.get(field, "")).strip() for field in required
                 ):
-                    issues.append(f"Shot {shot_id}: 角色 {name} 的动作 blocking 不完整")
+                    issues.append(
+                        f"Shot {shot_id}: 角色调度不完整: 角色 {name} 的动作 blocking 不完整"
+                    )
             if not shot.get("action_beats"):
                 issues.append(f"Shot {shot_id}: 多角色动作镜头缺少 action_beats")
 
