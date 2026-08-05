@@ -37,6 +37,11 @@ def main():
                         help="视频风格 (cinematic/energetic/warm/cold/dramatic/futuristic)")
     parser.add_argument("--music", default=None, help="背景音乐文件路径")
     parser.add_argument(
+        "--paid-take-budget",
+        type=int,
+        help="本次运行允许提交的付费 take 数量（省略则不设上限）",
+    )
+    parser.add_argument(
         "--platforms",
         nargs="+",
         choices=config.SUPPORTED_PLATFORMS,
@@ -46,9 +51,18 @@ def main():
     args = parser.parse_args()
 
     if args.resume:
-        overrides = [args.resolution, args.ratio, args.style, args.music, args.platforms]
+        overrides = [
+            args.resolution,
+            args.ratio,
+            args.style,
+            args.music,
+            args.platforms,
+            args.paid_take_budget,
+        ]
         if any(value is not None for value in overrides):
-            parser.error("--resume 使用原运行参数，不能同时覆盖画幅、风格、音乐或平台")
+            parser.error(
+                "--resume 使用原运行参数，不能同时覆盖画幅、风格、音乐、平台或付费 take 预算"
+            )
     elif not args.request:
         parser.error("请提供视频需求，或使用 --resume WORKSPACE")
 
@@ -62,6 +76,7 @@ def main():
                 style=args.style or "cinematic",
                 music_path=args.music,
                 platforms=args.platforms or ["youtube", "tiktok"],
+                paid_take_budget=args.paid_take_budget,
             )
         )
         result = asyncio.run(pipeline.run(args.request))

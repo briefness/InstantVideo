@@ -7,7 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from pipeline.models import RunOptions, RunStatus, validate_storyboard
-from pipeline.run_state import RunWorkspace
+from pipeline.run_state import PaidTakeBudgetExhaustedError, RunWorkspace
 
 
 def storyboard(shot_id: int = 1) -> dict:
@@ -241,6 +241,75 @@ def test_workspace_persists_resumable_provider_task_atomically(tmp_path: Path):
     resumed.record_shot(shot_id=1, status="running")
     assert resumed.manifest.shots["1"].provider_task_id is None
     assert resumed.manifest.shots["1"].last_frame_url is None
+
+
+def test_paid_take_reservation_binds_provider_identity_across_resume(tmp_path: Path):
+    workspace = RunWorkspace.create(
+        tmp_path,
+        RunOptions(request="A test video", paid_take_budget=1),
+    )
+    workspace.save_storyboard(storyboard())
+
+    reservation_id = workspace.reserve_paid_take(1)
+    workspace.confirm_paid_take_submission(reservation_id, "ark-task-1")
+    workspace.reconcile_paid_take(reservation_id)
+
+    resumed = RunWorkspace.resume(workspace.path)
+    assert resumed.manifest.paid_take_budget.estimated_takes == 1
+    assert resumed.manifest.paid_take_budget.reservations[0].model_dump() == {
+        "reservation_id": "1:1",
+        "shot_id": 1,
+        "take_number": 1,
+        "status": "reconciled",
+        "provider_task_id": "ark-task-1",
+    }
+    with pytest.raises(PaidTakeBudgetExhaustedError, match="未提交新的 provider 任务"):
+        resumed.reserve_paid_take(2)
+
+
+def test_released_paid_take_keeps_append_only_identity(tmp_path: Path):
+    workspace = RunWorkspace.create(
+        tmp_path,
+        RunOptions(request="A test video", paid_take_budget=1),
+    )
+
+    first = workspace.reserve_paid_take(1)
+    workspace.release_unsubmitted_paid_take(first)
+    second = workspace.reserve_paid_take(1)
+    workspace.reconcile_paid_take(second, "ark-task-2")
+
+    assert first == "1:1"
+    assert second == "1:2"
+    assert [item.status for item in workspace.manifest.paid_take_budget.reservations] == [
+        "released",
+        "reconciled",
+    ]
+
+
+def test_reconcile_can_bind_provider_identity_when_callback_was_not_observed(
+    tmp_path: Path,
+):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    reservation = workspace.reserve_paid_take(1)
+
+    workspace.reconcile_paid_take(reservation, "ark-terminal-task")
+
+    record = workspace.manifest.paid_take_budget.reservations[0]
+    assert record.status == "reconciled"
+    assert record.provider_task_id == "ark-terminal-task"
+
+
+def test_reference_chain_depth_is_persisted_with_accepted_shot(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+
+    workspace.record_shot(
+        shot_id=1,
+        status="success",
+        reference_chain_depth=2,
+    )
+
+    resumed = RunWorkspace.resume(workspace.path)
+    assert resumed.manifest.shots["1"].reference_chain_depth == 2
 
 
 def test_workspace_normalizes_prefixed_relative_artifact_path(

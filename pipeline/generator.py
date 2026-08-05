@@ -25,6 +25,7 @@ from pipeline.storyboard import (
     _scene_id,
     _should_use_previous_tail_reference,
 )
+from pipeline.production_plan import reference_policy
 from pipeline.participants import visible_character_names
 from pipeline.causality import ACTION_CONTRACT_VERSION, compile_action_contract
 from pipeline.provider_prompt import (
@@ -43,6 +44,10 @@ from pipeline.readiness import (
     ensure_shot_ready,
     ensure_storyboard_ready,
 )
+from pipeline.run_state import PaidTakeBudgetExhaustedError
+
+
+_REFERENCE_ROLE_UNSET = object()
 
 
 @dataclass
@@ -75,6 +80,7 @@ class ShotResult:
     technical_quality_score: int = 0
     semantic_accepted: Optional[bool] = None
     observed_end_state: dict[str, str] = field(default_factory=dict)
+    reference_chain_depth: Optional[int] = None
 
 
 class RemoteTaskPendingError(RuntimeError):
@@ -101,6 +107,10 @@ class VideoGenerator:
         self,
         output_dir: str,
         on_progress: Callable[[ShotResult], None] | None = None,
+        reserve_paid_take: Callable[[int], str] | None = None,
+        confirm_paid_take_submission: Callable[[str, str], None] | None = None,
+        reconcile_paid_take: Callable[[str, str | None], None] | None = None,
+        release_unsubmitted_paid_take: Callable[[str], None] | None = None,
         resume_tasks: Mapping[int, Mapping[str, object]] | None = None,
         resume_task_ids: Mapping[int, str] | None = None,
         accepted_shot_artifacts: Mapping[int, Mapping[str, object]] | None = None,
@@ -113,6 +123,10 @@ class VideoGenerator:
         self.character_refs: dict[str, str] = {}  # name → 本地图片路径
         self.character_ref_hashes: dict[str, str] = {}  # sha256 → character name
         self.on_progress = on_progress
+        self.reserve_paid_take = reserve_paid_take
+        self.confirm_paid_take_submission = confirm_paid_take_submission
+        self.reconcile_paid_take = reconcile_paid_take
+        self.release_unsubmitted_paid_take = release_unsubmitted_paid_take
         self.resume_tasks = {
             int(shot_id): dict(descriptor)
             for shot_id, descriptor in (resume_tasks or {}).items()
@@ -187,9 +201,22 @@ class VideoGenerator:
             results[idx] = result
 
             if result.status == "success":
-                shot["output_reference_depth"] = self._next_reference_depth(
-                    shot, prev_shot, incoming_last_frame
+                provenance = (
+                    self._read_generation_provenance(result.local_path)
+                    if result.local_path else {}
                 )
+                role_argument = (
+                    provenance.get("image_role")
+                    if "image_role" in provenance else _REFERENCE_ROLE_UNSET
+                )
+                result.reference_chain_depth = self._next_reference_depth(
+                    shot,
+                    prev_shot,
+                    incoming_last_frame,
+                    reference_role=role_argument,
+                )
+                shot["output_reference_depth"] = result.reference_chain_depth
+                self._notify_progress(result)
                 prev_last_frame = result.last_frame_url
                 if result.observed_end_state:
                     shot["observed_end_state"] = result.observed_end_state
@@ -375,6 +402,7 @@ class VideoGenerator:
                 acceptance_policy=restored.get("acceptance_policy"),
                 recovery_actions=list(restored.get("recovery_actions", [])),
                 prompt_attempts=list(restored.get("prompt_attempts", [])),
+                reference_chain_depth=int(restored.get("reference_chain_depth", 0)),
             )
             if not result.last_frame_url or not Path(result.last_frame_url).is_file():
                 result.last_frame_url = self._extract_local_tail_frame(
@@ -718,8 +746,17 @@ class VideoGenerator:
                     }
                     result.prompt_attempts.append(prompt_attempt)
 
+                    reservation_id = None
+
+                    # A new provider task is paid work. Persist its authorization
+                    # before the call; existing remote tasks are polling only.
+                    if not resuming_existing_task and self.reserve_paid_take:
+                        reservation_id = self.reserve_paid_take(shot["shot_id"])
+
                     # 调用 API
                     def remember_submission(task_id: str) -> None:
+                        if reservation_id and self.confirm_paid_take_submission:
+                            self.confirm_paid_take_submission(reservation_id, task_id)
                         self._write_generation_provenance(
                             shot["shot_id"], generation_provenance, task_id
                         )
@@ -753,6 +790,15 @@ class VideoGenerator:
                         result.provider_task_id = str(returned_task_id)
                         prompt_attempt["provider_task_id"] = result.provider_task_id
                         self._notify_progress(result)
+                    if reservation_id and result.provider_task_id and self.reconcile_paid_take:
+                        self.reconcile_paid_take(
+                            reservation_id,
+                            result.provider_task_id,
+                        )
+                    elif reservation_id and self.release_unsubmitted_paid_take:
+                        # SeedanceAPI returns no task ID only when task creation
+                        # failed before a provider identity existed.
+                        self.release_unsubmitted_paid_take(reservation_id)
                     if self._is_privacy_failure(gen_result):
                         gen_result["error_type"] = "privacy"
                     if gen_result["status"] == "succeeded":
@@ -1086,6 +1132,11 @@ class VideoGenerator:
                     SemanticReviewUnavailableError,
                 ):
                     raise
+                except PaidTakeBudgetExhaustedError as exc:
+                    result.errors.append(str(exc))
+                    result.status = "failed"
+                    self._notify_progress(result)
+                    return result
                 except asyncio.TimeoutError:
                     result.errors.append(f"L{level}: 超时")
                     print(f"     ⚠ L{level} 超时")
@@ -1402,6 +1453,16 @@ class VideoGenerator:
                     char_ref_paths.append(path)
 
         if continuity == "intentional_cut":
+            policy = reference_policy(shot)
+            if policy == "identity_only" and not char_ref_paths:
+                if prev_last_frame:
+                    print(
+                        "     [REF] 计划重锚点暂无 canonical identity，"
+                        "保留尾帧 first_frame"
+                    )
+                    return [prev_last_frame], "first_frame"
+                print("     [REF] 计划重锚点暂无 canonical identity，T2V 模式")
+                return [], None
             if prev_last_frame and _should_use_previous_tail_reference(
                 shot,
                 prev_shot,
@@ -1492,9 +1553,16 @@ class VideoGenerator:
         shot: dict,
         previous_shot: Optional[dict],
         previous_frame: Optional[str],
+        *,
+        reference_role: object = _REFERENCE_ROLE_UNSET,
     ) -> int:
         if previous_shot is None or not previous_frame:
             return 0
+        if reference_role is not _REFERENCE_ROLE_UNSET:
+            return (
+                int(previous_shot.get("output_reference_depth", 0)) + 1
+                if reference_role == "first_frame" else 0
+            )
         has_identity_reference = any(
             name in self.character_refs for name in shot.get("characters", [])
         )
@@ -1503,6 +1571,12 @@ class VideoGenerator:
             previous_shot,
             has_identity_reference=has_identity_reference,
         ):
+            if (
+                reference_policy(shot) == "identity_only"
+                and not has_identity_reference
+                and previous_frame
+            ):
+                return int(previous_shot.get("output_reference_depth", 0)) + 1
             return 0
         return int(previous_shot.get("output_reference_depth", 0)) + 1
 
@@ -1519,6 +1593,9 @@ class VideoGenerator:
         if shot.get("continuity_from_previous") == "seamless":
             print("     [REF] 隐私降级: 仅尾帧 first_frame")
             return [prev_last_frame], "first_frame"
+        if reference_policy(shot) == "identity_only":
+            print("     [REF] 隐私降级: canonical identity 不可用，保留尾帧 first_frame")
+            return [prev_last_frame], "first_frame"
         if _should_use_previous_tail_reference(
             shot,
             prev_shot,
@@ -1526,7 +1603,7 @@ class VideoGenerator:
         ):
             print("     [REF] 隐私降级: 仅尾帧 first_frame")
             return [prev_last_frame], "first_frame"
-        print("     [REF] 隐私降级: 跨场景或参考链已达上限, T2V 模式")
+        print("     [REF] 隐私降级: 跨场景且无状态参考职责, T2V 模式")
         return [], None
 
     @staticmethod

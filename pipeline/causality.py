@@ -204,6 +204,7 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
         scope=scope,
         motion=motion,
     )
+    review_projection = _compile_phase_review_projection(shot, phase, geometry)
     return CompiledActionContract(
         phase=phase,
         mode=mode,
@@ -216,8 +217,9 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
             shot,
             phase=phase,
             prompt_constraint=prompt_constraint,
+            narrative_constraint=narrative_prompt_constraint(review_projection),
         ),
-        review_projection=_compile_phase_review_projection(shot, phase, geometry),
+        review_projection=review_projection,
         canonical_geometry=deepcopy(geometry),
         prompt_start_state=(
             _setup_state_summary(shot.get("start_state"))
@@ -1012,6 +1014,7 @@ def _compile_phase_prompt_parts(
     *,
     phase: str,
     prompt_constraint: str,
+    narrative_constraint: str,
 ) -> tuple[str, ...]:
     """Project free-form shot fields through the selected Action Contract phase."""
     primary_action = str(shot.get("primary_action", "")).strip()
@@ -1026,6 +1029,8 @@ def _compile_phase_prompt_parts(
         )
         if prompt_constraint:
             parts.append(prompt_constraint)
+        if narrative_constraint:
+            parts.append(narrative_constraint)
         endpoint = _setup_state_summary(shot.get("end_state"))
         if endpoint:
             parts.append(f"finish at this preparation phase endpoint: {endpoint}")
@@ -1034,6 +1039,8 @@ def _compile_phase_prompt_parts(
     if phase == "aftermath":
         if prompt_constraint:
             parts.append(prompt_constraint)
+        if narrative_constraint:
+            parts.append(narrative_constraint)
         parts.append("finish with only the already established contracted outcome")
         return tuple(parts)
 
@@ -1041,18 +1048,11 @@ def _compile_phase_prompt_parts(
         parts.append(f"perform only this primary action: {primary_action}")
     if prompt_constraint:
         parts.append(prompt_constraint)
+    if narrative_constraint:
+        parts.append(narrative_constraint)
     if phase == "active":
-        narrative = shot.get("narrative_beat")
-        if isinstance(narrative, dict) and str(narrative.get("function", "")).strip():
-            parts.append(
-                "narrative "
-                f"{str(narrative['function']).strip()}: visibly advance only the contracted outcome"
-            )
         parts.append("finish with only the contracted outcome and its permitted scope")
     else:
-        narrative_constraint = narrative_prompt_constraint(shot)
-        if narrative_constraint:
-            parts.append(narrative_constraint)
         endpoint = _state_summary(shot.get("end_state"), include_open_motion=True)
         if endpoint:
             parts.append(f"finish with {endpoint}")

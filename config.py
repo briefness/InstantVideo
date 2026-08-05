@@ -89,6 +89,11 @@ GENERATION_CHAINS = {
     ],
 }
 
+# Consecutive accepted output-tail handoffs before the plan schedules an
+# intentional canonical identity re-anchor. The provider adapter only resets
+# when an eligible canonical reference actually exists.
+MAX_REFERENCE_CHAIN_DEPTH = 2
+
 # ─── 调色 LUT 映射 ───
 MOOD_LUT_MAP = {
     "cinematic": "IWLTBAP Coronado - Standard.cube",      # 电影感 (Kodak 风格)

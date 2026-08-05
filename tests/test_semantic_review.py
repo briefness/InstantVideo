@@ -1069,6 +1069,10 @@ def test_narrative_beat_is_part_of_review_contract():
     assert contract["narrative_beat"]["state_change"] == (
         "new evidence becomes visible"
     )
+    assert contract["narrative_carriers"][:2] == [
+        {"kind": "visible_change", "value": "new evidence becomes visible"},
+        {"kind": "readable_endpoint", "value": "the answer is understood"},
+    ]
 
 
 def test_setup_review_contract_uses_action_contract_phase_projection():

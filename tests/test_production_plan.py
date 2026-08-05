@@ -199,7 +199,19 @@ def test_same_scene_plan_never_treats_identity_as_a_substitute_for_state():
     plan = build_production_plan("action", 30)
 
     assert plan["slots"][0]["reference_policy"] == "independent"
-    assert all(
-        slot["reference_policy"] in {"state_if_same_scene", "state_and_identity"}
-        for slot in plan["slots"][1:]
-    )
+    assert [slot["reference_policy"] for slot in plan["slots"]] == [
+        "independent", "state_and_identity", "state_and_identity",
+        "identity_only", "state_and_identity",
+    ]
+
+
+def test_reanchor_policy_is_scheduled_only_inside_longer_sequences():
+    short = build_production_plan("balanced", 15)
+    long = build_production_plan("balanced", 60)
+
+    assert "identity_only" not in [slot["reference_policy"] for slot in short["slots"]]
+    assert [
+        index + 1
+        for index, slot in enumerate(long["slots"])
+        if slot["reference_policy"] == "identity_only"
+    ] == [4, 7]

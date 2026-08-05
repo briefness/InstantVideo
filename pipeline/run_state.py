@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from pipeline.models import (
+    PaidTakeReservation,
     RunManifest,
     RunOptions,
     PendingTaskDescriptor,
@@ -22,6 +23,10 @@ from pipeline.models import (
 
 MANIFEST_FILENAME = "run_manifest.json"
 STORYBOARD_FILENAME = "storyboard.json"
+
+
+class PaidTakeBudgetExhaustedError(RuntimeError):
+    """No durable authorization remains for a new provider submission."""
 
 
 def _now() -> str:
@@ -166,8 +171,87 @@ class RunWorkspace:
         for shot in validated["shots"]:
             key = str(shot["shot_id"])
             self.manifest.shots.setdefault(key, ShotTaskState(shot_id=shot["shot_id"]))
+        self.manifest.paid_take_budget.estimated_takes = len(validated["shots"])
         self.checkpoint("storyboard_ready", RunStatus.running)
         return validated
+
+    def reserve_paid_take(self, shot_id: int) -> str:
+        """Persist authorization before any new, billable provider submission."""
+        ledger = self.manifest.paid_take_budget
+        active = [
+            reservation
+            for reservation in ledger.reservations
+            if reservation.status in {"reserved", "submitted", "reconciled"}
+        ]
+        limit = self.options.paid_take_budget
+        if limit is not None and len(active) >= limit:
+            raise PaidTakeBudgetExhaustedError(
+                f"付费 take 预算已耗尽（{len(active)}/{limit}）；未提交新的 provider 任务"
+            )
+        prior_shot_takes = sum(
+            reservation.shot_id == shot_id for reservation in ledger.reservations
+        )
+        reservation_id = f"{shot_id}:{prior_shot_takes + 1}"
+        ledger.reservations.append(
+            PaidTakeReservation(
+                reservation_id=reservation_id,
+                shot_id=shot_id,
+                take_number=prior_shot_takes + 1,
+            )
+        )
+        self._save_manifest()
+        return reservation_id
+
+    def confirm_paid_take_submission(self, reservation_id: str, task_id: str) -> None:
+        """Bind a persisted authorization to the provider's immutable task identity."""
+        reservation = self._paid_take_reservation(reservation_id)
+        if reservation.status != "reserved":
+            raise ValueError(f"Paid take reservation is not pending: {reservation_id}")
+        reservation.status = "submitted"
+        reservation.provider_task_id = task_id
+        self._save_manifest()
+
+    def reconcile_paid_take(
+        self,
+        reservation_id: str,
+        provider_task_id: str | None = None,
+    ) -> None:
+        """Close a known provider submission without changing its charge count."""
+        reservation = self._paid_take_reservation(reservation_id)
+        if reservation.status == "reserved":
+            if not provider_task_id:
+                raise ValueError(
+                    f"Paid take submission has no provider identity: {reservation_id}"
+                )
+            reservation.status = "submitted"
+            reservation.provider_task_id = provider_task_id
+        if reservation.status == "submitted":
+            if (
+                provider_task_id
+                and reservation.provider_task_id
+                and reservation.provider_task_id != provider_task_id
+            ):
+                raise ValueError(
+                    f"Paid take provider identity changed: {reservation_id}"
+                )
+            reservation.status = "reconciled"
+            self._save_manifest()
+
+    def release_unsubmitted_paid_take(self, reservation_id: str) -> None:
+        """Release only an authorization known not to have reached the provider."""
+        reservation = self._paid_take_reservation(reservation_id)
+        if reservation.status != "reserved":
+            raise ValueError(
+                f"Submitted paid take cannot be released: {reservation_id}"
+            )
+        reservation.status = "released"
+        self._save_manifest()
+
+    def _paid_take_reservation(self, reservation_id: str) -> PaidTakeReservation:
+        for reservation in self.manifest.paid_take_budget.reservations:
+            if reservation.reservation_id == reservation_id:
+                return reservation
+        raise ValueError(f"Unknown paid take reservation: {reservation_id}")
 
     def checkpoint(self, stage: str, status: RunStatus = RunStatus.running) -> None:
         self.manifest.stage = stage
@@ -201,6 +285,7 @@ class RunWorkspace:
         technical_quality_score: int = 0,
         semantic_accepted: bool | None = None,
         observed_end_state: dict[str, str] | None = None,
+        reference_chain_depth: int | None = None,
         model_used: str = "",
         resolution_used: str = "",
         attempts: int = 0,
@@ -328,6 +413,11 @@ class RunWorkspace:
             technical_quality_score=technical_quality_score,
             semantic_accepted=semantic_accepted,
             observed_end_state=observed_end_state or {},
+            reference_chain_depth=(
+                reference_chain_depth
+                if reference_chain_depth is not None
+                else previous.reference_chain_depth if previous else 0
+            ),
             model_used=model_used,
             resolution_used=resolution_used,
             attempts=max(attempts, previous.attempts if previous else 0),
@@ -437,6 +527,7 @@ class RunWorkspace:
                 "technical_quality_score": technical_quality_score,
                 "semantic_accepted": semantic_accepted,
                 "observed_end_state": dict(observed_end_state),
+                "reference_chain_depth": state.reference_chain_depth,
                 "model_used": model_used,
                 "resolution_used": resolution_used,
                 "attempts": state.attempts,

@@ -18,7 +18,11 @@ from pipeline.causality import (
     compile_action_contract,
     requires_causal_review,
 )
-from pipeline.narrative import requires_narrative_review
+from pipeline.narrative import (
+    compile_narrative_carriers,
+    narrative_review_instruction,
+    requires_narrative_review,
+)
 from tools.ffmpeg_ops import get_video_duration
 from tools.frame_extractor import (
     composition_change_is_readable,
@@ -468,12 +472,7 @@ class SemanticTakeReviewer:
             if state_handoff_review else ""
         )
         narrative_instruction = (
-            "For narrative_state_change_valid, compare the earliest and latest current "
-            "samples and require a concrete visible difference showing state_change took "
-            "the story from state_before to the full state_after. Do not infer completion "
-            "from the prompt, smoke, a partial reaction, camera movement, mood, or a new "
-            "angle alone. "
-            if narrative_review else ""
+            narrative_review_instruction(contract) if narrative_review else ""
         )
         visible_result_instruction = (
             "When action_beats.visible_result is present, require that exact state change. "
@@ -841,6 +840,7 @@ def _review_contract(shot: dict) -> dict[str, Any]:
         )
     }
     contract.update(compile_action_contract(shot).review_projection)
+    contract["narrative_carriers"] = list(compile_narrative_carriers(contract))
     return contract
 
 

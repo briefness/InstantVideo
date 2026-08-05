@@ -225,6 +225,22 @@ def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
         requires_visible_result = phase != "setup"
 
     framing_families = _framing_families(count)
+    reference_policy = (
+        "independent"
+        if index == 0
+        else "state_if_same_scene"
+        if framing_families[index] == framing_families[index - 1]
+        else "state_and_identity"
+    )
+    # A planned intentional cut is the only place where a long tail chain may
+    # reset. It remains a no-op when no accepted canonical identity exists.
+    if (
+        index > 0
+        and index < count - 1
+        and index % (config.MAX_REFERENCE_CHAIN_DEPTH + 1) == 0
+    ):
+        reference_policy = "identity_only"
+
     return {
         "shot_id": index + 1,
         "duration": duration,
@@ -234,13 +250,7 @@ def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
         "requires_visible_result": requires_visible_result,
         "coverage_roles": _coverage_roles(focus, index, count),
         "framing_family": framing_families[index],
-        "reference_policy": (
-            "independent"
-            if index == 0
-            else "state_if_same_scene"
-            if framing_families[index] == framing_families[index - 1]
-            else "state_and_identity"
-        ),
+        "reference_policy": reference_policy,
     }
 
 

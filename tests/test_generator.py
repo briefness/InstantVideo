@@ -498,12 +498,119 @@ async def test_normal_pending_descriptor_polls_same_task_without_new_submission(
     generator.resume_tasks = {1: descriptor}
 
     result = await generator._generate_single_shot(
-        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
     )
 
     assert result.status == "running"
     assert generator.api.task_ids == ["normal-pending-task"]
     assert generator.api.creates == 0
+
+
+@pytest.mark.asyncio
+async def test_paid_take_budget_stops_fresh_submission_before_fake_provider_call(
+    tmp_path: Path,
+):
+    workspace = RunWorkspace.create(
+        tmp_path,
+        RunOptions(request="A test video", paid_take_budget=0),
+    )
+    generator = VideoGenerator(
+        str(workspace.path),
+        reserve_paid_take=workspace.reserve_paid_take,
+        confirm_paid_take_submission=workspace.confirm_paid_take_submission,
+        reconcile_paid_take=workspace.reconcile_paid_take,
+        release_unsubmitted_paid_take=workspace.release_unsubmitted_paid_take,
+    )
+
+    class FakeProvider:
+        supports_last_frame = True
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate(self, **_kwargs):
+            self.calls += 1
+            pytest.fail("exhausted budget must stop before provider submission")
+
+    generator.api = FakeProvider()
+    generator.semantic_reviewer = None
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral test shot."}
+
+    result = await generator._generate_single_shot(
+        shot, None, None, {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]}
+    )
+
+    assert result.status == "failed"
+    assert generator.api.calls == 0
+    assert "预算已耗尽" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_pending_descriptor_poll_does_not_reserve_a_paid_take(tmp_path: Path):
+    reservations: list[int] = []
+    generator = VideoGenerator(
+        str(tmp_path),
+        reserve_paid_take=lambda shot_id: reservations.append(shot_id) or "1:1",
+    )
+    shot = {"shot_id": 1, "duration": 5, "prompt_en": "A neutral legacy shot."}
+    fingerprint = "b" * 64
+    descriptor = {
+        "task_id": "existing-task",
+        "prompt_profile": "normal",
+        "prompt_fingerprint": fingerprint,
+        "compiled_contract_version": "action-contract-v2",
+        "compiled_contract_fingerprint": generator._compiled_contract_fingerprint(shot),
+    }
+    generator.resume_tasks = {1: descriptor}
+    generator._write_generation_provenance(
+        1,
+        generator._generation_provenance(
+            shot, [], None, prompt_profile="normal", prompt_fingerprint=fingerprint
+        ),
+        "existing-task",
+    )
+
+    class FakeProvider:
+        supports_last_frame = True
+
+        async def poll_task(self, task_id, *, timeout):
+            assert task_id == "existing-task"
+            return {
+                "status": "failed",
+                "error_type": "poll_timeout",
+                "provider_task_id": task_id,
+                "error": "still pending",
+            }
+
+    generator.api = FakeProvider()
+    generator.semantic_reviewer = None
+
+    result = await generator._generate_single_shot(
+        shot,
+        None,
+        None,
+        {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+    )
+
+    assert result.status == "running"
+    assert reservations == []
+
+
+def test_identity_reanchor_privacy_fallback_preserves_tail_state(tmp_path: Path):
+    generator = object.__new__(VideoGenerator)
+    shot = {
+        "continuity_from_previous": "intentional_cut",
+        "production_slot": {"reference_policy": "identity_only"},
+    }
+
+    assert generator._build_state_only_refs(
+        shot,
+        str(tmp_path / "tail.jpg"),
+        {"scene_id": "street"},
+    ) == ([str(tmp_path / "tail.jpg")], "first_frame")
 
 
 @pytest.mark.asyncio

@@ -40,3 +40,18 @@ _Avoid_: Cue, preparation
 The visible story consequence produced by an active interaction or preserved in its aftermath.
 _Avoid_: Phase endpoint, camera change
 
+**Paid Take Budget**:
+The run-level authorization for new provider submissions. Reserving a new Take consumes authorization; polling an existing provider task does not.
+_Avoid_: Retry count, quality threshold
+
+**Narrative Carrier**:
+A concrete, filmable visual choice that expresses a Narrative Beat through readable behavior, coverage, a declared detail, or a visible endpoint.
+_Avoid_: Mood, camera decoration
+
+**Canonical Anchor**:
+An accepted identity reference explicitly eligible to reset accumulated output-reference drift at a planned intentional cut.
+_Avoid_: Previous tail, arbitrary keyframe
+
+**Reference Chain Depth**:
+The number of consecutive accepted output-tail handoffs since the last independent generation or Canonical Anchor.
+_Avoid_: Shot number, retry count

@@ -591,6 +591,7 @@ class RunOptions(BaseModel):
     style: str = Field(default="cinematic", min_length=1)
     music_path: str | None = None
     platforms: list[str] = Field(default_factory=lambda: ["youtube", "tiktok"], min_length=1)
+    paid_take_budget: int | None = Field(default=None, ge=0)
 
     @field_validator("resolution")
     @classmethod
@@ -711,10 +712,32 @@ class ShotTaskState(BaseModel):
     technical_quality_score: int = 0
     semantic_accepted: bool | None = None
     observed_end_state: dict[str, str] = Field(default_factory=dict)
+    reference_chain_depth: int = Field(default=0, ge=0)
     model_used: str = ""
     resolution_used: str = ""
     attempts: int = 0
     errors: list[str] = Field(default_factory=list)
+
+
+class PaidTakeReservation(BaseModel):
+    """Durable authorization for one provider submission."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    reservation_id: str = Field(min_length=1)
+    shot_id: int = Field(gt=0)
+    take_number: int = Field(gt=0)
+    status: Literal["reserved", "submitted", "reconciled", "released"] = "reserved"
+    provider_task_id: str | None = None
+
+
+class PaidTakeBudgetState(BaseModel):
+    """The run-local paid-take ledger; absent limits remain explicitly unmetered."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    estimated_takes: int = Field(default=0, ge=0)
+    reservations: list[PaidTakeReservation] = Field(default_factory=list)
 
 
 class RunManifest(BaseModel):
@@ -727,6 +750,7 @@ class RunManifest(BaseModel):
     created_at: str
     updated_at: str
     options: RunOptions
+    paid_take_budget: PaidTakeBudgetState = Field(default_factory=PaidTakeBudgetState)
     shots: dict[str, ShotTaskState] = Field(default_factory=dict)
     final_path: str | None = None
     error: str | None = None

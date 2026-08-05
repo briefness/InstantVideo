@@ -5,6 +5,14 @@ from __future__ import annotations
 
 _ARC_FIELDS = ("goal", "stakes", "turning_point", "resolution")
 _BEAT_FIELDS = ("function", "state_before", "state_change", "state_after")
+_COVERAGE_CARRIERS = {
+    "establish": "make the initial situation and its change readable in the frame",
+    "action_subject": "keep the primary subject's visible behavior readable",
+    "target_reaction": "keep the intended receiver's visible response readable",
+    "interaction": "keep the visible cause and response in one readable spatial relation",
+    "aftermath": "hold the established result long enough to read",
+    "insert": "use the declared detail as visible evidence of the change",
+}
 
 
 def narrative_contract_present(storyboard: dict) -> bool:
@@ -77,19 +85,69 @@ def normalize_narrative_handoffs(storyboard: dict) -> list[tuple[object, object]
     return corrections
 
 
+def compile_narrative_carriers(shot: dict) -> tuple[dict[str, str], ...]:
+    """Project a Narrative Beat into concrete evidence without enlarging LLM JSON."""
+    beat = shot.get("narrative_beat")
+    if not isinstance(beat, dict):
+        return ()
+    change = str(beat.get("state_change", "")).strip()
+    after = str(beat.get("state_after", "")).strip()
+    if not change or not after:
+        return ()
+
+    carriers = [
+        {"kind": "visible_change", "value": change},
+        {"kind": "readable_endpoint", "value": after},
+    ]
+    coverage = str(shot.get("coverage_role", "")).strip()
+    coverage_carrier = _COVERAGE_CARRIERS.get(coverage)
+    if coverage_carrier:
+        carriers.append({"kind": "coverage", "value": coverage_carrier})
+    if coverage == "insert":
+        detail = next(
+            (
+                str(prop).strip()
+                for prop in shot.get("key_props", [])
+                if str(prop).strip()
+            ),
+            "",
+        )
+        if detail:
+            carriers.append({"kind": "signature_detail", "value": detail})
+    return tuple(carriers)
+
+
 def narrative_prompt_constraint(shot: dict) -> str:
     beat = shot.get("narrative_beat")
     if not isinstance(beat, dict):
         return ""
     function = str(beat.get("function", "")).strip()
     before = str(beat.get("state_before", "")).strip()
-    change = str(beat.get("state_change", "")).strip()
-    after = str(beat.get("state_after", "")).strip()
-    if not all((function, before, change, after)):
+    carriers = compile_narrative_carriers(shot)
+    if not function or not before or not carriers:
         return ""
+    carrier_text = "; ".join(
+        f"{carrier['kind']}={carrier['value']}" for carrier in carriers
+    )
     return (
-        f"narrative {function}: begin with {before}, visibly change it through "
-        f"{change}, and end with {after}"
+        f"narrative {function}: begin with {before}; filmable carriers: "
+        f"{carrier_text}; camera movement or mood alone cannot express the change"
+    )
+
+
+def narrative_review_instruction(shot: dict) -> str:
+    """Compile the same filmable carriers into the semantic review instruction."""
+    carriers = compile_narrative_carriers(shot)
+    if not carriers:
+        return ""
+    carrier_text = "; ".join(
+        f"{carrier['kind']}={carrier['value']}" for carrier in carriers
+    )
+    return (
+        "For narrative_state_change_valid, compare the earliest and latest current "
+        "samples and require the contracted filmable carriers to be visibly readable: "
+        f"{carrier_text}. Do not infer completion from the prompt, smoke, a partial "
+        "reaction, camera movement, mood, or a new angle alone. "
     )
 
 

@@ -33,6 +33,7 @@ class VideoPipeline:
         style: str = "cinematic",
         music_path: str | None = None,
         platforms: list[str] | None = None,
+        paid_take_budget: int | None = None,
         run_workspace: RunWorkspace | None = None,
     ):
         self.resolution = resolution
@@ -40,6 +41,7 @@ class VideoPipeline:
         self.style = style
         self.music_path = music_path
         self.platforms = platforms or ["youtube", "tiktok"]
+        self.paid_take_budget = paid_take_budget
         self.run_workspace = run_workspace
         self.workspace = run_workspace.path if run_workspace else None
         self._resuming = run_workspace is not None
@@ -54,6 +56,7 @@ class VideoPipeline:
             style=options.style,
             music_path=options.music_path,
             platforms=options.platforms,
+            paid_take_budget=options.paid_take_budget,
             run_workspace=run_workspace,
         )
 
@@ -74,6 +77,7 @@ class VideoPipeline:
                 style=self.style,
                 music_path=self.music_path,
                 platforms=self.platforms,
+                paid_take_budget=self.paid_take_budget,
             )
             self.run_workspace = RunWorkspace.create(config.OUTPUT_DIR, options)
             self.workspace = self.run_workspace.path
@@ -185,6 +189,7 @@ class VideoPipeline:
                 technical_quality_score=result.technical_quality_score,
                 semantic_accepted=result.semantic_accepted,
                 observed_end_state=result.observed_end_state,
+                reference_chain_depth=result.reference_chain_depth,
                 model_used=result.model_used,
                 resolution_used=result.resolution_used,
                 attempts=result.attempts,
@@ -194,6 +199,12 @@ class VideoPipeline:
         generator = VideoGenerator(
             str(self.workspace),
             on_progress=record_progress,
+            reserve_paid_take=self.run_workspace.reserve_paid_take,
+            confirm_paid_take_submission=(
+                self.run_workspace.confirm_paid_take_submission
+            ),
+            reconcile_paid_take=self.run_workspace.reconcile_paid_take,
+            release_unsubmitted_paid_take=self.run_workspace.release_unsubmitted_paid_take,
             resume_tasks=self.run_workspace.resumable_pending_tasks(),
             accepted_shot_artifacts=self.run_workspace.accepted_shot_artifacts(),
         )
