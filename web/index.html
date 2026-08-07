@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#10110f" />
+    <title>Seedance Studio</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66L20 8M20 4v4h-4" /></symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z" /></symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" /></symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
+      <symbol id="icon-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M7 5v14M17 5v14M3 9h4m10 0h4M3 15h4m10 0h4" /></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+      <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 4.4 2.7 18a2 2 0 0 0 1.75 3h15.1a2 2 0 0 0 1.75-3L13.7 4.4a2 2 0 0 0-3.4 0Z" /></symbol>
+    </svg>
+
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div>
+            <strong>Seedance</strong>
+            <span>Studio</span>
+          </div>
+        </div>
+
+        <button class="new-run-button" id="new-run-button" type="button">
+          <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+          新建任务
+        </button>
+
+        <label class="search-field">
+          <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+          <span class="sr-only">搜索任务</span>
+          <input id="run-search" type="search" placeholder="搜索任务" autocomplete="off" />
+        </label>
+
+        <div class="sidebar-label">
+          <span>最近任务</span>
+          <span id="run-count" class="tabular">0</span>
+        </div>
+        <nav id="run-list" class="run-list" aria-label="最近任务"></nav>
+
+        <div class="system-status">
+          <span id="api-indicator" class="signal-dot"></span>
+          <span id="api-label">检查服务</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">制作工作台</span>
+            <h1 id="page-title">项目总览</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-button" id="refresh-button" type="button" title="刷新">
+              <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+              <span class="sr-only">刷新</span>
+            </button>
+            <button class="compact-new-button" id="compact-new-button" type="button">
+              <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+              新建任务
+            </button>
+          </div>
+        </header>
+
+        <section id="empty-state" class="empty-state">
+          <div class="empty-visual" aria-hidden="true">
+            <span class="frame frame-one"></span>
+            <span class="frame frame-two"></span>
+            <span class="frame frame-three"><svg><use href="#icon-play"></use></svg></span>
+          </div>
+          <h2>选择一个制作任务</h2>
+          <p>镜头、运行状态与成片将在这里汇总。</p>
+          <button class="primary-button" id="empty-new-button" type="button">
+            <svg aria-hidden="true"><use href="#icon-plus"></use></svg>
+            新建任务
+          </button>
+        </section>
+
+        <div id="run-workspace" class="run-workspace" hidden>
+          <section class="run-heading">
+            <div>
+              <div class="heading-meta">
+                <span id="run-status" class="status-badge"></span>
+                <span id="run-id" class="run-id tabular"></span>
+              </div>
+              <h2 id="run-title"></h2>
+              <p id="run-request"></p>
+            </div>
+            <div class="run-actions">
+              <button id="resume-button" class="secondary-button" type="button" hidden>
+                <svg aria-hidden="true"><use href="#icon-refresh"></use></svg>
+                继续任务
+              </button>
+              <a id="download-button" class="primary-button" href="#" download hidden>
+                <svg aria-hidden="true"><use href="#icon-download"></use></svg>
+                下载成片
+              </a>
+            </div>
+          </section>
+
+          <div class="studio-grid">
+            <section class="preview-panel" aria-labelledby="preview-label">
+              <div class="section-bar">
+                <h3 id="preview-label">成片预览</h3>
+                <span id="preview-kind">最终成片</span>
+              </div>
+              <div class="video-stage" id="video-stage">
+                <video id="video-player" controls playsinline preload="metadata"></video>
+                <div id="video-placeholder" class="video-placeholder">
+                  <svg aria-hidden="true"><use href="#icon-film"></use></svg>
+                  <span>等待视频素材</span>
+                </div>
+              </div>
+              <div class="preview-meta">
+                <div><span>画幅</span><strong id="meta-ratio">-</strong></div>
+                <div><span>分辨率</span><strong id="meta-resolution">-</strong></div>
+                <div><span>时长</span><strong id="meta-duration" class="tabular">-</strong></div>
+                <div><span>风格</span><strong id="meta-style">-</strong></div>
+              </div>
+            </section>
+
+            <aside class="run-inspector">
+              <div class="section-bar">
+                <h3>运行状态</h3>
+                <span id="updated-time" class="tabular"></span>
+              </div>
+              <div class="stage-state">
+                <div class="stage-copy">
+                  <span>当前阶段</span>
+                  <strong id="stage-label">-</strong>
+                </div>
+                <span id="stage-percent" class="stage-percent tabular">0%</span>
+              </div>
+              <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+              <dl class="metric-list">
+                <div><dt>已完成镜头</dt><dd id="shot-progress" class="tabular">0 / 0</dd></div>
+                <div><dt>付费 Take</dt><dd id="take-progress" class="tabular">0 / -</dd></div>
+                <div><dt>导出平台</dt><dd id="platforms-value">-</dd></div>
+                <div><dt>语义验收</dt><dd id="review-value">-</dd></div>
+              </dl>
+              <div id="run-error" class="error-panel" hidden>
+                <svg aria-hidden="true"><use href="#icon-alert"></use></svg>
+                <p></p>
+              </div>
+              <div id="export-list" class="export-list"></div>
+            </aside>
+          </div>
+
+          <section class="shot-section">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Storyboard</span>
+                <h3>镜头序列</h3>
+              </div>
+              <span id="shot-count" class="tabular">0 个镜头</span>
+            </div>
+            <div id="shot-list" class="shot-list"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <dialog id="create-dialog" class="create-dialog">
+      <form id="create-form" method="dialog">
+        <header class="dialog-header">
+          <div>
+            <span class="eyebrow">New production</span>
+            <h2>创建视频任务</h2>
+          </div>
+          <button class="icon-button" id="close-dialog" type="button" title="关闭">
+            <svg aria-hidden="true"><use href="#icon-x"></use></svg>
+            <span class="sr-only">关闭</span>
+          </button>
+        </header>
+
+        <div class="dialog-body">
+          <label class="field full-field">
+            <span>视频需求</span>
+            <textarea name="request" rows="4" maxlength="4000" required placeholder="例如：15秒咖啡品牌广告，从咖啡豆到拿铁的过程"></textarea>
+          </label>
+
+          <fieldset class="field full-field">
+            <legend>画幅</legend>
+            <div id="ratio-options" class="segmented-control"></div>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend>分辨率</legend>
+            <div id="resolution-options" class="segmented-control"></div>
+          </fieldset>
+
+          <label class="field">
+            <span>视觉风格</span>
+            <select id="style-select" name="style"></select>
+          </label>
+
+          <label class="field">
+            <span>背景音乐</span>
+            <select id="music-select" name="music"><option value="">自动匹配</option></select>
+          </label>
+
+          <label class="field">
+            <span>付费 Take 上限</span>
+            <input name="paid_take_budget" type="number" min="0" step="1" inputmode="numeric" placeholder="不限制" />
+          </label>
+
+          <fieldset class="field full-field">
+            <legend>导出平台</legend>
+            <div id="platform-options" class="checkbox-grid"></div>
+          </fieldset>
+        </div>
+
+        <p id="form-error" class="form-error" role="alert" hidden></p>
+        <footer class="dialog-footer">
+          <button class="secondary-button" id="cancel-dialog" type="button">取消</button>
+          <button class="primary-button" id="submit-run" type="submit">
+            <svg aria-hidden="true"><use href="#icon-play"></use></svg>
+            开始制作
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
