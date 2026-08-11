@@ -8,6 +8,19 @@ docs/adr/*
 # generated types
 .astro/
 
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# local agent state
+.claude/
+.codex/
+/AGENTS.md
+/CLAUDE.md
+
 # dependencies
 node_modules/
 
