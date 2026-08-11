@@ -517,6 +517,30 @@ def test_rejected_only_take_never_becomes_resume_input(tmp_path: Path):
     assert resumed.accepted_shot_artifacts() == {}
 
 
+def test_technical_failure_is_retained_as_rejected_take_with_evidence(tmp_path: Path):
+    workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
+    video = workspace.path / "shots" / "shot_001.mp4"
+    video.parent.mkdir(exist_ok=True)
+    video.write_bytes(b"video")
+
+    workspace.record_shot(
+        shot_id=1,
+        status="failed",
+        local_path=str(video),
+        rejection_evidence=[{
+            "category": "technical",
+            "code": "technical.qa_failed",
+            "source": "technical_qa",
+        }],
+    )
+
+    state = RunWorkspace.resume(workspace.path).manifest.shots["1"]
+    assert state.canonical_take_id is None
+    assert state.take_history[0].disposition == "rejected"
+    assert state.take_history[0].rejection_evidence[0].code == "technical.qa_failed"
+    assert workspace.accepted_shot_artifacts() == {}
+
+
 def test_completed_workspace_reuses_existing_final_video(tmp_path: Path):
     workspace = RunWorkspace.create(tmp_path, RunOptions(request="A test video"))
     workspace.save_storyboard(storyboard())

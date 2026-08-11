@@ -183,6 +183,7 @@ class VideoPipeline:
                 acceptance_policy=result.acceptance_policy,
                 recovery_actions=result.recovery_actions,
                 prompt_attempts=result.prompt_attempts,
+                rejection_evidence=result.rejection_evidence,
                 local_path=result.local_path,
                 last_frame_url=result.last_frame_url,
                 quality_score=result.quality_score,

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-import re
-
 from pipeline.causality import compile_action_contract, interaction_geometry
 from pipeline.production_plan import classify_framing
+from pipeline.visual_invariants import (
+    compile_visual_invariants,
+    safe_screen_positions,
+)
 
 
 _FRAMING_LABELS = {
@@ -13,9 +15,6 @@ _FRAMING_LABELS = {
     "medium": "medium shot",
     "close_detail": "close detail shot",
 }
-_POSITION_TERMS = (
-    "left", "center", "right", "foreground", "midground", "background",
-)
 
 
 def has_explicit_action_contract(shot: dict) -> bool:
@@ -45,6 +44,7 @@ def compile_normal_provider_prompt(
     contract = compile_action_contract(shot)
     parts = ["Create one coherent cinematic shot"]
     parts.extend(_normal_visual_parts(shot, storyboard))
+    parts.extend(compile_visual_invariants(shot).prompt_parts)
     if has_observed_start:
         parts.append(
             "begin from the observed physical and action state in Image 1 while applying the current camera composition"
@@ -81,6 +81,7 @@ def compile_policy_safe_prompt(
         "Create one coherent cinematic shot with a restrained, non-graphic fictional treatment",
     ]
     parts.extend(_normal_visual_parts(shot, storyboard or {}))
+    parts.extend(compile_visual_invariants(shot).prompt_parts)
     if retake_instruction:
         parts.append(retake_instruction)
     camera = shot.get("camera", {})
@@ -88,7 +89,10 @@ def compile_policy_safe_prompt(
     framing = _FRAMING_LABELS.get(classify_framing(camera.get("start_framing")))
     if framing:
         parts.append(f"camera: stable {framing}")
-    positions = _safe_screen_positions(camera.get("screen_positions"))
+    positions = [
+        f"{entity}={position}"
+        for entity, position in safe_screen_positions(camera.get("screen_positions"))
+    ]
     if positions:
         parts.append("screen positions: " + ", ".join(positions))
 
@@ -206,7 +210,10 @@ def _normal_composition_parts(shot: dict, *, has_observed_start: bool) -> list[s
     framing = _FRAMING_LABELS.get(classify_framing(camera.get("start_framing")))
     if framing:
         parts.append(f"camera: {framing}")
-    positions = _safe_screen_positions(camera.get("screen_positions"))
+    positions = [
+        f"{entity}={position}"
+        for entity, position in safe_screen_positions(camera.get("screen_positions"))
+    ]
     if positions:
         parts.append("screen positions: " + ", ".join(positions))
     composition_change = str(shot.get("composition_change", "")).strip()
@@ -274,18 +281,6 @@ def _reference_clauses(
     elif image_role == "first_frame" and reference_count:
         clauses.append("begin from the supplied first frame without replaying a completed action")
     return clauses
-
-
-def _safe_screen_positions(value: object) -> list[str]:
-    if not isinstance(value, dict):
-        return []
-    positions: list[str] = []
-    for entity, raw_position in value.items():
-        text = str(raw_position or "").casefold()
-        tokens = [term for term in _POSITION_TERMS if re.search(rf"\b{term}\b", text)]
-        if tokens:
-            positions.append(f"{_entity_label(entity)}={' '.join(tokens)}")
-    return positions
 
 
 def _entity_label(value: object) -> str:

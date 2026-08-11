@@ -279,6 +279,7 @@ class RunWorkspace:
         acceptance_policy: str | None = None,
         recovery_actions: list[str] | None = None,
         prompt_attempts: list[dict[str, Any]] | None = None,
+        rejection_evidence: list[dict[str, Any]] | None = None,
         local_path: str | None = None,
         last_frame_url: str | None = None,
         quality_score: int = 0,
@@ -331,10 +332,14 @@ class RunWorkspace:
                     compiled_contract_fingerprint=compiled_contract_fingerprint,
                 )
         disposition = None
-        if relative_path and semantic_accepted is False:
-            disposition = "rejected"
-        elif relative_path and ShotStatus(status) == ShotStatus.success:
+        shot_status = ShotStatus(status)
+        if relative_path and shot_status == ShotStatus.success:
             disposition = "accepted"
+        elif relative_path and (
+            semantic_accepted is False or shot_status == ShotStatus.failed
+        ):
+            # 已物化但技术或语义失败的付费结果仍是 Take，只是不能推进 Canonical State。
+            disposition = "rejected"
         take = None
         if disposition:
             take = TakeRecordState(
@@ -355,6 +360,9 @@ class RunWorkspace:
                 accepted_contract_fingerprint=accepted_contract_fingerprint,
                 semantic_evaluator_version=semantic_evaluator_version,
                 acceptance_policy=acceptance_policy,
+                rejection_evidence=(
+                    rejection_evidence or [] if disposition == "rejected" else []
+                ),
                 errors=merged_errors,
             )
         take_history = _merge_take_history(

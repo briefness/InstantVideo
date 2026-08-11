@@ -41,10 +41,21 @@ from pipeline.semantic_review import (
 )
 from pipeline.readiness import (
     GenerationReadinessError,
+    ensure_provider_submission_ready,
     ensure_shot_ready,
     ensure_storyboard_ready,
 )
 from pipeline.run_state import PaidTakeBudgetExhaustedError
+from pipeline.visual_invariants import (
+    VISUAL_INVARIANTS_VERSION,
+    visual_invariants_fingerprint,
+)
+from pipeline.failure_evidence import (
+    pipeline_state_failure_evidence,
+    provider_failure_evidence,
+    semantic_review_failure_evidence,
+    technical_failure_evidence,
+)
 
 
 _REFERENCE_ROLE_UNSET = object()
@@ -77,6 +88,7 @@ class ShotResult:
     acceptance_policy: Optional[str] = None
     recovery_actions: list[str] = field(default_factory=list)
     prompt_attempts: list[dict] = field(default_factory=list)
+    rejection_evidence: list[dict] = field(default_factory=list)
     technical_quality_score: int = 0
     semantic_accepted: Optional[bool] = None
     observed_end_state: dict[str, str] = field(default_factory=dict)
@@ -332,6 +344,9 @@ class VideoGenerator:
                     "已接受镜头的编译合同、有效提示词或状态参考与当前请求不匹配；"
                     "必须由当前语义验收器离线复核，且不会在 resume 中隐式提交新的付费生成任务"
                 ],
+                rejection_evidence=pipeline_state_failure_evidence(
+                    "acceptance_context_mismatch"
+                ),
             )
             if self.semantic_reviewer and Path(result.local_path).is_file():
                 review = await self._review_rejected_take(
@@ -366,9 +381,14 @@ class VideoGenerator:
                         crop_boxes=review.identity_crop_boxes,
                     )
                     result.recovery_actions.append("offline_revalidate_accepted_take")
+                    result.rejection_evidence = []
                     result.errors = []
                     self._notify_progress(result)
                     return result
+                if review is None:
+                    result.rejection_evidence = technical_failure_evidence()
+                elif not review.accepted:
+                    result.rejection_evidence = semantic_review_failure_evidence(review)
             self._notify_progress(result)
             return result
         if restored:
@@ -464,6 +484,9 @@ class VideoGenerator:
             if not self.semantic_reviewer:
                 result.status = "failed"
                 result.local_path = str(rejected_takes[0])
+                result.rejection_evidence = pipeline_state_failure_evidence(
+                    "semantic_reviewer_unavailable"
+                )
                 result.errors.append(
                     "已有 rejected take，但语义验收器未启用；为避免无依据消耗唯一重拍预算，已停止"
                 )
@@ -479,6 +502,7 @@ class VideoGenerator:
             )
             if review is None:
                 result.status = "failed"
+                result.rejection_evidence = technical_failure_evidence()
                 self._notify_progress(result)
                 return result
             if review.accepted:
@@ -493,6 +517,7 @@ class VideoGenerator:
             semantic_failure = (
                 review.failure_reason or "镜头未满足动作与空间契约"
             )
+            result.rejection_evidence = semantic_review_failure_evidence(review)
             result.errors.append(f"历史镜头语义验收不通过: {semantic_failure}")
             result.local_path = str(rejected_takes[0])
             self._notify_progress(result)
@@ -545,6 +570,9 @@ class VideoGenerator:
                         )
                     if not review.accepted:
                         reason = review.failure_reason or "镜头未满足动作与空间契约"
+                        result.rejection_evidence = semantic_review_failure_evidence(
+                            review
+                        )
                         result.errors.append(f"缓存镜头语义验收不通过: {reason}")
                         rejected_path = self._preserve_rejected_take(
                             shot["shot_id"], cached_path
@@ -612,6 +640,9 @@ class VideoGenerator:
         elif Path(cached_path).exists() and Path(cached_path).stat().st_size > 0:
             result.status = "failed"
             result.local_path = cached_path
+            result.rejection_evidence = pipeline_state_failure_evidence(
+                "reference_provenance_mismatch"
+            )
             result.errors.append(
                 "本地镜头的状态参考溯源与当前合同不匹配；已停止，"
                 "缓存冲突本身不授权提交新的付费生成任务"
@@ -728,6 +759,18 @@ class VideoGenerator:
                             has_state_reference=has_state_reference,
                         )
                     if not resuming_existing_task:
+                        provider_duration = min(
+                            shot["duration"], deg_config["max_duration"]
+                        )
+                        ensure_provider_submission_ready(
+                            prompt,
+                            shot,
+                            storyboard,
+                            prompt_profile=prompt_profile,
+                            model=deg_config["model"],
+                            resolution=deg_config["resolution"],
+                            duration=provider_duration,
+                        )
                         prompt_fingerprint = hashlib.sha256(prompt.encode()).hexdigest()
                     generation_provenance = self._generation_provenance(
                         shot,
@@ -771,7 +814,7 @@ class VideoGenerator:
                     else:
                         gen_result = await self.api.generate(
                             prompt=prompt,
-                            duration=min(shot["duration"], deg_config["max_duration"]),
+                            duration=provider_duration,
                             ratio=storyboard.get("aspect_ratio", "16:9"),
                             resolution=deg_config["resolution"],
                             model=deg_config["model"],
@@ -833,6 +876,11 @@ class VideoGenerator:
                             prompt_attempt["provider_error_code"] = (
                                 result.provider_error_code
                             )
+                        prompt_attempt["failure_evidence"] = provider_failure_evidence(
+                            result.provider_error_type,
+                            error_code=result.provider_error_code,
+                            error_locus=result.provider_error_locus,
+                        )
 
                     if (
                         resuming_existing_task
@@ -847,6 +895,10 @@ class VideoGenerator:
                         return result
 
                     if gen_result["status"] == "succeeded":
+                        # 后续成功 Take 不能继承上一条 rejected Take 的证据。
+                        result.rejection_evidence = []
+                        result.semantic_accepted = None
+                        result.observed_end_state = {}
                         # Persist immutable submission lineage before any local
                         # materialization. A download outage must be resumable
                         # as the same remote task, never a new paid submission.
@@ -879,6 +931,9 @@ class VideoGenerator:
                             qa = check_video_quality(local_path)
                         except Exception as exc:
                             result.status = "failed"
+                            result.rejection_evidence = technical_failure_evidence(
+                                unavailable=True
+                            )
                             result.errors.append(
                                 "远端任务已成功，但本地技术 QA 异常；已停止且不会重新提交: "
                                 f"{exc}"
@@ -893,6 +948,7 @@ class VideoGenerator:
                         )
 
                         if not qa["pass"]:
+                            result.rejection_evidence = technical_failure_evidence()
                             result.errors.append(f"QA 不通过: {qa['issues']}")
                             result.status = "failed"
                             self._notify_progress(result)
@@ -915,6 +971,7 @@ class VideoGenerator:
                             result.semantic_accepted = review.accepted
                             result.observed_end_state = review.observed_end_state
                             if review.accepted:
+                                result.rejection_evidence = []
                                 result.accepted_contract_version = ACTION_CONTRACT_VERSION
                                 result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
                                 result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
@@ -933,6 +990,9 @@ class VideoGenerator:
                                 )
                             if not review.accepted:
                                 reason = review.failure_reason or "镜头未满足动作与空间契约"
+                                result.rejection_evidence = (
+                                    semantic_review_failure_evidence(review)
+                                )
                                 result.errors.append(f"语义验收不通过: {reason}")
                                 rejected_path = self._preserve_rejected_take(
                                     shot["shot_id"], local_path
@@ -1261,7 +1321,7 @@ class VideoGenerator:
         lineage. A later offline review may accept the same video against a new
         upstream tail; that must not rewrite what was originally submitted.
         """
-        return {
+        context = {
             "version": "acceptance-context-v1",
             "policy": policy,
             "compiled_contract_version": ACTION_CONTRACT_VERSION,
@@ -1274,6 +1334,13 @@ class VideoGenerator:
                 self._reference_fingerprint(value) for value in image_urls
             ],
         }
+        invariants_fingerprint = visual_invariants_fingerprint(shot)
+        if policy == "semantic_reviewed" and invariants_fingerprint:
+            context.update({
+                "visual_invariants_version": VISUAL_INVARIANTS_VERSION,
+                "visual_invariants_fingerprint": invariants_fingerprint,
+            })
+        return context
 
     def _write_acceptance_context(
         self,

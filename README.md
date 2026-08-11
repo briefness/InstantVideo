@@ -29,7 +29,9 @@ python web_server.py
 - **统一动作合约**：用 Action Contract 表达接触、定向路径、区域与间接作用，限制结果范围并检查因果顺序。
 - **连续性传递**：同场景镜头使用上一条已接受镜头的真实尾帧作为 `first_frame`，跨场景才切换独立身份参考。
 - **双层质量检查**：执行技术质量检查和可选的时序语义验收，失败只允许有限、定向的处理。
+- **付费提交前硬门**：在调用 Provider 前校验模型、分辨率、画幅、时长、生成链、Action Contract 投影与视觉锁，配置或编译结果不完整时直接停止。
 - **安全恢复**：持久化任务 ID、提示词指纹、合约签名、参考职责和验收上下文，避免恢复时重复提交付费任务。
+- **可审计失败证据**：把 Provider、技术 QA、语义验收和状态错误记录为结构化证据，并从 `run_manifest.json` 只读派生 Take、尝试与失败模式统计。
 - **完整后期链路**：自动完成规格统一、转场、BGM、TTS、LUT、字幕、片头与多平台导出。
 - **双入口**：Web 工作台和 CLI 共享同一套流水线与工作区格式。
 
@@ -48,6 +50,8 @@ python web_server.py
 对动作镜头，系统把准备、作用、结果与范围外主体拆到结构化合同中。Provider 提示词、安全重编译、语义验收和定向重拍共享同一合同投影，避免为单个题材添加关键词补丁。
 
 恢复时，已接受的本地片段只会在验收上下文匹配时复用；上下文变化会先触发离线复核。远端未决任务只轮询原任务，不重新提交。已返回但本地下载或技术 QA 失败的任务会停止，避免隐式重复扣费。
+
+失败统计不解析可能变化的自然语言错误信息，也不维护第二套账本。只有已接受 Take 可以推进 Canonical State；失败模式按同一提示词指纹聚合，样本不足时明确返回 `insufficient_evidence`，不会把单次失败推断成结构性问题。
 
 ## 环境要求
 
@@ -73,6 +77,8 @@ python --version
 ffmpeg -version
 python main.py --help
 ```
+
+建议在独立虚拟环境中安装依赖，并运行 `python -m pip check`。不要在依赖不一致的共享环境中执行真实 API 验收；模块可以导入不代表运行环境完整可用。
 
 ## 快速开始
 
@@ -221,25 +227,18 @@ python -m pytest -q
 
 # Python 编译检查
 python -m compileall -q pipeline tests
+
+# Web 前端语法检查
+node --check web/app.js
 ```
 
-测试覆盖分镜合约、时长与规格约束、Provider 参数、动作因果、状态恢复、转场、音频时间线和 Web 适配层。离线行为评测矩阵覆盖 15/30 秒、action/product/balanced、单/多角色、同/跨场景、四种交互模式以及 normal/policy-safe 编译。
+测试覆盖分镜合约、时长与规格约束、Provider 能力契约、付费提交前校验、动作因果、视觉不变量、结构化失败证据、生产统计、状态恢复、转场、音频时间线和 Web 适配层。离线行为评测矩阵覆盖 15/30 秒、action/product/balanced、单/多角色、同/跨场景、四种交互模式以及 normal/policy-safe 编译。
 
-## 设计取舍
+离线测试不会替代真实链路验收。发布前仍需在受支持的 Python 3.11/3.12 独立环境中验证真实视频生成、远程语义验收和所选远程 TTS。
 
-本项目吸收下列开源项目的可迁移思想，但不复制其实现或技术栈：
+## 架构约束
 
-| 项目 | 借鉴方向 | 本项目的实现边界 |
-| --- | --- | --- |
-| [FireRed-OpenStoryline](https://github.com/FireRedTeam/FireRed-OpenStoryline) | 长叙事拆分与故事状态 | 使用受限 Story Spine 与逐镜状态交接。 |
-| [Remotion](https://github.com/remotion-dev/remotion) | 可组合、可复现的视频时间线 | 使用确定性时长、转场与音频时间计算，不引入 React 渲染栈。 |
-| [MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) | 自动化内容生产流程 | 保留可运行工作区与素材处理，不复制其产品工作流。 |
-| [moyin-creator](https://github.com/MemeCalculate/moyin-creator) | 叙事、视觉描述与拍摄控制分层 | 将角色资产、镜头调度、相机与生成提示词分阶段编译。 |
-| [ViMax](https://github.com/HKUDS/ViMax) | 规划、角色与事件提取、执行分离 | 使用整体故事弧、逐镜状态与生成就绪门。 |
-| [OpenMontage](https://github.com/calesthio/OpenMontage) | 生成前质量门与帧采样复核 | 使用就绪校验、时序语义验收、有限重拍与发布校验。 |
-| [seedance-2.0](https://github.com/Emily2040/seedance-2.0) | Seedance 调用经验 | 以官方 Ark 接口和本项目的持久化恢复边界为准。 |
-
-单一 Action Contract 的架构决策见 [`docs/adr/0001-single-action-contract-owner.md`](docs/adr/0001-single-action-contract-owner.md)。
+生产计划、Provider 提示词、语义验收和定向重拍必须共享同一 Action Contract，不得各自解释动作语义。Planned State、Observed State 与 Canonical State 相互分离，只有已接受 Take 可以推进 Canonical State。完整决策见 [`docs/adr/0001-single-action-contract-owner.md`](docs/adr/0001-single-action-contract-owner.md)。
 
 ## 已知限制
 

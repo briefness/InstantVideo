@@ -460,6 +460,7 @@ def test_setup_review_excludes_actor_only_preparation_from_physical_effect(
         "effect_path_valid": True,
         "reaction_causality_valid": True,
         "causal_sample_evidence": evidence,
+        "visual_invariants_valid": True,
         "primary_action_completed": True,
         "observed_end_state": {
             "location": "ruined street",
@@ -543,6 +544,7 @@ def test_structured_causal_evidence_overrides_aggregate_model_acceptance(
         "effect_path_valid": True,
         "reaction_causality_valid": True,
         "causal_sample_evidence": evidence,
+        "visual_invariants_valid": True,
         "primary_action_completed": True,
         "observed_end_state": {
             "location": "abstract scene",
@@ -619,6 +621,7 @@ def test_complete_causal_evidence_overrides_false_aggregate_verdict(
         "effect_path_valid": False,
         "reaction_causality_valid": False,
         "causal_sample_evidence": evidence,
+        "visual_invariants_valid": True,
         "primary_action_completed": True,
         "observed_end_state": {
             "location": "generic arena",
@@ -783,6 +786,7 @@ def test_causal_evidence_schema_mismatch_retries_same_review_once(
             "required_entities_visible": [True, True],
             "action_geometry_valid": True,
             "causal_sample_evidence": evidence,
+            "visual_invariants_valid": True,
             "primary_action_completed": True,
             "observed_end_state": {
                 "location": "ruined street",
@@ -853,6 +857,7 @@ def test_cached_review_recomputes_verdict_from_causal_evidence(
         "required_entities_visible": [True, True],
         "action_geometry_valid": True,
         "causal_sample_evidence": [dict(sample) for _ in range(9)],
+        "visual_invariants_valid": True,
         "primary_action_completed": True,
         "observed_end_state": {
             "location": "ruined street",

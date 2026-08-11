@@ -1,0 +1,58 @@
+[
+  {
+    "name": "input moderation",
+    "error_type": "moderation",
+    "error_code": "InputTextSensitiveContentDetected",
+    "error_locus": "input_text",
+    "category": "provider_policy",
+    "code": "provider.moderation"
+  },
+  {
+    "name": "reference privacy",
+    "error_type": "privacy",
+    "error_code": "InputReferencePrivacyInformationDetected",
+    "error_locus": "input_reference",
+    "category": "provider_policy",
+    "code": "provider.privacy"
+  },
+  {
+    "name": "output copyright",
+    "error_type": "copyright_policy",
+    "error_code": "OutputVideoPolicyViolation",
+    "error_locus": "output_video",
+    "category": "provider_policy",
+    "code": "provider.copyright_policy"
+  },
+  {
+    "name": "temporary outage",
+    "error_type": "transient_provider",
+    "error_code": "ServiceUnavailable",
+    "error_locus": "unknown",
+    "category": "provider_transient",
+    "code": "provider.transient_provider"
+  },
+  {
+    "name": "rate limit",
+    "error_type": "rate_limit",
+    "error_code": "TooManyRequests",
+    "error_locus": "unknown",
+    "category": "provider_transient",
+    "code": "provider.rate_limit"
+  },
+  {
+    "name": "poll timeout",
+    "error_type": "poll_timeout",
+    "error_code": "",
+    "error_locus": "unknown",
+    "category": "provider_transient",
+    "code": "provider.poll_timeout"
+  },
+  {
+    "name": "unclassified provider failure",
+    "error_type": "unknown",
+    "error_code": "UnexpectedFailure",
+    "error_locus": "unknown",
+    "category": "unknown",
+    "code": "provider.unknown"
+  }
+]

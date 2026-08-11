@@ -16,8 +16,10 @@ from pipeline.generator import (
     VideoGenerator,
 )
 from pipeline.models import RunOptions
+from pipeline.readiness import GenerationReadinessError
 from pipeline.run_state import RunWorkspace
 from pipeline.semantic_review import SEMANTIC_REVIEW_VERSION, SemanticReview
+from pipeline.visual_invariants import VISUAL_INVARIANTS_VERSION
 
 
 @pytest.fixture
@@ -36,6 +38,7 @@ def _record_progress(workspace: RunWorkspace):
             compiled_contract_version=result.compiled_contract_version,
             compiled_contract_fingerprint=result.compiled_contract_fingerprint,
             prompt_attempts=result.prompt_attempts,
+            rejection_evidence=result.rejection_evidence,
             attempts=result.attempts,
             errors=result.errors,
         )
@@ -51,6 +54,36 @@ class TestShotHasCharacter:
 
     def test_no_character(self, generator):
         assert not generator._shot_has_character({"subtitle_text": "x"})
+
+
+def test_semantic_acceptance_context_tracks_visual_invariants_without_changing_action_version(
+    generator,
+):
+    action_only_shot = {
+        "shot_id": 1,
+        "interaction_geometry": {
+            "effect_phase": "none",
+            "interaction_mode": "none",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+    }
+    shot = {
+        **action_only_shot,
+        "scene_id": "assembly_floor",
+    }
+
+    context = generator._acceptance_context(shot, [], None)
+
+    assert generator._compiled_contract_fingerprint(shot) == (
+        generator._compiled_contract_fingerprint(action_only_shot)
+    )
+    assert context["compiled_contract_version"] == "action-contract-v2"
+    assert context["visual_invariants_version"] == VISUAL_INVARIANTS_VERSION
+    assert len(context["visual_invariants_fingerprint"]) == 64
+    assert "visual_invariants_fingerprint" not in generator._acceptance_context(
+        shot, [], None, policy="technical_only"
+    )
 
 
 @pytest.mark.asyncio
@@ -546,6 +579,52 @@ async def test_paid_take_budget_stops_fresh_submission_before_fake_provider_call
     assert result.status == "failed"
     assert generator.api.calls == 0
     assert "预算已耗尽" in result.errors[-1]
+
+
+@pytest.mark.asyncio
+async def test_provider_preflight_stops_before_paid_take_reservation(
+    tmp_path: Path,
+    monkeypatch,
+):
+    reservations: list[int] = []
+    generator = VideoGenerator(
+        str(tmp_path),
+        reserve_paid_take=lambda shot_id: reservations.append(shot_id) or "1:1",
+    )
+
+    class FakeProvider:
+        supports_last_frame = True
+
+        async def generate(self, **_kwargs):
+            pytest.fail("invalid provider prompt must not reach submission")
+
+    generator.api = FakeProvider()
+    generator.semantic_reviewer = None
+    monkeypatch.setattr(
+        "pipeline.generator.compile_normal_provider_prompt",
+        lambda *_args, **_kwargs: " ",
+    )
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "prompt_en": "A neutral test shot.",
+        "interaction_geometry": {
+            "effect_phase": "none",
+            "interaction_mode": "none",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+    }
+
+    with pytest.raises(GenerationReadinessError, match="最终 provider prompt 为空"):
+        await generator._generate_single_shot(
+            shot,
+            None,
+            None,
+            {"resolution": "480p", "aspect_ratio": "16:9", "shots": [shot]},
+        )
+
+    assert reservations == []
 
 
 @pytest.mark.asyncio
@@ -1366,6 +1445,11 @@ async def test_semantic_retake_is_bounded_across_resume(generator, monkeypatch):
     second = await generator._generate_single_shot(shot, None, None, storyboard)
 
     assert first.status == "failed"
+    assert {item["code"] for item in first.rejection_evidence} == {
+        "contract.required_entity_missing",
+        "contract.action_geometry_invalid",
+        "contract.primary_action_incomplete",
+    }
     assert generator.api.calls == 2
     assert len(list((generator.output_dir / "shots").glob("*_rejected_*.mp4"))) == 2
     assert second.status == "failed"
@@ -2192,6 +2276,10 @@ async def test_repeated_input_text_moderation_stops_after_one_recompile(generato
     assert result.provider_error_locus == "input_text"
     assert result.recovery_actions == ["recompile_input_text_policy_safe"]
     assert len(result.prompt_attempts) == 2
+    assert all(
+        attempt["failure_evidence"][0]["category"] == "provider_policy"
+        for attempt in result.prompt_attempts
+    )
 
 
 @pytest.mark.asyncio

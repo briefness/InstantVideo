@@ -2,6 +2,7 @@
 
 import pytest
 
+import config
 from pipeline.causality import (
     blocking_geometry_issues,
     causal_evidence_issues,
@@ -10,9 +11,12 @@ from pipeline.causality import (
 from pipeline.readiness import (
     coverage_readiness_issues,
     GenerationReadinessError,
+    ensure_provider_submission_ready,
     ensure_shot_ready,
+    provider_submission_issues,
     storyboard_readiness_issues,
 )
+from pipeline.provider_prompt import compile_normal_provider_prompt
 from pipeline.participants import (
     canonical_entity_id,
     iter_structured_entity_references,
@@ -39,6 +43,104 @@ def test_visible_participants_cover_all_structured_character_fields():
     assert visible_character_names(
         shot, ["robot", "zombies", "guard", "observer"]
     ) == ["robot", "zombies", "guard", "observer"]
+
+
+def test_provider_submission_preflight_accepts_compiled_contract_prompt():
+    shot = {
+        "shot_id": 1,
+        "duration": 5,
+        "scene_id": "calibration_bay",
+        "interaction_geometry": {
+            "actor": "technician",
+            "target": "console",
+            "effect_phase": "setup",
+            "interaction_mode": "none",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+        "end_state": {"pose_and_gaze": "hand visibly poised above the switch"},
+    }
+    storyboard = {
+        "resolution": "480p",
+        "aspect_ratio": "16:9",
+        "style": "cinematic realism",
+    }
+    prompt = compile_normal_provider_prompt(
+        shot, storyboard, has_observed_start=False
+    )
+
+    assert provider_submission_issues(
+        prompt,
+        shot,
+        storyboard,
+        prompt_profile="normal",
+        model=config.SEEDANCE_MODEL,
+        resolution="480p",
+        duration=5,
+    ) == []
+
+
+def test_provider_submission_preflight_rejects_lost_contract_projection():
+    shot = {
+        "shot_id": 2,
+        "interaction_geometry": {
+            "actor": "technician",
+            "target": "console",
+            "effect_phase": "setup",
+            "interaction_mode": "none",
+            "outcome_scope": "none",
+            "effect_motion": "none",
+        },
+        "end_state": {"pose_and_gaze": "hand visibly poised above the switch"},
+    }
+
+    issues = provider_submission_issues(
+        "Create one coherent cinematic shot.",
+        shot,
+        {"resolution": "480p", "aspect_ratio": "16:9"},
+        prompt_profile="normal",
+        model=config.SEEDANCE_MODEL,
+        resolution="480p",
+        duration=5,
+    )
+
+    assert any("丢失" in issue and "Action Contract" in issue for issue in issues)
+
+
+def test_provider_submission_preflight_rejects_empty_or_unsupported_request():
+    with pytest.raises(GenerationReadinessError, match="最终 provider prompt 为空"):
+        ensure_provider_submission_ready(
+            " ",
+            {"shot_id": 3},
+            {"resolution": "480p", "aspect_ratio": "16:9"},
+            prompt_profile="normal",
+            model=config.SEEDANCE_MODEL,
+            resolution="1080p",
+            duration=5,
+        )
+
+
+def test_provider_submission_preflight_rejects_incomplete_capability_contract(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        "pipeline.readiness.capability_contract_issues",
+        lambda: ["720p generation chain is empty"],
+    )
+
+    issues = provider_submission_issues(
+        "Create one coherent cinematic shot.",
+        {"shot_id": 4},
+        {"resolution": "480p", "aspect_ratio": "16:9"},
+        prompt_profile="policy_safe",
+        model=config.SEEDANCE_MODEL,
+        resolution="480p",
+        duration=5,
+    )
+
+    assert issues[0] == (
+        "Provider capability contract 不完整: 720p generation chain is empty"
+    )
 
 
 def test_normalize_shot_participants_uses_unique_shared_entity_token():

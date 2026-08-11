@@ -23,6 +23,7 @@ from pipeline.narrative import (
     narrative_review_instruction,
     requires_narrative_review,
 )
+from pipeline.visual_invariants import compile_visual_invariants
 from tools.ffmpeg_ops import get_video_duration
 from tools.frame_extractor import (
     composition_change_is_readable,
@@ -102,6 +103,7 @@ class SemanticReview:
     action_handoff_valid: bool = True
     screen_direction_valid: bool = True
     prop_continuity_valid: bool = True
+    visual_invariants_valid: bool = True
     identity_crop_boxes: dict[str, tuple[float, float, float, float]] = field(
         default_factory=dict
     )
@@ -116,6 +118,7 @@ class SemanticReview:
         require_narrative: bool = False,
         require_blocking: bool = False,
         require_composition: bool = False,
+        require_visual_invariants: bool = False,
     ) -> "SemanticReview":
         required = value.get("required_entities_visible", {})
         observed = value.get("observed_end_state", {})
@@ -192,6 +195,11 @@ class SemanticReview:
                 "prop_continuity_valid",
                 default=True,
             ),
+            visual_invariants_valid=_strict_bool(
+                value.get("visual_invariants_valid"),
+                "visual_invariants_valid",
+                default=not require_visual_invariants,
+            ),
             identity_crop_boxes=_parse_crop_boxes(
                 value.get("identity_crop_boxes")
             ),
@@ -212,6 +220,7 @@ class SemanticReview:
             and review.action_handoff_valid
             and review.screen_direction_valid
             and review.prop_continuity_valid
+            and review.visual_invariants_valid
         )
         reason = "" if objectively_valid else review.failure_reason
         if not objectively_valid and not reason:
@@ -253,6 +262,8 @@ def _objective_failure_reason(review: SemanticReview) -> str:
         reasons.append("屏幕运动方向或空间轴不连续")
     if not review.prop_continuity_valid:
         reasons.append("持续道具或武器形态不连续")
+    if not review.visual_invariants_valid:
+        reasons.append("镜头违反声明的环境、主体、道具、灯光或空间不变量")
     return "；".join(reasons) or "语义验收未通过"
 
 
@@ -321,6 +332,7 @@ class SemanticTakeReviewer:
     ) -> SemanticReview:
         video_hash = _sha256_file(Path(video_path))
         contract = _review_contract(shot)
+        invariant_review = bool(contract.get("visual_invariants"))
         causal_review = requires_causal_review(shot)
         boundary_review = bool(
             previous_frame_path and Path(previous_frame_path).is_file()
@@ -412,6 +424,7 @@ class SemanticTakeReviewer:
                     require_narrative=narrative_review,
                     require_blocking=blocking_review,
                     require_composition=composition_review,
+                    require_visual_invariants=invariant_review,
                 )
             except ValueError:
                 pass
@@ -442,6 +455,9 @@ class SemanticTakeReviewer:
         composition_fields = (
             "composition_change_valid, " if composition_review else ""
         )
+        invariant_fields = (
+            "visual_invariants_valid, " if invariant_review else ""
+        )
         causal_instruction = action_contract.review_instruction
         causal_evidence_instruction = (
             action_contract.evidence_prompt(len(timestamps))
@@ -457,6 +473,7 @@ class SemanticTakeReviewer:
             narrative_review=narrative_review,
             blocking_review=blocking_review,
             composition_review=composition_review,
+            invariant_review=invariant_review,
             boundary_review=boundary_review,
             state_handoff_review=state_handoff_review,
         )
@@ -503,6 +520,16 @@ class SemanticTakeReviewer:
             "excuse copying the previous framing. "
             if composition_review else ""
         )
+        invariant_instruction = (
+            "visual_invariants_valid is true only when every declared visual invariant "
+            "holds across the chronological samples. Reject environment replacement, "
+            "disappearance of required entities or continuity props, duplication of a "
+            "declared individual identity, identity or relative-scale drift, undeclared "
+            "prop-form changes, unrelated lighting replacement, or an incorrect initial "
+            "screen position. A prop may change only when the Action Contract visibly "
+            "requires it. "
+            if invariant_review else ""
+        )
         with tempfile.TemporaryDirectory(prefix="review-", dir=self.cache_dir) as frame_dir:
             current_images = []
             composition_similarity = None
@@ -534,6 +561,7 @@ class SemanticTakeReviewer:
                     + narrative_fields
                     + blocking_fields
                     + composition_fields
+                    + invariant_fields
                     + "primary_action_completed, boundary_continuity_valid, and "
                     "identity_continuity_valid. When a previous-shot tail is supplied, "
                     "also return strict booleans for environment_continuity_valid, "
@@ -611,6 +639,7 @@ class SemanticTakeReviewer:
                         + visible_result_instruction
                         + blocking_instruction
                         + composition_instruction
+                        + invariant_instruction
                         + "For a "
                         "same-scene boundary, compare the accepted previous tail only with "
                         "the first current frame: preserve "
@@ -666,6 +695,7 @@ class SemanticTakeReviewer:
                     narrative_review=narrative_review,
                     blocking_review=blocking_review,
                     composition_review=composition_review,
+                    invariant_review=invariant_review,
                     boundary_review=boundary_review,
                     state_handoff_review=state_handoff_review,
                 )
@@ -804,6 +834,7 @@ class SemanticTakeReviewer:
                 require_narrative=narrative_review,
                 require_blocking=blocking_review,
                 require_composition=composition_review,
+                require_visual_invariants=invariant_review,
             )
         except ValueError as exc:
             raise SemanticReviewUnavailableError(
@@ -840,6 +871,9 @@ def _review_contract(shot: dict) -> dict[str, Any]:
         )
     }
     contract.update(compile_action_contract(shot).review_projection)
+    visual_invariants = compile_visual_invariants(shot)
+    if visual_invariants.required:
+        contract["visual_invariants"] = visual_invariants.review_projection
     contract["narrative_carriers"] = list(compile_narrative_carriers(contract))
     return contract
 
@@ -863,6 +897,7 @@ def _response_shape_issues(
     narrative_review: bool,
     blocking_review: bool,
     composition_review: bool,
+    invariant_review: bool,
     boundary_review: bool,
     state_handoff_review: bool,
 ) -> list[str]:
@@ -885,6 +920,8 @@ def _response_shape_issues(
         required_booleans.append("blocking_valid")
     if composition_review:
         required_booleans.append("composition_change_valid")
+    if invariant_review:
+        required_booleans.append("visual_invariants_valid")
     if boundary_review:
         required_booleans.extend(_BOUNDARY_REVIEW_FIELDS)
     issues = [
@@ -950,6 +987,7 @@ def _review_response_format(
     narrative_review: bool,
     blocking_review: bool,
     composition_review: bool,
+    invariant_review: bool,
     boundary_review: bool,
     state_handoff_review: bool,
 ) -> dict[str, Any]:
@@ -1011,6 +1049,8 @@ def _review_response_format(
         properties["blocking_valid"] = {"type": "boolean"}
     if composition_review:
         properties["composition_change_valid"] = {"type": "boolean"}
+    if invariant_review:
+        properties["visual_invariants_valid"] = {"type": "boolean"}
     if boundary_review:
         properties.update({
             field: {"type": "boolean"}

@@ -616,6 +616,30 @@ class RunOptions(BaseModel):
         return value
 
 
+class FailureEvidenceState(BaseModel):
+    """Stable objective evidence; localized error text remains display-only."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    category: Literal[
+        "contract",
+        "technical",
+        "provider_policy",
+        "provider_transient",
+        "state",
+        "unknown",
+    ]
+    code: str = Field(min_length=1)
+    source: Literal[
+        "provider",
+        "technical_qa",
+        "semantic_review",
+        "pipeline_state",
+        "legacy_manifest",
+    ]
+    details: dict[str, str] = Field(default_factory=dict)
+
+
 class PromptAttemptState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -628,6 +652,7 @@ class PromptAttemptState(BaseModel):
     provider_task_id: str | None = None
     provider_error_locus: str | None = None
     provider_error_code: str | None = None
+    failure_evidence: list[FailureEvidenceState] = Field(default_factory=list)
 
 
 class PendingTaskDescriptor(BaseModel):
@@ -674,6 +699,7 @@ class TakeRecordState(BaseModel):
     )
     semantic_evaluator_version: str | None = None
     acceptance_policy: Literal["semantic_reviewed", "technical_only"] | None = None
+    rejection_evidence: list[FailureEvidenceState] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
 
