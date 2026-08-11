@@ -13,9 +13,9 @@
 
 ## 成片示例
 
-[![《末日清道夫》成片预览](assets/demo/apocalypse-cleaner.webp)](https://github.com/briefness/InstantVideo/releases/download/demo-20260803/final.mp4)
+https://github.com/user-attachments/assets/abfd9e19-f63f-427c-8dd5-d67ad66afc87
 
-点击封面观看完整 MP4。该样例由本项目完成生产计划、分镜、片段生成、验收、后期与导出；成片 33.5 秒，输出规格为 480p、16:9。
+该样例由本项目完成生产计划、分镜、片段生成、验收、后期与导出；成片 33.5 秒，输出规格为 480p、16:9。[下载原始 MP4](https://github.com/briefness/InstantVideo/releases/download/demo-20260803/final.mp4)。
 
 ## Web 工作台
 
