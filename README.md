@@ -11,6 +11,12 @@
 > [!IMPORTANT]
 > 本项目是非官方实现。模型可用性、接口参数和价格以[火山方舟官方文档](https://www.volcengine.com/docs/82379)为准。真实生成会调用付费服务。
 
+## 成片示例
+
+[![《末日清道夫》成片预览](assets/demo/apocalypse-cleaner.webp)](https://github.com/briefness/InstantVideo/releases/download/demo-20260803/final.mp4)
+
+点击封面观看完整 MP4。该样例由本项目完成生产计划、分镜、片段生成、验收、后期与导出；成片 33.5 秒，输出规格为 480p、16:9。
+
 ## Web 工作台
 
 ![Seedance Web 工作台](assets/screenshots/seedance-studio.jpg)
