@@ -215,6 +215,15 @@
             <input name="paid_take_budget" type="number" min="0" step="1" inputmode="numeric" placeholder="不限制" />
           </label>
 
+          <label class="field">
+            <span>交付方式</span>
+            <select name="delivery_mode" aria-describedby="delivery-mode-help">
+              <option value="reviewed">逐镜验收后成片</option>
+              <option value="preview">先完成预览片</option>
+            </select>
+            <small id="delivery-mode-help">预览片仅检查技术可用性，人物、动作和运镜待验收；仍按预算生成。</small>
+          </label>
+
           <fieldset class="field full-field">
             <legend>导出平台</legend>
             <div id="platform-options" class="checkbox-grid"></div>

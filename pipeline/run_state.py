@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 import json
+import fcntl
 import os
+import tempfile
+import threading
+from contextlib import contextmanager, nullcontext
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,6 +36,24 @@ class PaidTakeBudgetExhaustedError(RuntimeError):
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _manifest_transaction(method):
+    """修改必须在同一个锁内重读、计算和提交，嵌套调用复用事务。"""
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._thread_lock:
+            if self._in_transaction:
+                return method(self, *args, **kwargs)
+            with self._file_lock(".manifest.lock"):
+                self._reload_manifest()
+                self._in_transaction = True
+                try:
+                    return method(self, *args, **kwargs)
+                finally:
+                    self._in_transaction = False
+                    self._reload_manifest()
+    return wrapped
 
 
 def _merge_prompt_attempts(
@@ -62,7 +85,18 @@ def _merge_take_history(
         return history
     for index, take in enumerate(history):
         if take.take_id == current.take_id:
-            history[index] = current
+            # 允许重新验收同一素材，但提交来源一旦已知便不可被回调覆盖。
+            source = {}
+            for field in (
+                "prompt_fingerprint", "compiled_contract_version",
+                "compiled_contract_fingerprint", "model_used", "resolution_used",
+            ):
+                original = getattr(take, field)
+                incoming = getattr(current, field)
+                if original and incoming and original != incoming:
+                    raise ValueError(f"Take {take.take_id} 的提交来源 {field} 不可更改")
+                source[field] = original or incoming
+            history[index] = current.model_copy(update=source)
             break
     else:
         history.append(current)
@@ -89,6 +123,33 @@ class RunWorkspace:
         self.path = path.resolve()
         self.manifest_path = self.path / MANIFEST_FILENAME
         self.manifest = manifest
+        self._snapshot = manifest.model_dump(mode="json", exclude_none=True)
+        self._thread_lock = threading.RLock()
+        self._in_transaction = False
+
+    @contextmanager
+    def _file_lock(self, name: str, *, nonblocking: bool = False):
+        fd = os.open(self.path / name, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        try:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | (fcntl.LOCK_NB if nonblocking else 0))
+            except BlockingIOError as exc:
+                raise RuntimeError("该工作区正在运行；请等待当前执行完成再恢复") from exc
+            yield
+        finally:
+            os.close(fd)
+
+    def _reload_manifest(self) -> None:
+        self.manifest = RunManifest.model_validate_json(self.manifest_path.read_text(encoding="utf-8"))
+        self._snapshot = self.manifest.model_dump(mode="json", exclude_none=True)
+
+    @contextmanager
+    def execution(self):
+        """跨 CLI、Web 和进程占有整个运行；退出或进程终止自动释放。"""
+        with self._file_lock(".execution.lock", nonblocking=True):
+            with self._thread_lock, self._file_lock(".manifest.lock"):
+                self._reload_manifest()
+            yield
 
     @classmethod
     def create(cls, output_root: Path, options: RunOptions) -> "RunWorkspace":
@@ -125,11 +186,36 @@ class RunWorkspace:
             raise ValueError(f"Invalid run manifest: {manifest_path}: {exc}") from exc
         return cls(resolved, manifest)
 
+    def authorize_planned_generation(self, limit: int) -> None:
+        """显式启动已完成的零预算规划；不扩充已执行任务的额度。"""
+        if type(limit) is not int or limit <= 0:
+            raise ValueError('授权提交次数必须是正整数')
+        with self.execution(), self._thread_lock:
+            if (self.manifest.stage != 'planning_ready'
+                    or self.manifest.status != RunStatus.interrupted
+                    or self.manifest.paid_take_budget.reservations
+                    or any(s.provider_task_id or s.pending_task or s.take_history
+                           for s in self.manifest.shots.values())
+                    or self.options.paid_take_budget not in (0, limit)):
+                raise ValueError('只能授权已完成纯规划且尚无视频提交的工作区；不能追加已有付费额度')
+            self.load_storyboard(include_observations=False)
+            if self.options.paid_take_budget == limit:
+                return
+            self.manifest.options = RunOptions.model_validate({
+                **self.options.model_dump(), 'paid_take_budget': limit})
+            # _save_manifest 的锁与快照校验防止并发写入覆盖最新账本。
+            self._save_manifest()
+
     @property
     def options(self) -> RunOptions:
         return self.manifest.options
 
-    def load_storyboard(self) -> dict[str, Any]:
+    def load_storyboard(self, *, include_observations: bool = True) -> dict[str, Any]:
+        """Read the frozen plan, optionally enriching it with accepted observations.
+
+        Planning admission must use the frozen view: execution progress is not
+        an authored revision. The default preserves existing inspection callers.
+        """
         path = self.path / STORYBOARD_FILENAME
         if not path.is_file():
             raise ValueError(f"Resume workspace has no validated storyboard: {path}")
@@ -141,6 +227,8 @@ class RunWorkspace:
         from pipeline.storyboard import _apply_coverage_defaults
 
         _apply_coverage_defaults(validated["shots"])
+        if not include_observations:
+            return validate_storyboard(validated)
         for shot in validated["shots"]:
             state = self.manifest.shots.get(str(shot["shot_id"]))
             if not state:
@@ -161,6 +249,7 @@ class RunWorkspace:
                 shot["observed_end_state"] = observed
         return validate_storyboard(validated)
 
+    @_manifest_transaction
     def save_storyboard(self, storyboard: dict[str, Any]) -> dict[str, Any]:
         validated = validate_storyboard(storyboard)
         from pipeline.storyboard import _apply_coverage_defaults
@@ -175,8 +264,9 @@ class RunWorkspace:
         self.checkpoint("storyboard_ready", RunStatus.running)
         return validated
 
-    def reserve_paid_take(self, shot_id: int) -> str:
-        """Persist authorization before any new, billable provider submission."""
+    @_manifest_transaction
+    def check_paid_take(self, shot_id: int) -> None:
+        """只读检查当前策略；不占用额度，真正提交前仍须原子预留。"""
         ledger = self.manifest.paid_take_budget
         active = [
             reservation
@@ -184,10 +274,29 @@ class RunWorkspace:
             if reservation.status in {"reserved", "submitted", "reconciled"}
         ]
         limit = self.options.paid_take_budget
+        policy = self.options.take_policy
+        if policy != 'legacy':
+            if str(shot_id) not in self.manifest.shots:
+                raise ValueError('提交的镜头不在冻结生产计划内')
+            submitted_shots = {reservation.shot_id for reservation in active}
+            if policy == 'single_pass' and shot_id in submitted_shots:
+                raise PaidTakeBudgetExhaustedError('本次策略每个镜头最多提交一次；原任务与素材已保留')
+            if limit is not None:
+                future = sum(state.shot_id != shot_id and state.shot_id not in submitted_shots
+                             and state.status != ShotStatus.success for state in self.manifest.shots.values())
+                if limit - len(active) < 1 + future:
+                    raise PaidTakeBudgetExhaustedError(
+                        f'剩余额度不足以同时提交本次任务并保留后续 {future} 个镜头的首次机会；未提交新任务')
         if limit is not None and len(active) >= limit:
             raise PaidTakeBudgetExhaustedError(
                 f"付费 take 预算已耗尽（{len(active)}/{limit}）；未提交新的 provider 任务"
             )
+
+    @_manifest_transaction
+    def reserve_paid_take(self, shot_id: int) -> str:
+        """Persist authorization before any new, billable provider submission."""
+        self.check_paid_take(shot_id)
+        ledger = self.manifest.paid_take_budget
         prior_shot_takes = sum(
             reservation.shot_id == shot_id for reservation in ledger.reservations
         )
@@ -202,6 +311,7 @@ class RunWorkspace:
         self._save_manifest()
         return reservation_id
 
+    @_manifest_transaction
     def confirm_paid_take_submission(self, reservation_id: str, task_id: str) -> None:
         """Bind a persisted authorization to the provider's immutable task identity."""
         reservation = self._paid_take_reservation(reservation_id)
@@ -211,6 +321,7 @@ class RunWorkspace:
         reservation.provider_task_id = task_id
         self._save_manifest()
 
+    @_manifest_transaction
     def reconcile_paid_take(
         self,
         reservation_id: str,
@@ -237,6 +348,7 @@ class RunWorkspace:
             reservation.status = "reconciled"
             self._save_manifest()
 
+    @_manifest_transaction
     def release_unsubmitted_paid_take(self, reservation_id: str) -> None:
         """Release only an authorization known not to have reached the provider."""
         reservation = self._paid_take_reservation(reservation_id)
@@ -253,12 +365,14 @@ class RunWorkspace:
                 return reservation
         raise ValueError(f"Unknown paid take reservation: {reservation_id}")
 
+    @_manifest_transaction
     def checkpoint(self, stage: str, status: RunStatus = RunStatus.running) -> None:
         self.manifest.stage = stage
         self.manifest.status = status
         self.manifest.error = None
         self._save_manifest()
 
+    @_manifest_transaction
     def record_shot(
         self,
         *,
@@ -443,6 +557,21 @@ class RunWorkspace:
             if state.status == ShotStatus.running and state.provider_task_id
         }
 
+    def ensure_recoverable_submissions(self) -> None:
+        """没有任务身份或镜头提交记录的占用不能被当作可重新生成的失败。"""
+        for reservation in self.manifest.paid_take_budget.reservations:
+            state = self.manifest.shots.get(str(reservation.shot_id))
+            if reservation.status == "reserved" or (
+                reservation.status == "submitted" and (
+                    state is None or not reservation.provider_task_id
+                    or state.provider_task_id != reservation.provider_task_id
+                )
+            ):
+                raise RuntimeError(
+                    f"Shot {reservation.shot_id} 的提交结果尚未确认；"
+                    "已保留预算占用，须核对原任务后恢复，不能自动重新生成。"
+                )
+
     def resumable_pending_tasks(self) -> dict[int, dict[str, Any]]:
         """Return only fully identified submissions that may be polled safely."""
         return {
@@ -557,16 +686,19 @@ class RunWorkspace:
             }
         return accepted
 
+    @_manifest_transaction
     def mark_failed(self, error: str) -> None:
         self.manifest.status = RunStatus.failed
         self.manifest.error = error
         self._save_manifest()
 
+    @_manifest_transaction
     def mark_interrupted(self, error: str = "Run interrupted") -> None:
         self.manifest.status = RunStatus.interrupted
         self.manifest.error = error
         self._save_manifest()
 
+    @_manifest_transaction
     def mark_succeeded(self, final_path: str) -> None:
         self.manifest.status = RunStatus.succeeded
         self.manifest.stage = "completed"
@@ -596,17 +728,33 @@ class RunWorkspace:
         return str(path if path.is_absolute() else self.path / path)
 
     def _save_manifest(self) -> None:
-        self.manifest.updated_at = _now()
-        self._atomic_write_json(
-            self.manifest_path,
-            self.manifest.model_dump(mode="json", exclude_none=True),
-        )
+        with self._thread_lock:
+            lock = nullcontext() if self._in_transaction else self._file_lock(".manifest.lock")
+            with lock:
+                # 兼容首次创建及显式保存；拒绝过期快照覆盖已提交状态。
+                if not self._in_transaction and self.manifest_path.exists():
+                    stored = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+                    if stored != self._snapshot:
+                        raise RuntimeError("运行状态已变化；不能覆盖最新记录")
+                self.manifest.updated_at = _now()
+                snapshot = self.manifest.model_dump(mode="json", exclude_none=True)
+                self._atomic_write_json(self.manifest_path, snapshot)
+                self._snapshot = snapshot
 
     @staticmethod
     def _atomic_write_json(path: Path, data: Any) -> None:
-        temp_path = path.with_name(f".{path.name}.tmp")
-        temp_path.write_text(
-            json.dumps(data, ensure_ascii=False, indent=2, default=str),
-            encoding="utf-8",
-        )
-        os.replace(temp_path, path)
+        fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(data, handle, ensure_ascii=False, indent=2, default=str)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(name, path)
+            # 文件内容与目录中的替换记录都落盘后，才允许调用方提交远端任务。
+            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        finally:
+            Path(name).unlink(missing_ok=True)

@@ -12,7 +12,7 @@ import asyncio
 import sys
 
 import config
-from pipeline.orchestrator import VideoPipeline
+from pipeline.orchestrator import VideoPipeline, MotionPreparationRequiredError
 from pipeline.generator import RemoteTaskPendingError
 
 
@@ -31,11 +31,20 @@ def main():
 
     parser.add_argument("request", nargs="?", help="视频需求描述 (自然语言)")
     parser.add_argument("--resume", metavar="WORKSPACE", help="从已有 output 工作区继续")
+    parser.add_argument('--authorize-paid-takes', type=int,
+                        help='恢复已通过纯规划且无视频提交的工作区时，显式授权本次视频提交总上限')
+    parser.add_argument("--plan-only", action="store_true", help="只生成并审查分镜，保存后停止，不提交视频任务；可用 --resume 继续")
+    parser.add_argument('--take-policy', choices=['completion_first', 'single_pass'],
+                        help='提交策略：默认为后续镜头保留首次额度；single_pass 每镜最多一次，失败即停')
+    parser.add_argument('--delivery-mode', choices=['reviewed', 'preview'],
+                        help='交付方式：默认逐镜验收；preview 先拼接完整预览片，人物、动作及运镜待验收')
     parser.add_argument("--resolution", choices=config.SUPPORTED_RESOLUTIONS)
     parser.add_argument("--ratio", choices=config.SUPPORTED_ASPECT_RATIOS)
     parser.add_argument("--style",
                         help="视频风格 (cinematic/energetic/warm/cold/dramatic/futuristic)")
     parser.add_argument("--music", default=None, help="背景音乐文件路径")
+    parser.add_argument("--motion-control", choices=["auto", "text_guided", "reference_motion"],
+                        help="动作控制：auto 遵循需求；reference_motion 必须先准备可用动作参考")
     parser.add_argument(
         "--paid-take-budget",
         type=int,
@@ -49,6 +58,8 @@ def main():
     )
 
     args = parser.parse_args()
+    if args.authorize_paid_takes is not None and (not args.resume or args.plan_only):
+        parser.error('--authorize-paid-takes 仅用于恢复纯规划工作区并开始生成')
 
     if args.resume:
         overrides = [
@@ -58,15 +69,21 @@ def main():
             args.music,
             args.platforms,
             args.paid_take_budget,
+            args.motion_control,
+            args.take_policy,
+            args.delivery_mode,
         ]
         if any(value is not None for value in overrides):
             parser.error(
-                "--resume 使用原运行参数，不能同时覆盖画幅、风格、音乐、平台或付费 take 预算"
+                "--resume 使用原运行参数，不能同时覆盖画幅、风格、音乐、平台、动作控制、付费 take 预算、提交策略或交付方式"
             )
     elif not args.request:
         parser.error("请提供视频需求，或使用 --resume WORKSPACE")
 
     try:
+        if args.authorize_paid_takes is not None:
+            from pipeline.run_state import RunWorkspace
+            RunWorkspace.resume(args.resume).authorize_planned_generation(args.authorize_paid_takes)
         pipeline = (
             VideoPipeline.from_workspace(args.resume)
             if args.resume
@@ -77,14 +94,23 @@ def main():
                 music_path=args.music,
                 platforms=args.platforms or ["youtube", "tiktok"],
                 paid_take_budget=args.paid_take_budget,
+                motion_control=args.motion_control or "auto",
+                take_policy=args.take_policy or 'completion_first',
+                delivery_mode=args.delivery_mode or 'reviewed',
             )
         )
+        pipeline.plan_only = args.plan_only
         result = asyncio.run(pipeline.run(args.request))
-        print(f"\n🎉 完成! 视频已保存到: {result}")
+        if args.plan_only:
+            print(f"\n📋 分镜准备完成，未提交视频任务: {result}")
+        elif pipeline.delivery_mode == 'preview':
+            print(f"\n🎬 预览成片已保存（人物、动作和运镜待验收）: {result}")
+        else:
+            print(f"\n🎉 完成! 视频已保存到: {result}")
     except KeyboardInterrupt:
         print("\n\n⏹️ 已中断")
         sys.exit(1)
-    except RemoteTaskPendingError as e:
+    except (RemoteTaskPendingError, MotionPreparationRequiredError) as e:
         print(f"\n⏸️ {e}")
         sys.exit(2)
     except Exception as e:

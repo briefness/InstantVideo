@@ -455,6 +455,9 @@ def test_resume_keeps_planned_and_observed_end_states_separate(tmp_path: Path):
 
     assert restored["end_state"]["prop_state"] == "door remains closed"
     assert restored["observed_end_state"]["prop_state"] == "door is visibly open"
+    frozen = RunWorkspace.resume(workspace.path).load_storyboard(include_observations=False)
+    assert frozen == json.loads((workspace.path / "storyboard.json").read_text())
+    assert "observed_end_state" not in frozen["shots"][0]
 
 
 def test_rejected_take_is_retained_without_replacing_canonical_take(tmp_path: Path):

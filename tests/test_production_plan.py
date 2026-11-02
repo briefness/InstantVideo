@@ -21,14 +21,14 @@ def test_short_action_plan_reserves_execution_then_aftermath():
     assert sum(slot["duration"] for slot in plan["slots"]) == 15
     assert [slot["duration"] for slot in plan["slots"]] == [5, 5, 5]
     assert [slot["allowed_effect_phases"] for slot in plan["slots"]] == [
-        ["active"], ["active"], ["aftermath"],
+        ["active"], ["active"], ["active", "aftermath"],
     ]
     assert [slot["outcome_scope"] for slot in plan["slots"]] == [
         "single", "single", "single",
     ]
     assert all(slot["requires_visible_result"] for slot in plan["slots"])
     assert [slot["coverage_roles"] for slot in plan["slots"]] == [
-        ["interaction"], ["action_subject"], ["aftermath"],
+        ["interaction"], ["action_subject"], ["interaction", "aftermath"],
     ]
 
 
@@ -77,7 +77,7 @@ def test_every_supported_request_duration_compiles_to_executable_slots():
         if len(plan["slots"]) <= 2:
             assert phases == [["active"]] * len(plan["slots"])
         elif len(plan["slots"]) == 3:
-            assert phases == [["active"], ["active"], ["aftermath"]]
+            assert phases == [["active"], ["active"], ["active", "aftermath"]]
         else:
             assert phases[0] == ["setup"]
             assert phases[-1] == ["aftermath"]
@@ -87,7 +87,7 @@ def test_every_supported_request_duration_compiles_to_executable_slots():
             for phase in phases
         ]
         assert [slot["outcome_scope"] for slot in plan["slots"]] == expected_scopes
-        assert all(len(slot["coverage_roles"]) == 1 for slot in plan["slots"])
+        assert all(slot["coverage_roles"] for slot in plan["slots"])
         assert all(
             previous["framing_family"] != current["framing_family"]
             for previous, current in zip(plan["slots"], plan["slots"][1:])
@@ -125,7 +125,7 @@ def test_plan_compiler_owns_duration_phase_and_reference_topology():
     assert [
         shot["interaction_geometry"]["effect_phase"]
         for shot in storyboard["shots"]
-    ] == ["active", "active", "aftermath"]
+    ] == ["active", "active", "active"]
     assert storyboard["shots"][1]["continuity_from_previous"] == "intentional_cut"
     assert storyboard["shots"][1]["composition_change"] == "medium"
     assert storyboard["shots"][1]["camera"]["start_framing"] == "medium shot"

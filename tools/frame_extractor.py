@@ -118,7 +118,10 @@ def extract_frame(video_path: str, output_path: str, timestamp: float = None) ->
 
 def check_video_quality(video_path: str) -> dict:
     """
-    多维视频质量检测
+    多维画面技术检测，不评价人物动作、编舞或观感。
+
+    帧间变化包含运镜、光照与衣物变化，不能解释为人物动作覆盖率。
+    pass 仅表示以下技术检查通过；motion_coverage 保留为兼容别名。
 
     检测维度:
     1. 模糊 (Laplacian 方差 < 50)
@@ -240,7 +243,7 @@ def check_video_quality(video_path: str) -> dict:
         issues.append(f"冻结帧对占比 {frozen_pair_ratio:.0%}")
     elif frozen_pair_ratio > 0.5:
         score -= 35
-        issues.append(f"低运动覆盖率 {motion_coverage:.0%}")
+        issues.append(f"画面变化较少，变化帧对占比 {motion_coverage:.0%}")
 
     if blur_ratio > 0.3:
         score -= 30
@@ -256,6 +259,8 @@ def check_video_quality(video_path: str) -> dict:
         issues.append(f"时序突变占比 {temporal_break_ratio:.0%}")
 
     return {
+        "measurement_scope": "technical_image_checks",
+        "action_fluency": "not_evaluated",
         "quality_score": max(0, score),
         "pass": score >= 60 and not hard_failure,
         "blur_ratio": blur_ratio,
@@ -265,5 +270,6 @@ def check_video_quality(video_path: str) -> dict:
         "dark_ratio": dark_ratio,
         "frozen_pair_ratio": frozen_pair_ratio,
         "motion_coverage": motion_coverage,
+        "frame_change_coverage": motion_coverage,
         "issues": issues,
     }

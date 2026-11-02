@@ -88,6 +88,9 @@ def semantic_review_failure_evidence(review: object) -> list[dict[str, Any]]:
         ("action_geometry_valid", "contract", "contract.action_geometry_invalid"),
         ("effect_path_valid", "contract", "contract.effect_path_invalid"),
         ("reaction_causality_valid", "contract", "contract.reaction_causality_invalid"),
+        ("action_timing_valid", "contract", "contract.action_timing_invalid"),
+        ("action_sequence_valid", "contract", "contract.action_sequence_invalid"),
+        ("requested_outcome_valid", "contract", "contract.requested_outcome_invalid"),
         (
             "narrative_state_change_valid",
             "contract",

@@ -185,7 +185,9 @@ function renderShots(shots) {
     copy.append(
       meta,
       createElement("strong", "", shot.scene_description || shot.primary_action || "等待分镜内容"),
-      createElement("span", "", `${statusLabels[shot.status] || shot.status} · ${shot.quality_score || 0} 分`),
+      createElement("span", "", shot.status === "success" && shot.semantic_accepted !== true
+        ? `已生成·内容待验收 · 技术 ${shot.technical_quality_score || 0} 分`
+        : `${statusLabels[shot.status] || shot.status} · ${shot.quality_score || 0} 分`),
     );
     button.append(thumb, copy);
     if (shot.video_url) button.addEventListener("click", () => selectShot(shot));
@@ -205,11 +207,12 @@ function renderExports(exports) {
 }
 
 function renderRun(run) {
+  const preview = run.options.delivery_mode === "preview";
   state.currentRun = run;
   elements["empty-state"].hidden = true;
   elements["run-workspace"].hidden = false;
   elements["page-title"].textContent = run.title || "制作详情";
-  elements["run-status"].textContent = run.active ? "制作中" : statusLabels[run.status] || run.status;
+  elements["run-status"].textContent = run.active ? "制作中" : preview && run.status === "succeeded" ? "预览完成·内容待验收" : statusLabels[run.status] || run.status;
   elements["run-status"].className = `status-badge ${run.active ? "running" : run.status}`;
   elements["run-id"].textContent = run.run_id;
   elements["run-title"].textContent = run.title || run.request || "未命名任务";
@@ -218,12 +221,12 @@ function renderRun(run) {
   elements["resume-button"].hidden = !run.can_resume;
   elements["download-button"].hidden = !run.assets.final_url;
   elements["download-button"].href = run.assets.final_url || "#";
-  elements["download-button"].setAttribute("download", `${run.title || run.run_id}.mp4`);
+  elements["download-button"].setAttribute("download", `${run.title || run.run_id}${preview ? "-预览片" : ""}.mp4`);
 
   const defaultShot = run.shots.find((shot) => shot.video_url);
   if (!state.selectedShotId || !run.shots.some((shot) => shot.shot_id === state.selectedShotId)) {
     state.selectedShotId = null;
-    setVideo(run.assets.final_url || defaultShot?.video_url, run.assets.final_url ? "最终成片" : "最新镜头", run.assets.poster_url);
+    setVideo(run.assets.final_url || defaultShot?.video_url, run.assets.final_url ? (preview ? "预览成片·内容待验收" : "最终成片") : "最新镜头", run.assets.poster_url);
   }
 
   elements["meta-ratio"].textContent = run.options.aspect_ratio;
@@ -239,7 +242,7 @@ function renderRun(run) {
   elements["shot-progress"].textContent = `${run.progress.completed} / ${run.progress.total}`;
   elements["take-progress"].textContent = `${run.budget.used} / ${run.budget.limit ?? "-"}`;
   elements["platforms-value"].textContent = run.options.platforms.map((item) => platformLabels[item] || item).join(", ") || "-";
-  elements["review-value"].textContent = state.config?.semantic_review_enabled ? "已启用" : "仅技术验收";
+  elements["review-value"].textContent = preview ? "内容待验收（预览模式）" : state.config?.semantic_review_enabled ? "已启用" : "仅技术验收";
 
   elements["run-error"].hidden = !run.error;
   elements["run-error"].querySelector("p").textContent = run.error || "";
@@ -345,6 +348,7 @@ async function submitCreate(event) {
     style: form.get("style"),
     music: form.get("music"),
     paid_take_budget: form.get("paid_take_budget"),
+    delivery_mode: form.get("delivery_mode"),
     platforms: form.getAll("platforms"),
   };
 

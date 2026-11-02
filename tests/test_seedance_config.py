@@ -1,20 +1,37 @@
 """Official Seedance 2.0 Mini capability contract."""
 
 import config
+import runpy
+import pytest
 from pipeline.provider_capabilities import capability_contract_issues
 from tools.ffmpeg_ops import PLATFORM_SPECS
 
 
-def test_mini_defaults_are_official_480p_profile():
-    assert config.SEEDANCE_MODEL == "doubao-seedance-2-0-mini-260615"
-    assert config.DEFAULT_RESOLUTION == "480p"
-    assert config.GENERATION_CHAINS["480p"] == [
+def test_mini_defaults_are_official_480p_profile(monkeypatch):
+    monkeypatch.delenv('SEEDANCE_MODEL', raising=False)
+    monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+    defaults = runpy.run_path(config.__file__)
+    assert defaults['SEEDANCE_MODEL'] == "doubao-seedance-2-0-mini-260615"
+    assert defaults['DEFAULT_RESOLUTION'] == "480p"
+    assert defaults['GENERATION_CHAINS']["480p"] == [
         {
             "model": "doubao-seedance-2-0-mini-260615",
             "resolution": "480p",
             "max_duration": 15,
         }
     ]
+
+
+@pytest.mark.parametrize('model', ['doubao-seedance-2.0-fast', 'doubao-seedance-2.0',
+                                  'doubao-seedance-2-0-mini-260615'])
+def test_explicit_model_configuration_controls_every_generation_profile(monkeypatch, model):
+    original = config.SEEDANCE_MODEL
+    monkeypatch.setenv('SEEDANCE_MODEL', model)
+    monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+    selected = runpy.run_path(config.__file__)
+    assert selected['SEEDANCE_MODEL'] == model
+    assert all(p['model'] == model for profiles in selected['GENERATION_CHAINS'].values() for p in profiles)
+    assert config.SEEDANCE_MODEL == original  # Isolated defaults tests never reload the live module.
 
 
 def test_official_mini_dimensions_cover_every_supported_ratio():

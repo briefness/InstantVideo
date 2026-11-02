@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from pipeline.causality import compile_action_contract, interaction_geometry
+from pipeline.causality import compile_action_contract, interaction_geometry, event_execution_instruction
+from pipeline.action_timing import event_shot
+from pipeline.performance import performance_instruction, outcome_text, allocated_interaction_target
 from pipeline.production_plan import classify_framing
+from pipeline.staging_direction import staging_projection
 from pipeline.visual_invariants import (
     compile_visual_invariants,
     safe_screen_positions,
@@ -15,6 +18,32 @@ _FRAMING_LABELS = {
     "medium": "medium shot",
     "close_detail": "close detail shot",
 }
+
+
+def compile_generation_preview(storyboard: dict, *, model: str) -> dict:
+    """正式规划出口的只读投影，不伪造未来的参考图或观察状态。"""
+    from pipeline.film_rhythm import planned_interaction_seconds
+    from pipeline.readiness import provider_submission_issues
+    rows = []
+    for shot in storyboard['shots']:
+        prompts = {
+            'normal': compile_normal_provider_prompt(shot, storyboard, has_observed_start=False),
+            'policy_safe': compile_policy_safe_prompt(shot, storyboard=storyboard,
+                has_state_reference=False, image_role=None, reference_count=0),
+        }
+        rows.append({'shot_id': shot['shot_id'], 'duration': shot['duration'],
+            'allocated_interaction_seconds': round(planned_interaction_seconds([shot]), 3),
+            'reference_policy': (shot.get('production_slot') or {}).get('reference_policy'),
+            'profiles': {profile: {'prompt': prompt,
+                'staging_source_fingerprint': staging_projection(shot, profile=profile)['fingerprint'],
+                'omitted_staging_fields': staging_projection(shot, profile=profile)['omitted_fields'],
+                'preflight_issues': provider_submission_issues(prompt, shot, storyboard,
+                    prompt_profile=profile, model=model, resolution=storyboard['resolution'],
+                    duration=shot['duration'])} for profile, prompt in prompts.items()}})
+    return {'version': 'generation-preview-v1', 'scope': 'planned-text-projection',
+            'model': model, 'resolution': storyboard['resolution'], 'aspect_ratio': storyboard['aspect_ratio'],
+            'runtime_bindings': 'deferred: accepted prior state and identity/reference assets are not available in planning',
+            'shots': rows}
 
 
 def has_explicit_action_contract(shot: dict) -> bool:
@@ -44,6 +73,12 @@ def compile_normal_provider_prompt(
     contract = compile_action_contract(shot)
     parts = ["Create one coherent cinematic shot"]
     parts.extend(_normal_visual_parts(shot, storyboard))
+    visual = _structured_text(shot.get('visual_description'))
+    if visual:
+        parts.append(f"Authored visual direction for setting, materials and light: {visual}")
+    direction = staging_projection(shot)
+    if direction['instruction']:
+        parts.append(direction['instruction'])
     parts.extend(compile_visual_invariants(shot).prompt_parts)
     if has_observed_start:
         parts.append(
@@ -53,7 +88,8 @@ def compile_normal_provider_prompt(
         parts.append(f"start exactly with {contract.prompt_start_state}")
     parts.extend(contract.prompt_parts)
     parts.extend(_normal_composition_parts(shot, has_observed_start=has_observed_start))
-    parts.append("do not introduce another major action")
+    parts.append("do not introduce events beyond the ordered contract" if contract.review_projection.get('action_events')
+                 else "do not introduce another major action")
     return ". ".join(part for part in parts if part).strip() + "."
 
 
@@ -96,7 +132,54 @@ def compile_policy_safe_prompt(
     if positions:
         parts.append("screen positions: " + ", ".join(positions))
 
-    parts.append(_policy_action_clause(action_contract, actor, target))
+    events = action_contract.review_projection.get('action_events') or []
+    performance = action_contract.review_projection.get('performance_policy')
+    if performance and performance['version'] == 'performance-v2-outcomes':
+        by_id = {event['event_id']: event for event in events}
+        for index, beat in enumerate(shot['action_beats'], 1):
+            event = by_id.get(index)
+            if event:
+                parts.append(f"event {index}: {_entity_label(event['actor'])} causes a readable "
+                             f"{event['response_kind']} response by {_entity_label(event['target'])}; "
+                             f"mode={event['interaction_geometry']['interaction_mode']}; "
+                             f"scope={event['interaction_geometry']['outcome_scope']}; "
+                             f"required visible states: {outcome_text(event['outcomes'])}; "
+                             f"unaffected: {event['interaction_geometry']['unaffected_behavior']}; "
+                             f"{event['flow_from_previous']}")
+            else:
+                parts.append(f"Beat {index} {beat['activity']}: {_entity_label(beat['actor'])}; "
+                             f"visible state: {beat['visible_result']}; no new physical effect")
+    elif events:
+        by_id = {event['event_id']: event for event in events}
+        for index, beat in enumerate(action_contract.review_projection['action_beats'], 1):
+            event = by_id.get(index)
+            if event is None:
+                # 省去自由动作描写，但保留入场/收势的身份、时间和可见状态义务。
+                parts.append(
+                    (f"Beat {index} {beat['activity']}: " if performance else
+                     f"{beat['start_seconds']:g}-{beat['end_seconds']:g}s {beat['activity']}: ")
+                    +
+                    f"{_entity_label(beat['actor'])} toward {_entity_label(beat.get('target'))}; "
+                    f"contracted visible state: {beat.get('visible_result', '')}; no new physical effect"
+                )
+                continue
+            child = compile_action_contract(event_shot(event))
+            parts.append(
+                (f"event {event['event_id']}: " if performance else
+                 f"event {event['event_id']} ({event['start_seconds']:g}-{event['end_seconds']:g}s), "
+                 f"effect at {event['effect_at_seconds']:g}s, response at {event['reaction_at_seconds']:g}s: ")
+                + _policy_action_clause(child, _entity_label(event['actor']), _entity_label(event['target']))
+                + ('; ' + event_execution_instruction(event) if event_execution_instruction(event) else '')
+            )
+    else:
+        parts.append(_policy_action_clause(action_contract, actor, target))
+    # 保留合同时间窗和用户明确结局；不复制被拒绝的自由动作描述。
+    for part in action_contract.prompt_parts:
+        if part.startswith('Choreography is performance-guided:') and performance:
+            parts.append(performance_instruction(performance, include_brief=False,
+                interaction_target_seconds=allocated_interaction_target(shot)))
+        elif part.startswith(('Timed action schedule:', 'Required final visible outcome:')):
+            parts.append(part)
     parts.extend(_reference_clauses(
         has_state_reference=has_state_reference,
         image_role=image_role,

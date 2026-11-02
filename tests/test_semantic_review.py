@@ -22,6 +22,8 @@ class FakeCompletions:
         self.calls.append(kwargs)
         content = json.dumps({
             "accepted": True,
+            "identity_continuity_valid": True,
+            "boundary_continuity_valid": True,
             "required_entities_visible": {"robot": True, "zombies": True},
             "action_geometry_valid": True,
             "primary_action_completed": True,
@@ -38,7 +40,7 @@ class FakeCompletions:
             "failure_reason": "",
         })
         return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+            choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=content))]
         )
 
 
@@ -70,6 +72,8 @@ def _completion(content, *, finish_reason="stop", refusal=None):
 def _accepted_review_json():
     return json.dumps({
         "accepted": True,
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "required_entities_visible": [True],
         "action_geometry_valid": True,
         "primary_action_completed": True,
@@ -200,7 +204,7 @@ def test_local_similarity_rejects_large_cut_even_when_model_accepts(
         "failure_reason": "",
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",
@@ -265,7 +269,7 @@ def test_state_handoff_evidence_rejects_progress_reset_despite_aggregate_accepta
         "failure_reason": "",
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",
@@ -334,7 +338,7 @@ def test_first_frame_handoff_checks_reframing_at_midpoint(
         "failure_reason": "",
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
 
     def fake_extract(_video, output, timestamp=None):
@@ -390,6 +394,8 @@ def test_causal_review_uses_dense_temporal_sampling(
             "subject": "source and target",
             "action_phase": "effect completed",
         },
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "failure_reason": "",
     }
     calls = []
@@ -397,7 +403,7 @@ def test_causal_review_uses_dense_temporal_sampling(
     def create(**kwargs):
         calls.append(kwargs)
         return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(
                 content=json.dumps(response)
             ))]
         )
@@ -467,6 +473,8 @@ def test_setup_review_excludes_actor_only_preparation_from_physical_effect(
             "subject": "robot aiming at approaching zombies",
             "action_phase": "combat ready",
         },
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "failure_reason": "",
     }
     calls = []
@@ -474,7 +482,7 @@ def test_setup_review_excludes_actor_only_preparation_from_physical_effect(
     def create(**kwargs):
         calls.append(kwargs)
         return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(
+            choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(
                 content=json.dumps(response)
             ))]
         )
@@ -539,6 +547,8 @@ def test_structured_causal_evidence_overrides_aggregate_model_acceptance(
     }
     response = {
         "accepted": True,
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "required_entities_visible": [True, True],
         "action_geometry_valid": True,
         "effect_path_valid": True,
@@ -554,7 +564,7 @@ def test_structured_causal_evidence_overrides_aggregate_model_acceptance(
         "failure_reason": "None",
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",
@@ -628,10 +638,12 @@ def test_complete_causal_evidence_overrides_false_aggregate_verdict(
             "subject": "two subjects locked at the contact point",
             "action_phase": "contact established",
         },
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "failure_reason": "sample 4 reacts before intersection",
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",
@@ -700,7 +712,7 @@ def test_empty_semantic_response_retries_review_once_on_same_video(
     video = tmp_path / "shot.mp4"
     video.write_bytes(b"accepted-video-bytes")
     completions = SequencedCompletions([
-        _completion("", finish_reason="length"),
+        _completion("", finish_reason="stop"),
         _completion(_accepted_review_json()),
     ])
     monkeypatch.setattr(
@@ -734,7 +746,7 @@ def test_invalid_semantic_response_retry_is_bounded_and_diagnostic(
     video = tmp_path / "shot.mp4"
     video.write_bytes(b"accepted-video-bytes")
     completions = SequencedCompletions([
-        _completion("", finish_reason="length"),
+        _completion("", finish_reason="stop"),
         _completion("", finish_reason="stop"),
     ])
     monkeypatch.setattr(
@@ -783,6 +795,8 @@ def test_causal_evidence_schema_mismatch_retries_same_review_once(
     def response(evidence):
         return _completion(json.dumps({
             "accepted": True,
+            "identity_continuity_valid": True,
+            "boundary_continuity_valid": True,
             "required_entities_visible": [True, True],
             "action_geometry_valid": True,
             "causal_sample_evidence": evidence,
@@ -854,6 +868,8 @@ def test_cached_review_recomputes_verdict_from_causal_evidence(
     }
     response = _completion(json.dumps({
         "accepted": False,
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "required_entities_visible": [True, True],
         "action_geometry_valid": True,
         "causal_sample_evidence": [dict(sample) for _ in range(9)],
@@ -973,10 +989,12 @@ def test_ordered_visibility_array_maps_to_contract_ids(tmp_path: Path, monkeypat
             "subject": "combat robot facing zombies",
             "action_phase": "first burst completed",
         },
+        "identity_continuity_valid": True,
+        "boundary_continuity_valid": True,
         "failure_reason": None,
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",
@@ -1014,7 +1032,7 @@ def test_misaligned_visibility_dict_pauses_instead_of_rejecting_take(
         "failure_reason": None,
     }
     completions = SimpleNamespace(create=lambda **_kwargs: SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(response)))]
+        choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(content=json.dumps(response)))]
     ))
     monkeypatch.setattr(
         "pipeline.semantic_review.extract_frame",

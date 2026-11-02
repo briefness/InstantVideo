@@ -1,0 +1,601 @@
+{
+  "source_workspace": "output/20261031_223900_693234",
+  "request": "制作一部约15秒的武侠电影短片：两大高手决战紫禁之巅。分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务动作可读性。项目自行规划剧本、分镜、节奏和运镜，不使用人工补写的中间稿。总时长可以围绕15秒适当增减。",
+  "sources": {
+    "planning_intent_response.json": {
+      "sha256": "992dd65d782cc5bc93bd0aea5b92850522088ff544b5984522d69580d5126999",
+      "value": {
+        "model": "doubao-seed-2.1-lite",
+        "finish_reason": "stop",
+        "content": "{\"content_focus\": \"action\", \"pacing\": \"dense\", \"intent_evidence\": \"轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。\", \"ending_requirement\": \"一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。\", \"ending_evidence\": \"轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。\", \"motion_control\": \"text_guided\", \"motion_control_evidence\": \"\", \"choreography\": \"flexible\", \"requested_duration_seconds\": 15, \"duration_evidence\": \"制作一部约15秒的武侠电影短片：两大高手决战紫禁之巅。\", \"requested_shot_count\": 3, \"shot_count_evidence\": \"分成三段独立生成的视频，再由项目正式流程拼接成片。\"}"
+      }
+    },
+    "planning_identity.json": {
+      "sha256": "32965f2d05b92245107eae443745fb1b61646968d35d1850395ebc1f51e9bad1",
+      "value": {
+        "title": "紫禁之巅月夜剑决",
+        "theme_elements": [
+          "moonlit Forbidden City rooftop duel",
+          "graceful lightness skill landing",
+          "momentum-driven continuous sword exchanges",
+          "bloodless wuxia finishing strike",
+          "swirling robe hems",
+          "clanging sword sparks",
+          "sharp sword wind",
+          "clear action readability",
+          "cinematic night atmosphere"
+        ],
+        "story_arc": {
+          "goal": "两位顶尖江湖剑客在月夜下的紫禁之巅飞檐上展开宿命对决，以流畅的轻功身法与连续变招的剑技决出胜负",
+          "stakes": "对决无冗余僵持，败者将以写意武侠表现坠下飞檐，胜者登顶江湖第一，全程无血腥元素，所有动作清晰可读",
+          "turning_point": "中段缠斗中，白衣剑客借踏瓦的反弹力连续变招，连续避开黑衣剑客的格挡与反击，绕至其侧后方找到防御破绽",
+          "resolution": "白衣剑客以利落帅气的剑势点中黑衣剑客的肩颈穴位，黑衣剑客瞬间失力向后仰倒在飞檐边缘，衣袂翻飞间缓缓坠下，无任何血迹，终结动作与败方状态全程清晰可见"
+        },
+        "characters": [
+          {
+            "name": "SwordMaster_Bai",
+            "description": "身着月白色广袖武侠长袍，腰束玄色丝绦，长发半束以银质发冠固定，手持一柄精钢长剑，剑穗为素白长绸，面容清俊冷峻，足蹬黑色软底快靴，轻功身法轻盈",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          },
+          {
+            "name": "SwordMaster_Mo",
+            "description": "身着玄色暗纹武侠劲装，外罩半透黑纱披风，长发全束以墨色发带固定，手持一柄窄身黑钢长剑，剑穗为玄色短穗，面容冷硬，足蹬黑色软底靴，剑招刚猛",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          }
+        ],
+        "scene_entities": [
+          "curved yellow glazed roof tiles of the Forbidden City",
+          "silver full moon in dark indigo night sky",
+          "upturned carved palace eaves",
+          "loose scattered roof tiles",
+          "faint distant palace lantern glow",
+          "clanging sword spark effects",
+          "wind-tousled robe fabric",
+          "thin wispy cloud across the moon"
+        ],
+        "mood": "cinematic wuxia, crisp moonlit rooftop tension, sharp dynamic combat rhythm, elegant stylized wuxia tone",
+        "music_style": "fast-paced traditional Chinese wuxia orchestral, with erhu trills and taiko drum accents, sharp staccato hits aligned to combat beats, soft lingering note at the final fall"
+      }
+    },
+    "planning_shot_001.json": {
+      "sha256": "12633541d1255b8c9e5bbf101cf002814f37a2e049051c6a50aae37d3f4b766a",
+      "value": {
+        "shot": {
+          "scene_id": "zijin_ridge_shot1",
+          "scene_description": "紫禁之巅月夜，主殿黄色琉璃瓦屋顶坡面开阔，翘角飞檐在左，银月当空，远处宫灯微光点点，两大剑客在此展开宿命对决的开场。",
+          "visual_description": "16:9宽幅电影感夜景，黄色琉璃瓦屋顶从左下向右上脊线延展，暗靛色夜空悬着银白满月，一缕薄云斜掠月面。左侧可见雕花翘角飞檐，远处宫灯透出微弱暖光。冷调月光斜扫瓦面，拉出两位剑客的修长影子；衣袂翻飞与剑刃碰撞的冷白火星成为画面动态质感。",
+          "camera": {
+            "primary_movement": "fixed",
+            "composition": "wide full shot, low angle along roof slope",
+            "start_framing": "屋顶坡面全貌入镜，满月居中悬于飞檐上方，黑衣剑客立于右侧屋脊，白衣剑客自左侧飞檐入场",
+            "end_framing": "两位剑客在画面左右形成对峙构图，满月与远处宫灯微光留在背景",
+            "speed": "fixed",
+            "screen_positions": {
+              "SwordMaster_Bai": "left third",
+              "SwordMaster_Mo": "right third"
+            },
+            "axis_change": "establish"
+          },
+          "blocking": {
+            "SwordMaster_Bai": {
+              "frame_position": "画面左侧屋顶坡面，自左上方飞檐入场",
+              "body_orientation": "落地后朝右，侧对镜头",
+              "facing_target": "SwordMaster_Mo",
+              "eyeline_target": "SwordMaster_Mo",
+              "travel_direction": "向右沿屋顶坡面掠行",
+              "action_target": "格挡Mo的撩剑后顺势反击"
+            },
+            "SwordMaster_Mo": {
+              "frame_position": "画面右侧屋顶脊线",
+              "body_orientation": "朝左，正对Bai来路",
+              "facing_target": "SwordMaster_Bai",
+              "eyeline_target": "SwordMaster_Bai",
+              "travel_direction": "小幅后撤侧步",
+              "action_target": "撩剑试探Bai落地起势"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "SwordMaster_Mo已在右侧屋脊持剑等候，SwordMaster_Bai自左侧飞檐轻功入场",
+            "action_phase": "首轮交手setup，尚未分出胜负",
+            "camera": "固定广角全景",
+            "screen_direction": "Bai在左，Mo在右",
+            "pose_and_gaze": "Mo沉腰握剑凝视左侧；Bai凌空下落，衣袂向后扬起",
+            "prop_state": "两人长剑均已出鞘，剑穗随身法飘动",
+            "open_motion": "Bai足尖向屋顶坡面落去",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "两人在黄瓦屋顶上左右对峙",
+            "action_phase": "首轮攻防试探结束，连续缠斗即将展开",
+            "camera": "固定广角全景",
+            "screen_direction": "Bai在左前三步，Mo在右后半步",
+            "pose_and_gaze": "Bai收剑定势前指，Mo侧身握剑凝视对方，披风余晃",
+            "prop_state": "两剑均无缺损，火星已消散，瓦面留有浮尘",
+            "open_motion": "双方重心微沉，随时可继续变招进攻",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "story_change": "白衣剑客以轻功飞落紫禁飞檐，与等候的黑衣剑客首次兵刃相交；黑衣撩剑被白衣借势卸开，白衣顺势刺击又被黑衣侧身避开，双方快速完成首轮试探，张力拉满。",
+          "story_state_after": "首轮交手后双方试探完底数，Bai借落地与格挡的借势已掌握主动，Mo刚猛撩剑被卸、反击被避开，为中段Bai踏瓦绕后连续变招埋下伏笔。",
+          "action_plan": [
+            {
+              "id": "t1_bai_landing",
+              "actor": "SwordMaster_Bai",
+              "action": "从画面左侧翘角飞檐借力纵身，足尖轻点檐瓦，身形舒展掠向屋顶坡面，月白广袖与素白剑穗被风向后扬起。",
+              "result": "足尖轻踩松散黄瓦卸力落地，半蹲沉腰稳住重心，精钢长剑斜指身前，瓦面被踩出细碎浮尘，衣摆自然垂落。",
+              "kind": "transition",
+              "weight": 1.2
+            },
+            {
+              "id": "i2_mo_attack_bai_block",
+              "actor": "SwordMaster_Mo",
+              "action": "见Bai落地沉腰未稳，沉腰拧身，黑钢长剑自右下方向上斜撩，直取Bai持剑手腕，剑风扫动瓦面细尘。",
+              "result": "Bai立刻抬剑，以精钢剑脊贴住黑钢剑侧向上格挡，两剑交击迸出一串冷白火星；Bai借格挡力道旋身卸力，脚下在瓦面滑出半寸。",
+              "kind": "interaction",
+              "target": "SwordMaster_Bai",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "SwordMaster_Mo的黑钢长剑",
+                "region": "两人胸前高度的剑刃接触点",
+                "unaffected": "屋顶其余区域、月亮与远处宫灯",
+                "scope": "single"
+              },
+              "response": "deflection",
+              "resolution": {
+                "target_state": "Bai未被撩中，稳稳站在瓦面，格挡后重心已转为旋身反击姿态",
+                "actor_state": "Mo的撩剑被向上卸开，身体随前冲力道微微前倾",
+                "scene_changes": [
+                  {
+                    "entity": "clanging sword spark effects",
+                    "state": "剑刃交击处迸出短暂冷白火星并快速消散",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "loose scattered roof tiles",
+                    "state": "两人脚下瓦面浮尘被震起，少量松瓦轻微移位",
+                    "importance": "incidental"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "i3_bai_counter_mo_evade",
+              "actor": "SwordMaster_Bai",
+              "action": "借旋身卸力的余势，精钢长剑自下而上划半弧后平直刺出，直取Mo胸口，素白剑穗随出剑向前绷直。",
+              "result": "Mo拧腰向右侧步后撤，不与来剑硬接，黑钢长剑垂在身侧；剑尖擦着他玄色劲装前襟半寸掠过，剑风掀动外罩黑纱披风向后扬起。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "SwordMaster_Bai的精钢长剑剑尖",
+                "region": "Mo胸前前方半寸的空气路径",
+                "unaffected": "Mo的躯体、屋顶瓦片与背景夜空",
+                "scope": "single"
+              },
+              "response": "evasion",
+              "resolution": {
+                "target_state": "Mo避开刺击，未被剑锋触及，仍握剑保持站立戒备",
+                "actor_state": "Bai刺击力道送出，前脚微沉，身体略向前倾",
+                "scene_changes": [
+                  {
+                    "entity": "wind-tousled robe fabric",
+                    "state": "Mo的黑纱披风被擦身剑风掀动翻飞，随后缓缓回落",
+                    "importance": "incidental"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "h1_standoff",
+              "actor": "SwordMaster_Bai",
+              "action": "错步后双方同时收剑定势，Bai与Mo目光紧锁对方，衣袂在夜风中轻晃。",
+              "result": "黄瓦屋顶上形成左右对峙的开阔全景，银月悬于两人身后天际，首轮交手的余韵清晰可见。",
+              "kind": "hold",
+              "weight": 1
+            }
+          ],
+          "key_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "clanging sword spark effects",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "continuity_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "clanging sword spark effects",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "lighting": "主光源为头顶银色满月，冷调硬光勾勒人物轮廓与瓦面高光，远处宫灯暖光做微弱环境补光，剑刃碰撞处迸发明亮冷白火星。",
+          "mood": "cinematic wuxia, crisp moonlit rooftop tension"
+        }
+      }
+    },
+    "planning_shot_002.json": {
+      "sha256": "d05f16ef98638090006c7fa14f6e1719298e46da7f77088e0edbacab4640aa64",
+      "value": {
+        "shot": {
+          "scene_id": "zijin_ridge_shot2",
+          "scene_description": "紫禁之巅月夜，主殿黄色琉璃瓦屋顶坡面开阔，翘角飞檐在左，银月当空，远处宫灯微光点点，两大剑客从对峙转入连续缠斗，白衣剑客借踏瓦反弹连续变招绕至黑衣剑客侧后，找到防御破绽的转折阶段。",
+          "visual_description": "16:9宽幅电影感夜景，中景跟拍两人在黄瓦屋顶上的连续缠斗动作，冷调月光在瓦面拉出随人物移动的动态影子，剑刃碰撞的冷白火星随交手节奏闪现，月白与玄色衣袂翻飞的动态感强烈，一缕薄云斜掠月面，远处宫灯透出微弱暖光，瓦面浮尘被脚步带起，动作全程清晰可读。",
+          "camera": {
+            "primary_movement": "truck right",
+            "composition": "medium two-shot",
+            "start_framing": "中景框住左右对峙的Bai（左中）与Mo（右中），两人持剑沉腰，背景露出部分黄瓦坡面与夜空的月亮边缘",
+            "end_framing": "中景跟到Bai移至Mo的右后侧，Mo转身半圈的失衡姿态，两人距离极近，剑势交错",
+            "speed": "smooth",
+            "screen_positions": {
+              "SwordMaster_Bai": "起始左中，最终右中偏Mo身后",
+              "SwordMaster_Mo": "起始右中，最终中心偏左"
+            },
+            "axis_change": "hold"
+          },
+          "blocking": {
+            "SwordMaster_Bai": {
+              "frame_position": "起始于画面左中位置，最终移动到画面右中偏Mo身后的位置",
+              "body_orientation": "起始朝右正对Mo，最终侧身朝向Mo的肩颈位置",
+              "facing_target": "SwordMaster_Mo",
+              "eyeline_target": "SwordMaster_Mo的肩颈破绽",
+              "travel_direction": "向右斜向沿屋顶坡面突进，绕Mo的右侧移动",
+              "action_target": "连续变招虚刺、扫斩、踏瓦绕后，避开Mo的格挡"
+            },
+            "SwordMaster_Mo": {
+              "frame_position": "起始于画面右中位置，最终在画面中心偏左位置",
+              "body_orientation": "起始朝左正对Bai，最终拧腰转了半圈，右后侧暴露给Bai",
+              "facing_target": "SwordMaster_Bai",
+              "eyeline_target": "SwordMaster_Bai的剑尖",
+              "travel_direction": "向后撤步半尺，随Bai的移动拧腰转身",
+              "action_target": "举剑格挡Bai的连续进攻，回防侧后位置"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "SwordMaster_Bai在左前三步持剑前指，SwordMaster_Mo在右后半步侧身握剑，双方沉腰对峙",
+            "action_phase": "首轮试探结束，连续缠斗即将展开",
+            "camera": "中景跟拍，truck right",
+            "screen_direction": "Bai在左，Mo在右",
+            "pose_and_gaze": "Bai收剑定势前指，Mo侧身握剑凝视对方，披风余晃",
+            "prop_state": "两剑均出鞘无缺损，瓦面留有之前交手的浮尘",
+            "open_motion": "双方重心微沉，随时启动变招",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "Bai站在Mo的右后侧，剑尖指向Mo的肩颈破绽，Mo急转身半圈重心失衡",
+            "action_phase": "连续变招绕后完成，即将进入终结动作阶段",
+            "camera": "中景跟拍，truck right",
+            "screen_direction": "Bai在Mo的右后侧（画面偏右），Mo在画面中心偏左",
+            "pose_and_gaze": "Bai侧身贴在Mo侧后，剑尖前指Mo的肩颈；Mo拧腰转了半圈，黑剑横在身前，重心向后偏移",
+            "prop_state": "两剑无缺损，瓦面浮尘被脚步带起，之前的剑火星已消散",
+            "open_motion": "Bai的剑尖即将点中Mo的肩颈，Mo重心向后偏移即将失力",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "story_change": "对峙刚结束，Bai率先蹬瓦突进，连续三招借势变招：先是虚刺Mo面门，Mo举剑上格迸出火星，Bai不待两剑僵持立刻旋身转招斜扫Mo腰侧，Mo撤步下格慢了半拍，Bai顺着滑步惯性踏瓦腾身，从Mo的格挡空隙绕到他的右后侧，Mo急转身回防却只转了半圈，肩颈破绽完全暴露，全程无长时间持剑僵持，每招都借上一招的力道连续流动。",
+          "story_state_after": "Bai成功占据Mo右后侧的攻击位置，剑尖已指向Mo的肩颈破绽，Mo的刚猛格挡节奏被连续变招打乱，重心失衡无法及时回防，为下一段无血腥的帅气终结击杀做好全部铺垫，空间关系与动作节奏完全承接上一段。",
+          "action_plan": [
+            {
+              "id": "i1_bai_fake_thrust_mo_block",
+              "actor": "SwordMaster_Bai",
+              "action": "借对峙时沉腰的重心，足尖猛蹬脚下黄瓦，身形向前掠出，精钢长剑虚抬直刺Mo面门，素白剑穗随前冲向前绷直。",
+              "result": "Mo立刻抬黑钢长剑向上横架，挡住Bai的虚刺，两剑在Mo面门前高度交击，迸出一串冷白火星；Bai不待两剑受力僵持，立刻收力旋身，脚下在瓦面碾出半圈浮尘。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "SwordMaster_Bai的精钢长剑剑尖",
+                "region": "Mo面门前高度的剑刃接触点",
+                "unaffected": "屋顶其余区域、月亮与远处宫灯",
+                "scope": "single"
+              },
+              "response": "deflection",
+              "resolution": {
+                "target_state": "Mo举剑上格挡住面门方向的虚刺，未被剑锋触及，保持站立戒备",
+                "actor_state": "Bai收力旋身，重心转向Mo的右侧，准备衔接下一招",
+                "scene_changes": [
+                  {
+                    "entity": "clanging sword spark effects",
+                    "state": "两剑交击处迸出短暂冷白火星并快速消散",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "loose scattered roof tiles",
+                    "state": "Bai蹬瓦的力道震起瓦面浮尘，少量松瓦轻微移位",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "weight": 1.3,
+              "carry": "承接上一段结束时双方沉腰对峙的蓄力状态，无停顿直接启动进攻",
+              "overlap": false
+            },
+            {
+              "id": "i2_bai_sweep_mo_evade",
+              "actor": "SwordMaster_Bai",
+              "action": "借旋身的余势，精钢长剑自上向下斜扫Mo的腰侧，广袖随旋身动作甩开，身形顺着扫剑的力道继续向Mo的右侧滑步。",
+              "result": "Mo见Bai剑势转向腰侧，立刻撤步向后半尺，黑钢长剑向下压挡，却慢了半拍，剑风扫过他的腰侧劲装，掀动黑纱披风向后扬起；Bai的扫剑力道未被硬接，顺着滑步的力道继续向Mo的右后侧移动。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "SwordMaster_Bai的精钢长剑剑刃",
+                "region": "Mo腰侧前方半寸的空气路径",
+                "unaffected": "Mo的躯体、屋顶瓦片与背景夜空",
+                "scope": "single"
+              },
+              "response": "evasion",
+              "resolution": {
+                "target_state": "Mo撤步避开扫剑，未被剑锋触及，黑剑压在腰侧高度做防御姿态",
+                "actor_state": "Bai滑步到Mo的右侧，距离Mo的身侧只剩一步，重心继续向前准备绕后",
+                "scene_changes": [
+                  {
+                    "entity": "wind-tousled robe fabric",
+                    "state": "Mo的黑纱披风被扫剑的剑风掀动翻飞，随后缓缓回落",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "weight": 1.2,
+              "carry": "承接上一单元Bai旋身收力的余势，不做停顿直接转招",
+              "overlap": false
+            },
+            {
+              "id": "i3_bai_step_behind_mo_turn_late",
+              "actor": "SwordMaster_Bai",
+              "action": "不待扫剑的力道卸完，足尖点在Mo脚边的瓦面借力腾身半尺，身形从Mo的格挡空隙穿过，绕到Mo的右后侧，精钢长剑顺势回收，剑尖停在Mo肩颈前方一寸的位置。",
+              "result": "Mo急忙拧腰转身，黑钢长剑横在身前想要回防，却因为Bai的移动速度太快，只转了半圈，右后侧完全暴露，重心因急转身向后偏移，Bai稳稳站在他的右后方，剑尖稳稳指向他的肩颈位置，两人距离不到一臂。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "SwordMaster_Bai的身形移动路径",
+                "region": "Mo身侧到右后侧的移动空间",
+                "unaffected": "Mo的正面防御位置、屋顶瓦片与夜空",
+                "scope": "single"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "Mo的转身只完成半圈，右后侧防御完全露出，重心向后偏移无法及时回防",
+                "actor_state": "Bai稳稳站在Mo的右后侧，剑尖前指Mo的肩颈破绽，重心稳定随时可出剑",
+                "scene_changes": [
+                  {
+                    "entity": "loose scattered roof tiles",
+                    "state": "Bai点瓦腾身的力道踩松两块黄瓦，瓦面浮尘被脚步带起",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "weight": 1.3,
+              "carry": "承接上一单元Bai滑步向Mo右侧移动的惯性，不卸力直接踏瓦腾身绕后",
+              "overlap": false
+            },
+            {
+              "id": "h1_turn_settle",
+              "actor": "SwordMaster_Bai",
+              "action": "剑尖稳稳停在Mo肩颈前方一寸的位置，目光锁定Mo的破绽，月白广袖与素白剑穗在夜风中轻晃。",
+              "result": "中景画面里，Bai在Mo右后侧的攻击姿态、Mo急转身失衡的姿态都清晰可见，转折点的张力拉满，为下一段的终结动作做好准备。",
+              "kind": "hold",
+              "target": "",
+              "weight": 1.2
+            }
+          ],
+          "key_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "clanging sword spark effects",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "continuity_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "clanging sword spark effects",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "lighting": "主光源为头顶银色满月，冷调硬光勾勒人物轮廓与黄瓦高光，远处宫灯暖光做微弱环境补光，剑刃碰撞处迸发明亮冷白火星，移动的人物在瓦面拉出动态拉长的影子。",
+          "mood": "cinematic wuxia, crisp moonlit rooftop tension, sharp dynamic combat rhythm, elegant stylized tone"
+        }
+      }
+    },
+    "planning_shot_003.json": {
+      "sha256": "0638067432d0cc0af4fe3a9e99316b564d93c787ac77e0241f4260911307fdf6",
+      "value": {
+        "shot": {
+          "scene_id": "zijin_ridge_shot3",
+          "scene_description": "紫禁之巅月夜主殿黄色琉璃瓦飞檐屋顶，飞檐外沿临空，银月当空斜覆薄云，远处宫灯微光点点，承接前序缠斗的终结阶段，白衣剑客在黑衣剑客侧后占据攻击位置，即将完成无血腥的帅气终结击杀，最终败者坠檐、胜者立顶的结果清晰呈现。",
+          "visual_description": "16:9宽幅电影感夜景全景，冷调月光在黄瓦面拉出清晰的人物长影，完整框住飞檐边缘的对决动作，月白与玄色衣袂翻飞的动态被月光清晰照亮，斜掠的薄云半遮银月，远处宫灯透出微弱暖光，全程无血腥视觉元素，所有终结动作与败者坠落状态清晰可读，无模糊遮挡。",
+          "camera": {
+            "primary_movement": "fixed",
+            "composition": "wide full shot",
+            "start_framing": "全景框住黄瓦坡面上的两人，Bai在画面右中，Mo在画面左中靠近飞檐外沿，背景露出完整银月、斜掠薄云与远处宫灯，左侧露出翘角飞檐",
+            "end_framing": "全景保持固定构图，Bai在画面右中持剑站立，Mo已坠出檐边，背景月亮与宫灯位置不变",
+            "speed": "fixed",
+            "screen_positions": {
+              "SwordMaster_Bai": "画面右中位置，全程保持站立",
+              "SwordMaster_Mo": "起始画面左中靠近飞檐外沿，最终坠出画面下沿"
+            },
+            "axis_change": "hold"
+          },
+          "blocking": {
+            "SwordMaster_Bai": {
+              "frame_position": "画面右中位置，全程站立不移动",
+              "body_orientation": "侧身朝向飞檐外沿的Mo",
+              "facing_target": "SwordMaster_Mo",
+              "eyeline_target": "Mo坠落的方向",
+              "travel_direction": "原地站稳，无横向移动",
+              "action_target": "点中Mo的肩颈穴位，引导Mo失衡坠檐，收剑定势"
+            },
+            "SwordMaster_Mo": {
+              "frame_position": "起始在画面左中靠近飞檐外沿",
+              "body_orientation": "拧腰半圈朝向Bai的方向",
+              "facing_target": "SwordMaster_Bai",
+              "eyeline_target": "Bai的剑尖",
+              "travel_direction": "向后仰倒，从飞檐外沿坠向檐下",
+              "action_target": "被点中穴位后失力，顺着重心坠下飞檐"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "Bai站在Mo的右后侧，剑尖指向Mo的肩颈破绽，Mo急转身半圈重心失衡靠近飞檐外沿",
+            "action_phase": "连续变招绕后完成，即将发动终结一击",
+            "camera": "全景固定机位，保持之前的动作轴线",
+            "screen_direction": "Bai在画面右侧，Mo在画面左侧靠近飞檐边缘",
+            "pose_and_gaze": "Bai侧身贴在Mo侧后，剑尖前指Mo的肩颈；Mo拧腰转了半圈，黑剑横在身前，重心向后偏移",
+            "prop_state": "两剑均出鞘无缺损，瓦面留有之前交手带起的浮尘，之前的剑火星已消散",
+            "open_motion": "Bai的剑尖即将点中Mo的肩颈，Mo重心向后偏移即将失力",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄色琉璃瓦飞檐屋顶，月夜",
+            "subject": "Bai持精钢长剑立在飞檐边缘，Mo被点中肩颈穴位后失力，向后仰倒坠下飞檐，全程无血腥",
+            "action_phase": "月夜剑决结束，胜者登顶",
+            "camera": "全景固定机位，完整呈现终结动作与败者坠落结果",
+            "screen_direction": "Bai在画面右中持剑站立，Mo已坠出檐边",
+            "pose_and_gaze": "Bai收剑垂在身侧，目光望向Mo坠落的方向，衣袂在夜风中轻晃",
+            "prop_state": "两剑无缺损，Mo的黑钢长剑落在瓦面上，瓦面留有之前交手的浮尘与被碰松的瓦片",
+            "open_motion": "Bai的衣袂被夜风拂动，Mo的黑纱披风残留在夜空中轻晃",
+            "lighting": "银色满月冷光为主，远处宫灯暖光微弱补光"
+          },
+          "story_change": "承接上一段Bai连续变招绕至Mo右后侧、剑尖直指Mo肩颈破绽的状态，Bai不做任何停顿，手腕轻送以剑指点中Mo的肩颈穴位，全程无剑刃交击、无血迹；Mo瞬间浑身失力，黑钢长剑脱手滑落在黄瓦上，Bai顺着点剑的余势微沉手腕，引导Mo的失衡重心向后仰倒，Mo从飞檐边缘坠下，玄色劲装与黑纱披风在夜空中翻飞；Bai顺势收剑，稳稳立在飞檐边，整个终结动作利落帅气，没有多余僵持，完全符合无血腥的武侠写意表现。",
+          "story_state_after": "白衣剑客Bai以精准的点穴剑招赢得紫禁之巅的月夜剑决，黑衣剑客Mo无血迹坠下飞檐，Bai持剑立于檐边，成为对决的胜者，全片叙事完成，人物容貌、服装、兵器与空间关系完全承接前两段镜头，动作节奏连贯无断裂。",
+          "action_plan": [
+            {
+              "id": "i1_bai_acupoint_strike",
+              "actor": "SwordMaster_Bai",
+              "action": "承接上一段剑尖停在Mo肩颈前一寸的蓄力状态，手腕轻送，精钢长剑的剑尖精准点在Mo的肩颈穴位上，素白剑穗随点剑的动作轻轻震颤，广袖顺着出剑的力道自然垂落。",
+              "result": "Mo被剑尖点中穴位的瞬间，浑身力道瞬间消散，握黑钢长剑的手指一松，黑剑斜斜滑落在脚边的黄瓦上，全程无任何血迹出现，Mo的身体立刻失去支撑，重心完全向后偏移。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "SwordMaster_Bai的精钢长剑剑尖",
+                "region": "Mo的肩颈穴位位置",
+                "unaffected": "Mo的其他躯体部位、屋顶瓦片、月亮与远处宫灯",
+                "scope": "single"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "Mo被点中肩颈穴位，瞬间失力，黑钢长剑脱手滑落在黄瓦面上，无任何外伤与血迹",
+                "actor_state": "Bai点剑动作完成，手腕稳稳压着剑势，重心稳定",
+                "scene_changes": [
+                  {
+                    "entity": "SwordMaster_Mo",
+                    "state": "肩颈被剑尖点中，瞬间失力，黑钢长剑脱手滑落在黄瓦面上，无任何血迹",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "loose scattered roof tiles",
+                    "state": "黑剑滑落时碰松两块黄瓦，瓦面浮尘被剑刃带起",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "weight": 2.3,
+              "carry": "承接上一段结束时Bai在Mo右后侧、剑尖前指Mo肩颈破绽的蓄力状态，无停顿直接出剑点穴",
+              "overlap": false
+            },
+            {
+              "id": "i2_bai_guide_mo_fall",
+              "actor": "SwordMaster_Bai",
+              "action": "顺着点剑的余势，手腕微沉，剑脊轻轻搭在Mo的肩侧，借着Mo失衡的重心，顺着他向后仰倒的力道带了半寸，不做多余拉扯，身形稳稳站在原地。",
+              "result": "Mo的身体顺着被引导的力道完全向后仰倒，软底靴在瓦面蹭过半尺，整个人从飞檐外沿向外坠出，玄色劲装与黑纱披风在夜空中大幅翻飞，没有任何挣扎动作。",
+              "kind": "interaction",
+              "target": "SwordMaster_Mo",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "sweep",
+                "source": "SwordMaster_Bai的剑脊搭在Mo肩侧的施力点",
+                "region": "Mo从瓦面到飞檐外沿的失衡路径",
+                "unaffected": "屋顶上的瓦面、月亮与远处宫灯",
+                "scope": "single"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "Mo的身体完全离开飞檐边缘，向檐下空中坠落，全程无血迹",
+                "actor_state": "Bai站在原地，持剑的手稳稳不动，目光跟随Mo坠落的方向",
+                "scene_changes": [
+                  {
+                    "entity": "SwordMaster_Mo",
+                    "state": "身体完全离开飞檐边缘，向檐下空中坠落，黑纱披风被夜风扬起，无任何血迹",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "wind-tousled robe fabric",
+                    "state": "Mo的黑纱披风与劲装在坠落过程中大幅翻飞",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "weight": 2,
+              "carry": "承接上一单元Bai点中Mo肩颈、Mo瞬间失力的状态，不卸力顺势引导Mo的失衡重心",
+              "overlap": false
+            },
+            {
+              "id": "h1_final_hold",
+              "actor": "SwordMaster_Bai",
+              "action": "看着Mo坠下的方向，手腕轻转将精钢长剑收回鞘中，月白长袍的衣袂在夜风中轻轻晃动，银质发冠在月光下泛着冷光。",
+              "result": "全景画面里，Bai稳稳立在飞檐边缘的姿态清晰可见，背景是当空的银月、斜掠的薄云与远处点点宫灯，整个对决的终结结果完全呈现，没有多余动作。",
+              "kind": "hold",
+              "weight": 0.7
+            }
+          ],
+          "key_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "continuity_props": [
+            "SwordMaster_Bai",
+            "SwordMaster_Mo",
+            "curved yellow glazed roof tiles of the Forbidden City",
+            "silver full moon in dark indigo night sky",
+            "upturned carved palace eaves",
+            "loose scattered roof tiles",
+            "faint distant palace lantern glow",
+            "wind-tousled robe fabric",
+            "thin wispy cloud across the moon"
+          ],
+          "lighting": "主光源为头顶银色满月，冷调硬光勾勒人物轮廓与黄瓦高光，远处宫灯的暖光做微弱环境补光，人物在瓦面拉出清晰的长影，衣袂翻飞的动态被月光清晰照亮，全程无血腥相关的视觉元素。",
+          "mood": "cinematic wuxia, crisp moonlit rooftop tension, sharp dynamic combat rhythm, elegant stylized wuxia tone, quiet victorious resolve after the duel"
+        }
+      }
+    }
+  }
+}

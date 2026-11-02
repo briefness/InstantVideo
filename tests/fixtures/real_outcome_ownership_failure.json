@@ -1,0 +1,163 @@
+{
+  "shot": {
+    "scene_id": "zijin_roof_setup",
+    "scene_description": "月夜下紫禁城主殿重檐琉璃瓦顶，四周宫城层层铺展，高空空旷，瓦面覆有薄霜。",
+    "visual_description": "16:9宽幅电影质感，冷白满月悬于重檐上方，青蓝夜色中琉璃瓦反射银辉，两侧飞檐翘角入画，青衣与红衣剑客以衣色清晰区分，动作留白充足，突出高空决战的空旷纵深感。",
+    "camera": {
+      "primary_movement": "crane up",
+      "composition": "wide full shot",
+      "start_framing": "高空远景纳入主殿屋顶、两侧飞檐与满月",
+      "end_framing": "宽景居中收束于左右对峙的两位剑客，双剑刚完成试探交击",
+      "speed": "slow",
+      "screen_positions": {
+        "AzureSwordsman": "left third",
+        "CrimsonSwordsman": "right third"
+      },
+      "axis_change": "establish"
+    },
+    "blocking": {
+      "AzureSwordsman": {
+        "frame_position": "left roof ridge",
+        "body_orientation": "facing right",
+        "facing_target": "CrimsonSwordsman",
+        "eyeline_target": "CrimsonSwordsman",
+        "travel_direction": "from left adjacent eave toward main roof ridge",
+        "action_target": "CrimsonSwordsman"
+      },
+      "CrimsonSwordsman": {
+        "frame_position": "right roof ridge",
+        "body_orientation": "facing left",
+        "facing_target": "AzureSwordsman",
+        "eyeline_target": "AzureSwordsman",
+        "travel_direction": "from right flying eave toward main roof ridge",
+        "action_target": "AzureSwordsman"
+      }
+    },
+    "start_state": {
+      "location": "紫禁城主殿琉璃瓦顶",
+      "subject": "两位剑客尚未落位",
+      "action_phase": "轻功入场",
+      "camera": "高空远景",
+      "screen_direction": "无",
+      "pose_and_gaze": "双方从两侧飞檐向主殿顶掠来，目光已锁定彼此",
+      "prop_state": "精钢长剑与宽刃重剑均持于手中，尚未交击",
+      "open_motion": "衣袂翻飞的轻功腾挪",
+      "lighting": "冷白月光侧照，瓦面泛银蓝反光"
+    },
+    "end_state": {
+      "location": "紫禁城主殿琉璃瓦顶",
+      "subject": "双方在瓦顶对峙并完成首轮剑招试探",
+      "action_phase": "开场试探交锋",
+      "camera": "高空宽景",
+      "screen_direction": "青衣在左，红衣在右",
+      "pose_and_gaze": "两人相距三步，持剑侧身紧盯对方，红衣因劈空余势身形微前倾",
+      "prop_state": "双剑刚完成一次格挡与一次闪避，刃身泛冷光，无缺损",
+      "open_motion": "红衣重剑下劈后余势未消，青衣后撤半步稳住重心",
+      "lighting": "冷白月光持续勾勒人物轮廓，阴影呈冷蓝色"
+    },
+    "story_change": "两位顶尖剑客先后以高难度轻功落于紫禁城主殿瓦顶，完成首轮兵器试探，巅峰对决正式开启。",
+    "story_state_after": "双方在数十米高的琉璃瓦顶形成对峙，均未受伤；红衣重剑劈空后身形前倾，为后续借瓦面、飞檐腾挪变招留出空间。",
+    "action_plan": [
+      {
+        "id": "enter_azure",
+        "actor": "AzureSwordsman",
+        "action": "从左侧相邻飞檐蹬壁借力，身形斜掠三丈，广袖长袍被夜风灌满，足尖点在主殿脊兽旁的琉璃瓦上。",
+        "result": "青衣剑客稳落左侧瓦脊，墨色高马尾与衣摆向后扬起，右手持精钢长剑斜指地面，目光锁定右侧。",
+        "kind": "transition",
+        "weight": 1.1
+      },
+      {
+        "id": "enter_crimson",
+        "actor": "CrimsonSwordsman",
+        "action": "从右侧重檐翘角纵身跃出，空中拧身，宽刃重剑横于身侧，红劲装衣摆猎猎翻飞。",
+        "result": "红衣剑客落于右侧瓦脊，靴底碾过薄霜留下浅痕，重剑拄地撑住身形，与青衣剑客遥遥相对。",
+        "kind": "transition",
+        "weight": 1.1
+      },
+      {
+        "id": "first_clash",
+        "actor": "AzureSwordsman",
+        "action": "左脚向前踏碎半片瓦霜，拧腰送出长剑，刃身自左向右平削红衣剑客腰侧。",
+        "result": "红衣剑客抬重剑横挡，双剑在两人之间相撞，冷冽火星溅起，青衣被反震得腕部微沉。",
+        "kind": "interaction",
+        "target": "CrimsonSwordsman",
+        "effect": {
+          "mode": "direct_contact",
+          "motion": "static",
+          "source": "精钢长剑刃身",
+          "region": "红衣重剑剑格与刃身中段",
+          "unaffected": "双方躯干、四肢与瓦面其他区域"
+        },
+        "response": "deflection",
+        "outcomes": [
+          {
+            "entity": "AzureSwordsman",
+            "state": "未受伤，持剑立于左侧瓦脊，可继续进攻"
+          },
+          {
+            "entity": "CrimsonSwordsman",
+            "state": "未受伤，以重剑格开长剑，重心稳在右侧瓦脊"
+          },
+          {
+            "entity": "精钢长剑",
+            "state": "刃身与重剑交击后泛冷光，无缺损"
+          }
+        ],
+        "carry": "承接落定后的对峙重心",
+        "overlap": false,
+        "weight": 1.4
+      },
+      {
+        "id": "crimson_counter",
+        "actor": "CrimsonSwordsman",
+        "action": "借格挡反震之力旋身，重剑自上而下斜劈向青衣剑客肩颈，靴底在琉璃瓦上碾出半圈霜痕。",
+        "result": "青衣剑客向后仰身滑出半步，重剑刃风擦着广袖掠过，劈在瓦面溅起细碎霜粒，红衣因劈空余势身形前倾。",
+        "kind": "interaction",
+        "target": "AzureSwordsman",
+        "effect": {
+          "mode": "directed_path",
+          "motion": "sweep",
+          "source": "宽刃重剑刃身",
+          "region": "青衣剑客肩颈前方的空处",
+          "unaffected": "青衣躯干、红衣持剑手腕、瓦面未被劈中区域"
+        },
+        "response": "evasion",
+        "outcomes": [
+          {
+            "entity": "AzureSwordsman",
+            "state": "未被剑锋击中，后撤半步稳住身形，仍持剑可战"
+          },
+          {
+            "entity": "CrimsonSwordsman",
+            "state": "重剑劈空，身形前倾但未失平衡，仍持重剑"
+          },
+          {
+            "entity": "琉璃瓦面",
+            "state": "被剑风扫落薄霜，无大面积碎裂"
+          }
+        ],
+        "carry": "承接双剑交击后的反震旋身",
+        "overlap": false,
+        "weight": 1.3
+      }
+    ],
+    "key_props": [
+      "精钢长剑",
+      "宽刃重剑",
+      "琉璃瓦顶",
+      "脊兽",
+      "飞檐",
+      "薄霜"
+    ],
+    "continuity_props": [
+      "精钢长剑",
+      "宽刃重剑",
+      "琉璃瓦顶",
+      "脊兽",
+      "飞檐",
+      "薄霜"
+    ],
+    "lighting": "冷白满月高悬，侧光打亮琉璃瓦反光与衣料纹理，阴影呈冷蓝色，人物轮廓镶银边。",
+    "mood": "cinematic"
+  }
+}

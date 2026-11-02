@@ -1,0 +1,395 @@
+{
+  "source_workspace": "output/20261102_121241_688517",
+  "sources": {
+    "semantic_reviews/e62377e02505f88906d9b7cc07c4ff0320681a27b2b094d88fedf2ca66c0cec6.evidence.json": "da3d6b21c7743e2339ee2225c9c36da270d2ca14052af7dbea9f11eed6d4c148",
+    "result_admission.json": "084fa1aba2c9e708c4e9b1d82fc5b9f297e82b91a283eaa106ac910151dad178"
+  },
+  "evidence": {
+    "video_hash": "e62377e02505f88906d9b7cc07c4ff0320681a27b2b094d88fedf2ca66c0cec6",
+    "contract_hash": "5d2e07c9583853c979e752725d6454bf81d29e3c2d33d78bebcd80d8b3eae593",
+    "evaluator_hash": "a1f898dd3f4b18371d7a33686fa0a740c9c1a9757020e3ea4d03cd762e1eada2",
+    "sample_timestamps": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      1.75,
+      2.0,
+      2.25,
+      2.5,
+      2.75,
+      3.0,
+      3.25,
+      3.5,
+      3.75,
+      4.0,
+      4.25,
+      4.5,
+      4.75,
+      4.95
+    ],
+    "media_duration": 5,
+    "status": "unavailable",
+    "unobservable_fields": [
+      "boundary_continuity_valid"
+    ],
+    "response": {
+      "accepted": false,
+      "required_entities_visible": [
+        true,
+        true
+      ],
+      "action_geometry_valid": false,
+      "primary_action_completed": false,
+      "boundary_continuity_valid": null,
+      "identity_continuity_valid": true,
+      "observed_end_state": {
+        "location": "紫禁城主殿黄琉璃瓦屋脊",
+        "subject": "YE_GUCHENG（玄衣持剑高手）与LENG_QINGSHANG（白衣持剑高手）",
+        "action_phase": "双方在屋脊中段完成首次兵器交击，进入连续攻防流动阶段",
+        "camera": "宽幅全景平稳跟拍，完整保留屋脊空间关系",
+        "screen_direction": "两人从屋脊两端相向突进后在中段交错对峙",
+        "pose_and_gaze": "双方持剑互相紧盯对方，身姿紧绷处于攻防姿态",
+        "prop_state": "两剑多次交击后弹开，瓦面被脚步带起细碎浮尘",
+        "open_motion": "错步后顺势旋身准备下一招变招",
+        "lighting": "冷调月夜柔光持续，满月在画面上半区中央，瓦面反射月光"
+      },
+      "identity_crop_boxes": [
+        [
+          0.32,
+          0.22,
+          0.58,
+          0.73
+        ],
+        [
+          0.55,
+          0.28,
+          0.88,
+          0.93
+        ]
+      ],
+      "failure_reason": "未完成契约要求的事件4全部结果：LENG_QINGSHANG的软剑全程为刚性直剑，未出现弧形弯曲状态，也未顺着交击弹力完成扫击动作；YE_GUCHENG未被扫向手腕的软剑逼得侧身错步，旧力未卸的状态未呈现；LENG_QINGSHANG未完成格剑旋身滑步落定的指定动作，仅完成举剑格挡。",
+      "action_timing_valid": true,
+      "creative_brief_valid": true,
+      "action_event_evidence": [
+        {
+          "event_id": 3,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 0.0,
+          "observed_effect_seconds": 2.25,
+          "observed_reaction_seconds": 2.25,
+          "observed_end_seconds": 2.75,
+          "active_intervals": [
+            {
+              "start_seconds": 2.25,
+              "end_seconds": 2.75
+            }
+          ]
+        },
+        {
+          "event_id": 4,
+          "effect_visible": false,
+          "target_reaction_visible": false,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": false,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 2.75,
+          "observed_effect_seconds": 3.0,
+          "observed_reaction_seconds": 3.0,
+          "observed_end_seconds": 4.95,
+          "active_intervals": [
+            {
+              "start_seconds": 2.75,
+              "end_seconds": 4.95
+            }
+          ]
+        }
+      ],
+      "effect_path_valid": true,
+      "reaction_causality_valid": true,
+      "narrative_state_change_valid": false,
+      "blocking_valid": true,
+      "visual_invariants_valid": false
+    }
+  },
+  "shot": {
+    "shot_id": 1,
+    "duration": 5,
+    "scene_id": "MAIN_HALL_ROOF",
+    "scene_description": "紫禁城主殿最高处的黄琉璃瓦陡峭屋脊坡面，两侧立有鎏金脊兽，下方可见红墙与幽暗庭院，月夜下远处连片宫殿轮廓铺展在薄夜雾中。",
+    "prompt_en": "16:9宽幅电影质感，冷调月夜柔光铺满黄琉璃瓦，瓦面反射冷银色月光，鎏金脊兽泛着暗金光泽，深靛色夜空悬着圆满明月，远处宫殿轮廓朦胧柔和，整体氛围肃杀清冷，充满武侠对决的紧绷张力。 从侧方配殿屋檐蹬踏借力，身形舒展腾空，玄色衣摆与暗红色剑穗在夜风中扬起，足尖轻点主殿屋脊的鎏金脊兽借力，沿陡峭的琉璃瓦坡面向中心滑步突进. 玄色身影在月光下划出流畅弧线，稳稳落在屋脊左侧坡面，脚步带起瓦面细碎浮尘. 从另一侧配殿屋檐腾空掠出，银白高马尾随动作扬起，足尖轻点瓦面借力，沿琉璃瓦坡面向中心快速滑步突进，冷银色软剑在身侧泛着微光. 月白色身影在屋脊右侧坡面稳稳落定，与左侧的YE_GUCHENG遥遥对视. 顺着滑步的惯性拧腰送肩，手中青钢长剑从下往上斜撩，剑刃带着破风声直取LENG_QINGSHANG的腰侧，没有停顿复位. 青钢剑的冷光在瓦面反光中划出一道亮线，直逼对方腰侧空门. 抬手中冷银色软剑精准格开斜撩而来的青钢剑，顺着两剑相交的弹力旋身转步，软剑顺势弯成弧形扫向YE_GUCHENG的持剑手腕，借瓦面坡度的滑力加速变招，完全没有停顿复位. 两剑碰撞发出清脆鸣响，软剑的弧形刃身顺着弹力滑向对方手腕，逼得对方错步后撤.",
+    "visual_description": "16:9宽幅电影质感，冷调月夜柔光铺满黄琉璃瓦，瓦面反射冷银色月光，鎏金脊兽泛着暗金光泽，深靛色夜空悬着圆满明月，远处宫殿轮廓朦胧柔和，整体氛围肃杀清冷，充满武侠对决的紧绷张力。",
+    "continuity_from_previous": "none",
+    "composition_change": "large",
+    "result_admission": "reviewed-results-v1",
+    "generation_rhythm": "allocated-v1",
+    "generation_direction": "authored-staging-v1",
+    "media_selection": "planned-prefix-v1",
+    "coverage_role": "interaction",
+    "required_visible_entities": [
+      "YE_GUCHENG",
+      "LENG_QINGSHANG"
+    ],
+    "interaction_geometry": {
+      "actor": "LENG_QINGSHANG",
+      "target": "YE_GUCHENG",
+      "interaction_mode": "direct_contact",
+      "effect_phase": "active",
+      "outcome_scope": "single",
+      "effect_motion": "static",
+      "source": "LENG_QINGSHANG_soft_sword",
+      "effect_region": "两剑交击点到YE_GUCHENG持剑手腕的弧形路径",
+      "reaction_scope": "one clearly isolated intended target within the visible effect region",
+      "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+      "must_share_frame": true,
+      "line_of_action_visible": false,
+      "actor_screen_position": "画面右侧屋脊远端",
+      "target_screen_position": "画面左侧屋脊远端",
+      "occlusion_policy": "none"
+    },
+    "narrative_beat": {
+      "function": "setup",
+      "state_before": "两位顶尖高手为争夺紫禁之巅的武林名号，在紫禁城最高屋脊上展开生死决战。",
+      "state_change": "两位高手从两侧配殿檐角借力，以潇洒轻功落上主殿屋脊，相向突进完成首次兵器交击，决战正式拉开序幕。",
+      "state_after": "双方在主殿屋脊中心位置完成首次剑刃碰撞，尚未分出高下，连续攻防的节奏已经建立。"
+    },
+    "production_slot": {
+      "shot_id": 1,
+      "duration": 5,
+      "narrative_function": "setup",
+      "allowed_effect_phases": [
+        "active"
+      ],
+      "outcome_scope": "single",
+      "requires_visible_result": true,
+      "min_interaction_seconds": 0.0,
+      "min_interaction_events": 2,
+      "result_hold_seconds": 0.0,
+      "choreography": "flexible",
+      "creative_brief": "制作约15秒的紫禁之巅决战，分三段独立视频再拼接。两大高手在紫禁城屋脊决战，武侠电影风格和电影级质感。轻功入场要帅；武打动作要多、节奏快，有借势、变招和连续的攻防流动，不要机械地一来一回或每招停顿复位。最后一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。重点保持三段人物身份、服饰和兵器一致，前后动作与空间连续，运镜服务于动作可读性。项目自行规划脚本、分镜与时间分配。",
+      "coverage_roles": [
+        "interaction"
+      ],
+      "framing_family": "wide",
+      "reference_policy": "independent"
+    },
+    "primary_action": "从侧方配殿屋檐蹬踏借力，身形舒展腾空，玄色衣摆与暗红色剑穗在夜风中扬起，足尖轻点主殿屋脊的鎏金脊兽借力，沿陡峭的琉璃瓦坡面向中心滑步突进; 从另一侧配殿屋檐腾空掠出，银白高马尾随动作扬起，足尖轻点瓦面借力，沿琉璃瓦坡面向中心快速滑步突进，冷银色软剑在身侧泛着微光; 顺着滑步的惯性拧腰送肩，手中青钢长剑从下往上斜撩，剑刃带着破风声直取LENG_QINGSHANG的腰侧，没有停顿复位; 抬手中冷银色软剑精准格开斜撩而来的青钢剑，顺着两剑相交的弹力旋身转步，软剑顺势弯成弧形扫向YE_GUCHENG的持剑手腕，借瓦面坡度的滑力加速变招，完全没有停顿复位",
+    "action_beats": [
+      {
+        "phase": "trigger",
+        "actor": "YE_GUCHENG",
+        "action": "从侧方配殿屋檐蹬踏借力，身形舒展腾空，玄色衣摆与暗红色剑穗在夜风中扬起，足尖轻点主殿屋脊的鎏金脊兽借力，沿陡峭的琉璃瓦坡面向中心滑步突进",
+        "target": "yellow_glazed_tile_surface",
+        "visible_result": "玄色身影在月光下划出流畅弧线，稳稳落在屋脊左侧坡面，脚步带起瓦面细碎浮尘",
+        "start_seconds": 0.0,
+        "end_seconds": 1.5,
+        "activity": "transition"
+      },
+      {
+        "phase": "trigger",
+        "actor": "LENG_QINGSHANG",
+        "action": "从另一侧配殿屋檐腾空掠出，银白高马尾随动作扬起，足尖轻点瓦面借力，沿琉璃瓦坡面向中心快速滑步突进，冷银色软剑在身侧泛着微光",
+        "target": "yellow_glazed_tile_surface",
+        "visible_result": "月白色身影在屋脊右侧坡面稳稳落定，与左侧的YE_GUCHENG遥遥对视",
+        "start_seconds": 1.5,
+        "end_seconds": 2.5,
+        "activity": "transition"
+      },
+      {
+        "phase": "peak",
+        "actor": "YE_GUCHENG",
+        "action": "顺着滑步的惯性拧腰送肩，手中青钢长剑从下往上斜撩，剑刃带着破风声直取LENG_QINGSHANG的腰侧，没有停顿复位",
+        "target": "LENG_QINGSHANG",
+        "visible_result": "青钢剑的冷光在瓦面反光中划出一道亮线，直逼对方腰侧空门",
+        "outcomes": [
+          {
+            "entity": "YE_GUCHENG",
+            "state": "拧腰送肩完成斜撩剑动作，重心随滑步惯性前移"
+          },
+          {
+            "entity": "LENG_QINGSHANG",
+            "state": "感知到剑刃袭来，手腕翻转举剑准备格挡"
+          }
+        ],
+        "scene_changes": [
+          {
+            "entity": "YE_GUCHENG_qinggang_sword",
+            "state": "剑刃斜向上抬起，处于攻击路径中",
+            "importance": "required"
+          }
+        ],
+        "start_seconds": 2.5,
+        "end_seconds": 3.7,
+        "activity": "interaction",
+        "interaction_geometry": {
+          "actor": "YE_GUCHENG",
+          "target": "LENG_QINGSHANG",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "sweep",
+          "source": "YE_GUCHENG_qinggang_sword",
+          "effect_region": "从YE_GUCHENG身前斜向上到LENG_QINGSHANG腰侧的路径",
+          "reaction_scope": "青钢剑的冷光在瓦面反光中划出一道亮线，直逼对方腰侧空门",
+          "unaffected_behavior": "屋脊远端的夜空、庭院与未被触及的鎏金脊兽",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "画面左侧屋脊远端",
+          "target_screen_position": "画面右侧屋脊远端",
+          "occlusion_policy": "none"
+        },
+        "effect_at_seconds": 2.98,
+        "reaction_at_seconds": 3.34,
+        "response_kind": "deflection",
+        "result_directions": []
+      },
+      {
+        "phase": "peak",
+        "actor": "LENG_QINGSHANG",
+        "action": "抬手中冷银色软剑精准格开斜撩而来的青钢剑，顺着两剑相交的弹力旋身转步，软剑顺势弯成弧形扫向YE_GUCHENG的持剑手腕，借瓦面坡度的滑力加速变招，完全没有停顿复位",
+        "target": "YE_GUCHENG",
+        "visible_result": "两剑碰撞发出清脆鸣响，软剑的弧形刃身顺着弹力滑向对方手腕，逼得对方错步后撤",
+        "outcomes": [
+          {
+            "entity": "LENG_QINGSHANG",
+            "state": "完成格剑旋身动作，重心随瓦面坡度滑步落定"
+          },
+          {
+            "entity": "YE_GUCHENG",
+            "state": "被扫向手腕的软剑逼得侧身错步，旧力尚未完全卸去"
+          }
+        ],
+        "scene_changes": [
+          {
+            "entity": "LENG_QINGSHANG_soft_sword",
+            "state": "剑刃呈弧形弯曲状态，顺着交击弹力完成扫击动作",
+            "importance": "required"
+          },
+          {
+            "entity": "yellow_glazed_tile_surface",
+            "state": "两人脚步碾过的位置留下浅淡靴印，浮尘被脚步带起飘散",
+            "importance": "incidental"
+          }
+        ],
+        "start_seconds": 3.7,
+        "end_seconds": 5.0,
+        "activity": "interaction",
+        "interaction_geometry": {
+          "actor": "LENG_QINGSHANG",
+          "target": "YE_GUCHENG",
+          "interaction_mode": "direct_contact",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "sweep",
+          "source": "LENG_QINGSHANG_soft_sword",
+          "effect_region": "两剑交击点到YE_GUCHENG持剑手腕的弧形路径",
+          "reaction_scope": "两剑碰撞发出清脆鸣响，软剑的弧形刃身顺着弹力滑向对方手腕，逼得对方错步后撤",
+          "unaffected_behavior": "屋脊远端的红墙与庭院区域",
+          "must_share_frame": true,
+          "line_of_action_visible": false,
+          "actor_screen_position": "画面右侧屋脊远端",
+          "target_screen_position": "画面左侧屋脊远端",
+          "occlusion_policy": "none"
+        },
+        "effect_at_seconds": 4.22,
+        "reaction_at_seconds": 4.61,
+        "response_kind": "impact",
+        "flow_from_previous": "Beat 3 -> Beat 4: continue the preceding movement into this action without an unexplained pause or reset.",
+        "result_directions": []
+      }
+    ],
+    "start_state": {
+      "location": "MAIN_HALL_ROOF",
+      "subject": "两位紫禁之巅决战高手",
+      "action_phase": "轻功入场完成，即将展开首次攻防",
+      "camera": "wide shot平稳跟拍",
+      "screen_direction": "两人分别从画面左右两端向中心相向移动",
+      "pose_and_gaze": "双方持剑凝神对视，身姿紧绷",
+      "prop_state": "两人长剑均出鞘握于手中",
+      "open_motion": "两人从配殿檐角借力腾空后，正沿主殿屋脊坡面快速滑步突进",
+      "lighting": "冷调月夜柔光，瓦面反射月光"
+    },
+    "end_state": {
+      "location": "MAIN_HALL_ROOF",
+      "subject": "两位紫禁之巅决战高手",
+      "action_phase": "首次兵器交击完成，进入连续攻防流动阶段",
+      "camera": "wide shot保持跟拍",
+      "screen_direction": "两人在屋脊中心位置交错",
+      "pose_and_gaze": "双方兵器交击后侧身错步，目光仍锁定对方",
+      "prop_state": "两剑相交后弹开，瓦面被脚步带起细碎浮尘",
+      "open_motion": "错步后顺势旋身准备下一招变招",
+      "lighting": "冷调月夜柔光持续"
+    },
+    "camera": {
+      "primary_movement": "tracking",
+      "composition": "宽幅全景以斜向延伸的琉璃瓦屋脊为视觉引导线，将两位入场高手置于屋脊两端的视觉落点，满月作为背景光源勾勒人物轮廓，完整保留屋脊空间关系以保证动作可读性。",
+      "start_framing": "wide shot",
+      "end_framing": "wide shot",
+      "speed": "平稳跟拍，匹配轻功移动的流畅速度",
+      "screen_positions": {
+        "full_moon_night_sky": "画面上半区中央",
+        "yellow_glazed_tile_surface": "从画面左下斜向右上延伸，占据画面下半区",
+        "gilded_ridge_beast": "屋脊中后段位置",
+        "dark_wood_eave": "画面最下边缘",
+        "loose_tile_fragment": "瓦面中前段",
+        "YE_GUCHENG": "玄衣角色身侧",
+        "LENG_QINGSHANG": "白衣角色身侧"
+      },
+      "axis_change": "establish"
+    },
+    "blocking": {
+      "YE_GUCHENG": {
+        "frame_position": "画面左侧屋脊远端",
+        "body_orientation": "朝向画面右侧",
+        "facing_target": "LENG_QINGSHANG",
+        "eyeline_target": "LENG_QINGSHANG",
+        "travel_direction": "沿屋脊坡面斜向向右下方快速突进",
+        "action_target": "LENG_QINGSHANG"
+      },
+      "LENG_QINGSHANG": {
+        "frame_position": "画面右侧屋脊远端",
+        "body_orientation": "朝向画面左侧",
+        "facing_target": "YE_GUCHENG",
+        "eyeline_target": "YE_GUCHENG",
+        "travel_direction": "沿屋脊坡面斜向向左下方快速突进",
+        "action_target": "YE_GUCHENG"
+      }
+    },
+    "lighting": "冷银色满月从斜上方洒落柔光，在黄琉璃瓦表面形成冷亮的镜面反光，人物轮廓被月光勾出柔和亮边，阴影边缘清晰锐利，整体照度偏低，营造出月夜紫禁城的肃杀清冷氛围。",
+    "mood": "凌厉、紧绷，顶尖高手对决前的张力，充满古典武侠的氛围感。",
+    "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+    "subtitle_text": "",
+    "transition_to_next": "cut",
+    "generate_audio": true,
+    "characters": [
+      "YE_GUCHENG",
+      "LENG_QINGSHANG"
+    ],
+    "extract_character_ref": false,
+    "key_props": [
+      "yellow_glazed_tile_surface",
+      "gilded_ridge_beast",
+      "dark_wood_eave",
+      "full_moon_night_sky",
+      "loose_tile_fragment",
+      "YE_GUCHENG_qinggang_sword",
+      "LENG_QINGSHANG_soft_sword"
+    ],
+    "continuity_props": [
+      "yellow_glazed_tile_surface",
+      "YE_GUCHENG_qinggang_sword",
+      "LENG_QINGSHANG_soft_sword"
+    ]
+  }
+}

@@ -1,0 +1,184 @@
+{
+  "fingerprint": "a791c36e60fa47af0689b5fdd71472e86b3aaed76b2ca3386d1a39083dd25d09",
+  "verdict": {
+    "units": [
+      {
+        "shot_id": 1,
+        "beat_index": 0,
+        "cause_and_participants_valid": false,
+        "classification_matches_description": false,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "该beat标注activity为interaction，但实际动作是Bai Yi施展轻功入场落步、拔剑前指，未对Hei Yi发起直接外部作用，interaction_geometry中也标注must_share_frame为false，不存在真实的交互行为，与interaction类型要求不符。"
+      },
+      {
+        "shot_id": 1,
+        "beat_index": 1,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Hei Yi作为发起方挥剑劈向Bai Yi，Bai Yi侧身闪避，存在明确的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 1,
+        "beat_index": 2,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Bai Yi顺势刺向Hei Yi，Hei Yi回剑格挡，双剑相交，存在直接的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 2,
+        "beat_index": 0,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Hei Yi承接上一轮力道滑开银剑后下劈，Bai Yi侧身闪避，存在明确的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 2,
+        "beat_index": 1,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Bai Yi闪避同时反撩刺向Hei Yi手腕，Hei Yi收腕格挡，双剑再次相交，存在直接的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 2,
+        "beat_index": 2,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Hei Yi借力旋身横扫向Bai Yi腰腹，Bai Yi跃起闪避，存在明确的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 2,
+        "beat_index": 3,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Bai Yi落地后连续变招刺向Hei Yi，逼得Hei Yi后退露出破绽，存在明确的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 3,
+        "beat_index": 0,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "Bai Yi抓住破绽直刺命中Hei Yi躯干，Hei Yi身体一震、黑剑脱手，存在直接的攻防交互，参与者与因果关系匹配，interaction类型与描述一致。"
+      },
+      {
+        "shot_id": 3,
+        "beat_index": 1,
+        "cause_and_participants_valid": false,
+        "classification_matches_description": false,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "该beat标注activity为interaction，发起方为Hei Yi，但实际动作是Hei Yi被刺后失去平衡向后仰倒，属于受击后的自主倒地反应，并未对Bai Yi发起任何外部作用，不存在真实交互，与interaction类型要求不符。"
+      },
+      {
+        "shot_id": 3,
+        "beat_index": 2,
+        "cause_and_participants_valid": false,
+        "classification_matches_description": false,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity",
+          "interaction_geometry",
+          "response_kind"
+        ],
+        "reason": "该beat标注activity为interaction，发起方为Bai Yi，但实际动作是Bai Yi收剑垂落至身侧、看向倒地的Hei Yi，未对Hei Yi发起任何外部作用，不存在真实交互，与interaction类型要求不符。"
+      },
+      {
+        "shot_id": 3,
+        "beat_index": 3,
+        "cause_and_participants_valid": true,
+        "classification_matches_description": true,
+        "evidence_fields": [
+          "actor",
+          "target",
+          "action",
+          "visible_result",
+          "activity"
+        ],
+        "reason": "该beat标注activity为hold，动作是Bai Yi保持收剑站立姿态确认胜负，属于结果展示类的静止状态，与hold类型要求一致，因果关系清晰。"
+      }
+    ],
+    "continuity_valid": true,
+    "requested_outcome_valid": true,
+    "reason": "三段分镜的人物身份、服装兵器、屋脊场景与黄昏光线保持一致，动作衔接连贯：第一段首轮交锋后双剑相交对峙，第二段承接格挡姿态展开连续变招，第三段承接黑衫剑客的步法破绽完成决胜刺击，最终黑衫剑客倒地不再起身、白衫剑客收剑站立，完全满足原需求的结局要求。"
+  }
+}

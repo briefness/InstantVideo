@@ -153,6 +153,8 @@ def _run_summary(
             "music": Path(options["music_path"]).name if options.get("music_path") else None,
             "platforms": options.get("platforms", []),
             "paid_take_budget": options.get("paid_take_budget"),
+            "motion_control": options.get("motion_control", "auto"),
+            "delivery_mode": options.get("delivery_mode", "reviewed"),
         },
         "title": (storyboard or {}).get("title", "") if include_storyboard else "",
         "mood": (storyboard or {}).get("mood", "") if include_storyboard else "",
@@ -219,6 +221,9 @@ def _parse_create_payload(payload: Any) -> RunOptions:
         except (TypeError, ValueError) as exc:
             raise ValueError("付费 Take 预算必须是非负整数") from exc
 
+    take_policy = payload.get('take_policy', 'completion_first')
+    if take_policy not in ('completion_first', 'single_pass'):
+        raise ValueError('生成策略必须为保留各镜头首次机会或每镜头仅提交一次')
     return RunOptions(
         request=request,
         resolution=str(payload.get("resolution", config.DEFAULT_RESOLUTION)),
@@ -227,6 +232,9 @@ def _parse_create_payload(payload: Any) -> RunOptions:
         music_path=music_path,
         platforms=[str(platform) for platform in platforms],
         paid_take_budget=budget,
+        take_policy=take_policy,
+        delivery_mode=payload.get("delivery_mode", "reviewed"),
+        motion_control=payload.get("motion_control", "auto"),
     )
 
 
@@ -310,6 +318,8 @@ async def create_run(request: web.Request) -> web.Response:
         music_path=options.music_path,
         platforms=options.platforms,
         paid_take_budget=options.paid_take_budget,
+        delivery_mode=options.delivery_mode,
+        motion_control=options.motion_control,
         run_workspace=workspace,
     )
     pipeline._resuming = False

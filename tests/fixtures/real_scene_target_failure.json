@@ -1,0 +1,1449 @@
+{
+  "workspace": "output/20261101_015431_580232",
+  "sources": {
+    "planning_intent_response.json": {
+      "sha256": "8db51c504490a0b07a80e8934c45649f0282aaaf930bca614df1e2ed85a1771b",
+      "value": {
+        "model": "doubao-seed-2.1-lite",
+        "finish_reason": "stop",
+        "content": "{\"content_focus\": \"action\", \"pacing\": \"dense\", \"intent_evidence\": \"两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。\", \"ending_requirement\": \"一方被另一方帅气地击杀，结局清楚、非血腥。\", \"ending_evidence\": \"最后一方被另一方帅气地击杀，结局清楚、非血腥。\", \"motion_control\": \"text_guided\", \"motion_control_evidence\": \"\", \"choreography\": \"flexible\", \"requested_duration_seconds\": 15, \"duration_evidence\": \"生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。\", \"requested_shot_count\": 3, \"shot_count_evidence\": \"必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。\"}"
+      }
+    },
+    "planning_identity.json": {
+      "sha256": "8b4e29c296a2371b830f730a0be7f7a7a558b63dd2bf3570ab0cb9246a279ec6",
+      "value": {
+        "title": "紫禁之巅·霜刃决",
+        "theme_elements": [
+          "紫禁皇城月夜屋脊场景",
+          "轻功飞掠帅气入场",
+          "连续流畅的武侠攻防",
+          "交手时的借势、卸力与变招",
+          "非血腥帅气击杀结局",
+          "三段式动作连贯衔接",
+          "电影级武侠质感",
+          "服务动作的动态运镜"
+        ],
+        "story_arc": {
+          "goal": "两位顶尖武林高手在紫禁城屋脊完成宿命对决，决出天下第一的归属",
+          "stakes": "对决全程不能惊扰皇城值守，败者将失去屋脊立足平衡坠下数十米高的皇城屋顶，胜者将成为武林公认的第一高手",
+          "turning_point": "连续攻防数十招后，玄衣大侠卸力时踩滑一块松动的琉璃瓦，重心出现瞬间偏移，青衣剑客抓住破绽借屋脊坡度旋身变招突进",
+          "resolution": "青衣剑客以寒铁长剑精准点中玄衣大侠颈侧死穴，对方瞬间僵立无血迹溢出，随后顺着屋脊坡度向后缓缓坠下，青衣剑客持剑立在屋脊上，衣袂被夜风扬起，胜负清晰分明"
+        },
+        "characters": [
+          {
+            "name": "Qingyi_Jianke",
+            "description": "身着月白暗竹纹交领武袍，墨色高马尾以银簪束起，腰系玄色牛皮革带，手持无鞘寒铁长剑，剑尾垂藏青丝穗，足蹬黑色软底轻功靴，面容清俊气质冷冽，为对决的胜者",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          },
+          {
+            "name": "Xuanyi_Daxia",
+            "description": "身着玄色暗金云纹交领武袍，长发以赤金冠束起，腰系朱红丝绦，手持宽背厚刃玄铁重剑，剑尾垂朱红丝穗，足蹬黑色厚底快靴，面容刚毅气质沉猛，为对决的败者",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          }
+        ],
+        "scene_entities": [
+          "ForbiddenCity_Yellow_Glazed_Main_Roof",
+          "Night_Full_Moon_Above_Imperial_City",
+          "Roof_End_Glazed_Auspicious_Beast",
+          "Distant_Layered_Imperial_Palaces",
+          "Loose_Roof_Tile_Fragments",
+          "Moonlit_Floating_Dust"
+        ]
+      }
+    },
+    "planning_shot_001.json": {
+      "sha256": "c8a74683e20610ec9ffadd74e3fd03bf2c953ec99e5fe7789c99d7c754a1181e",
+      "value": {
+        "shot": {
+          "scene_id": "forbidden_city_roof_night_01",
+          "scene_description": "紫禁城主殿黄琉璃瓦屋脊的月夜场景，两位高手从两侧远殿飞掠入场，在屋脊中央完成初次兵器交击，拉开决战序幕",
+          "visual_description": "16:9宽幅全景，冷银色满月悬在皇城上空，月光铺满金黄色琉璃瓦屋脊，远处层叠的宫殿飞檐在夜雾里泛着暗金轮廓，屋脊尽头的琉璃瑞兽剪影立在画面上缘，细碎浮尘在月光里浮动，倾斜的屋脊坡度从画面左下延伸至右上，为后续轻功与交手提供天然的运动空间",
+          "camera": {
+            "primary_movement": "fixed",
+            "composition": "wide panoramic",
+            "start_framing": "高角度全景，纳入悬在天顶的满月、远处层叠的皇城宫殿群、整段倾斜的黄琉璃瓦屋脊，屋脊尽头的琉璃瑞兽剪影位于画面上缘",
+            "end_framing": "保持全景构图，将屋脊中央交击的两人置于画面视觉中心，两侧飞掠的余势收束在交击点",
+            "speed": "fixed",
+            "axis_change": "establish",
+            "screen_positions": {
+              "Qingyi_Jianke": "画面左半区，从左边缘入画最终停在中央偏左位置",
+              "Xuanyi_Daxia": "画面右半区，从右边缘入画最终停在中央偏右位置"
+            }
+          },
+          "blocking": {
+            "Qingyi_Jianke": {
+              "frame_position": "初始从画面左上方远殿方向入画，最终停在屋脊中央偏左的瓦面位置",
+              "body_orientation": "朝向画面右侧，身体与屋脊坡度呈45度夹角",
+              "facing_target": "Xuanyi_Daxia",
+              "eyeline_target": "Xuanyi_Daxia握重剑的手腕位置",
+              "travel_direction": "沿屋脊斜面向右前方飞掠",
+              "action_target": "Xuanyi_Daxia手中的玄铁重剑剑身"
+            },
+            "Xuanyi_Daxia": {
+              "frame_position": "初始从画面右上方远殿方向入画，最终停在屋脊中央偏右的瓦面位置",
+              "body_orientation": "朝向画面左侧，身体与屋脊坡度呈45度夹角",
+              "facing_target": "Qingyi_Jianke",
+              "eyeline_target": "Qingyi_Jianke握寒铁长剑的剑尖位置",
+              "travel_direction": "沿屋脊斜面向左前方飞掠",
+              "action_target": "Qingyi_Jianke的肩颈位置"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊两侧的远殿飞檐位置",
+            "subject": "青衣剑客与玄衣大侠分别在两侧远殿飞檐上蓄势，准备飞掠至主殿屋脊对决",
+            "action_phase": "轻功入场启动阶段，尚未发生兵器接触",
+            "camera": "高角度固定全景机位，纳入整段屋脊与满月背景",
+            "screen_direction": "青衣剑客从左向右运动，玄衣大侠从右向左运动，相向而行",
+            "pose_and_gaze": "两人均持出鞘兵器，目光紧盯对方位置，身体呈蹬地飞掠的预备姿态",
+            "prop_state": "寒铁长剑与玄铁重剑均出鞘持在手中，剑穗自然垂落",
+            "open_motion": "足尖蹬踏瓦面的飞掠启动动作",
+            "lighting": "冷银色满月顶光，琉璃瓦面反射暖金色光泽"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊中央段",
+            "subject": "两人完成初次兵器交击，剑尖停在玄衣握剑的手腕外侧，尚未出现失衡或受伤",
+            "action_phase": "初次攻防接触完成，进入连续变招的衔接节点",
+            "camera": "保持高角度全景机位，将交击的两人置于画面中央",
+            "screen_direction": "两人面对面站立，青衣在左，玄衣在右",
+            "pose_and_gaze": "两人身体微沉，重心落在瓦面，目光紧盯对方的兵器与眼神",
+            "prop_state": "寒铁长剑与玄铁重剑刃部交抵，剑穗因交击的震颤微微晃动",
+            "open_motion": "交击后兵器震颤的余势，剑尖保持前伸的动势准备下一轮攻防",
+            "lighting": "冷银色月光下，交击溅出的火星形成短暂的暖光点缀"
+          },
+          "story_change": "两位高手凭借绝顶轻功从两侧远殿飞掠至主殿屋脊，玄衣大侠率先出剑斜劈，青衣剑客抬剑格挡并顺着力道滑剑逼向对方手腕，初次兵器交击完成，震落一块松动的琉璃瓦碎片，为后续的失衡转折埋下伏笔",
+          "story_state_after": "两人在倾斜的琉璃瓦屋脊上相距一臂距离，兵器交抵，重心均已落稳，没有出现受伤或坠瓦的情况，进入连续攻防的预备状态，脚边的松动瓦块顺着坡度滑到玄衣大侠的立足范围附近",
+          "action_plan": [
+            {
+              "id": "entrance_qingyi",
+              "actor": "Qingyi_Jianke",
+              "action": "足尖轻点左侧远殿的琉璃瓦檐角，身形如掠影沿主殿屋脊的斜面向右前方飞掠，月白武袍的衣袂被夜风向后扯出流畅弧线，寒铁长剑斜垂在身侧，藏青丝穗随飞掠节奏轻晃",
+              "result": "从画面左边缘入画，足尖轻落在主殿屋脊的瓦面上，屈膝卸去飞掠的冲力，剑尖斜指下方瓦面，目光锁定对面来势",
+              "kind": "transition",
+              "weight": 1.5
+            },
+            {
+              "id": "entrance_xuanyi",
+              "actor": "Xuanyi_Daxia",
+              "action": "足尖重踏右侧远殿的琉璃瓦檐角，身形沉猛如鹰沿主殿屋脊的斜面向左前方飞掠，玄色武袍的下摆被破风掀起，玄铁重剑横在身前，朱红丝穗随飞掠节奏扬起",
+              "result": "从画面右边缘入画，足尖踏在主殿屋脊的瓦面上，沉腰稳住下盘，重剑横举在胸前，目光锁定对面的青衣剑客",
+              "kind": "transition",
+              "weight": 1
+            },
+            {
+              "id": "strike_xuanyi",
+              "actor": "Xuanyi_Daxia",
+              "action": "借踏瓦面的沉劲拧腰转肩，玄铁重剑带着沉猛力道自上而下斜劈向青衣剑客的肩颈位置，剑风扫过瓦面带起细碎浮尘",
+              "result": "重剑刃部携风直落，剑影在月光下划出暗金色的弧线",
+              "kind": "interaction",
+              "target": "Qingyi_Jianke",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "Xuanyi_Daxia手中的玄铁重剑",
+                "region": "Qingyi_Jianke肩颈前方的攻击路径",
+                "unaffected": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月"
+              },
+              "response": "deflection",
+              "resolution": {
+                "target_state": "重剑的劈砍路径被青衣剑客抬剑精准架住，没有触及青衣的身体",
+                "actor_state": "玄衣大侠劈砍的力道未完全释放，手臂保持前送姿态",
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "剑风扫过瓦面，带起细碎浮尘在月光下浮动",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "玄衣劈砍的沉劲顺着剑身向前传导，为青衣后续的卸力变招提供可借的力道基础",
+              "overlap": false,
+              "weight": 1
+            },
+            {
+              "id": "deflect_qingyi",
+              "actor": "Qingyi_Jianke",
+              "action": "抬剑精准架住重剑的劈砍力道，顺着对方下劈的沉劲向侧方卸力，手腕一转让寒铁长剑顺着重剑剑脊滑向玄衣大侠的握剑手腕，剑刃擦过剑脊带出细碎火星",
+              "result": "两剑交击的位置溅出数点冷亮火星，青衣的剑尖停在玄衣握剑的手腕外侧，没有造成实际伤害",
+              "kind": "interaction",
+              "target": "Xuanyi_Daxia",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "两剑交击的接触点",
+                "region": "Xuanyi_Daxia握剑的手腕外侧位置",
+                "unaffected": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "玄衣大侠被滑来的剑尖逼得手腕微抬，身体重心微微调整，尚未失去平衡",
+                "actor_state": "青衣剑客卸力后重心稳在瓦面，手臂顺着交击的余势保持前伸姿态",
+                "scene_changes": [
+                  {
+                    "entity": "Loose_Roof_Tile_Fragments",
+                    "state": "两剑交击的震力震落脚边一块松动的琉璃瓦碎片，顺着屋脊坡度向下滑出半尺距离，停在玄衣大侠的立足范围附近",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "交击溅出的火星短暂照亮周围浮动的浮尘",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "剑尖停在玄衣手腕外侧的前伸余势没有收回，为下一段连续攻防的变招留下自然衔接的动势",
+              "overlap": false,
+              "weight": 1.5
+            }
+          ],
+          "key_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "continuity_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "lighting": "冷银色满月顶光从画面上方洒落，在金黄色琉璃瓦表面形成柔和的暖金色反光，人物轮廓镶上淡银色的轮廓光，阴影浅淡落在瓦面，空气中的浮尘被月光照出细碎光粒，兵器交击时溅出的火星形成短暂的暖光点缀，整体明暗对比适中，突出武侠对决的冷峻肃杀氛围",
+          "mood": "cinematic wuxia, solemn and sharp"
+        }
+      }
+    },
+    "planning_shot_002.json": {
+      "sha256": "6268056f95c3fcb94905fb37e4a6b89d42bcee2f5821be37f31fda929abc3c30",
+      "value": {
+        "shot": {
+          "scene_id": "forbidden_city_roof_night_01",
+          "scene_description": "紫禁城主殿黄琉璃瓦屋脊的月夜场景，两人承接初次交击的余势展开连续攻防，玄衣大侠卸力时踩中松动瓦块重心偏移，青衣剑客抓住破绽突进，决战迎来关键转折",
+          "visual_description": "16:9宽幅中景，聚焦两位高手交手的上半身与兵器，冷银色月光在寒铁长剑与玄铁重剑的刃部反射出冷亮寒光，金黄色琉璃瓦的暖金色反光落在人物下半身，背景隐约露出满月的边缘与远处宫殿的暗金轮廓，倾斜的屋脊坡度从画面左下延伸至右上，人物随交手动作向画面右上移动，细碎浮尘在剑风里浮动",
+          "camera": {
+            "primary_movement": "tracking",
+            "composition": "medium shot",
+            "start_framing": "中景对准两人交击的上半身，两剑交抵的位置位于画面视觉中心",
+            "end_framing": "中景对准突进的青衣与后仰的玄衣，剑尖距离玄衣颈侧的位置位于画面视觉中心",
+            "speed": "medium",
+            "screen_positions": {
+              "Qingyi_Jianke": "画面左半区，随交手向画面右上移动",
+              "Xuanyi_Daxia": "画面右半区，随卸力滑步向画面右上移动后重心后仰"
+            },
+            "axis_change": "hold"
+          },
+          "blocking": {
+            "Qingyi_Jianke": {
+              "frame_position": "起始在画面左半区中央，随交手向画面右上移动",
+              "body_orientation": "朝向画面右侧，身体与屋脊坡度保持45度夹角",
+              "facing_target": "Xuanyi_Daxia",
+              "eyeline_target": "Xuanyi_Daxia的腰侧与重心位置",
+              "travel_direction": "沿屋脊斜面向右上方滑步跟进",
+              "action_target": "Xuanyi_Daxia的腰侧空当，随后变向指向颈侧"
+            },
+            "Xuanyi_Daxia": {
+              "frame_position": "起始在画面右半区中央，随卸力滑步向画面右上移动后重心偏移",
+              "body_orientation": "朝向画面左侧，身体与屋脊坡度保持45度夹角",
+              "facing_target": "Qingyi_Jianke",
+              "eyeline_target": "Qingyi_Jianke的剑尖位置",
+              "travel_direction": "沿屋脊斜面向右上方滑步卸力，随后因踩瓦向后仰",
+              "action_target": "Qingyi_Jianke的斜挑剑尖"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊中央段",
+            "subject": "两人初次交击后兵器交抵，青衣剑尖停在玄衣握剑手腕外侧，松动瓦块停在玄衣立足范围附近",
+            "action_phase": "连续攻防启动阶段，承接初次交击的余势",
+            "camera": "中景跟随机位，聚焦两人交手的上半身与兵器",
+            "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，两人面对面",
+            "pose_and_gaze": "两人身体微沉，重心落在瓦面，目光紧盯对方的兵器与重心位置",
+            "prop_state": "寒铁长剑与玄铁重剑刃部交抵，剑穗因交击震颤微微晃动",
+            "open_motion": "青衣剑客前伸的剑尖带着交击的震颤余势，准备变招",
+            "lighting": "冷银色满月顶光，琉璃瓦面反射暖金色光泽，人物轮廓镶淡银色光边"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊中央偏右上段",
+            "subject": "玄衣大侠踩滑松动瓦块重心偏移，青衣剑客抓住破绽突进，剑尖直指玄衣颈侧",
+            "action_phase": "攻防转折完成，进入击杀前的衔接节点",
+            "camera": "保持中景跟随机位，将突进的两人置于画面中央",
+            "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，玄衣身体向后仰",
+            "pose_and_gaze": "青衣剑客拧腰前伸，目光紧盯玄衣颈侧；玄衣大侠身体后仰，目光因重心偏移微散，握剑手臂保持格挡姿态",
+            "prop_state": "寒铁长剑前伸直指玄衣颈侧，玄铁重剑横在玄衣身前，剑穗随动作晃动",
+            "open_motion": "青衣剑客突进的前伸余势保持，剑尖稳定指向目标，准备完成点穴击杀",
+            "lighting": "冷银色月光下，突进的剑刃反射冷亮寒光，瓦面暖反光落在人物下半身"
+          },
+          "story_change": "青衣剑客承接初次交击的前伸余势变招斜挑玄衣腰侧，玄衣抬剑格挡卸力向后滑步，靴底踩中此前震落的松动琉璃瓦碎片，瓦块打滑导致玄衣重心瞬间偏移，青衣捕捉破绽旋身突进，剑尖直指玄衣颈侧，决战迎来关键转折",
+          "story_state_after": "玄衣大侠单脚踩在打滑的瓦面上，身体向后仰出，握剑的手臂保持格挡姿态却无法做出有效反击，青衣剑客持剑突进，剑尖距离玄衣颈侧仅寸许，尚未触及皮肤，松动瓦块已顺着坡度滑离立足位置，胜负天平即将倾斜",
+          "action_plan": [
+            {
+              "id": "qingyi_thrust",
+              "actor": "Qingyi_Jianke",
+              "action": "顺着剑尖前伸的余势，手腕翻转，寒铁长剑从刺向手腕的路径变向，斜挑向玄衣大侠的腰侧空当，身体顺着屋脊坡度向右上滑步跟进，月白袍角扫过瓦面",
+              "result": "寒铁长剑斜挑向玄衣腰侧，剑风扫过带起细碎浮尘，玄衣抬起重剑剑脊精准挡住剑尖",
+              "kind": "interaction",
+              "target": "Xuanyi_Daxia",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                "region": "Xuanyi_Daxia腰侧的攻击路径",
+                "unaffected": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月"
+              },
+              "response": "deflection",
+              "resolution": {
+                "target_state": "玄衣大侠抬起重剑剑脊，精准挡住斜挑的剑尖，没有触及腰侧",
+                "actor_state": "青衣剑客滑步跟进后重心稳在瓦面，手臂保持前送姿态",
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "青衣滑步跟进时带起瓦面的细碎浮尘，在月光下浮动",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "玄衣格挡的力道顺着剑脊传导，为玄衣后续的卸力滑步提供力道基础",
+              "overlap": false,
+              "weight": 1.5
+            },
+            {
+              "id": "xuanyi_slip_tile",
+              "actor": "Xuanyi_Daxia",
+              "action": "抬起重剑剑脊接住青衣斜挑的力道，顺着挑劲向右侧卸力，沉腰向后滑半步卸去冲力，靴底正好碾过脚边那块松动的琉璃瓦碎片",
+              "result": "重剑剑脊挡住斜挑的剑尖，靴底碾过瓦块的瞬间，瓦块顺着坡度打滑，玄衣的下盘重心瞬间失控",
+              "kind": "interaction",
+              "target": "Loose_Roof_Tile_Fragments",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "Xuanyi_Daxia的靴底",
+                "region": "Loose_Roof_Tile_Fragments的表面",
+                "unaffected": "其他完整琉璃瓦面、远处层叠宫殿、空中的满月"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "松动琉璃瓦碎片被靴底碾得顺着屋脊坡度向下滑出半尺，玄衣大侠的靴底踩在打滑的瓦面上，重心瞬间向左偏移，身体向后仰出半寸",
+                "actor_state": "玄衣大侠握剑的手臂保持格挡姿态，下盘重心失控",
+                "scene_changes": [
+                  {
+                    "entity": "Loose_Roof_Tile_Fragments",
+                    "state": "被玄衣靴底碾得顺着屋脊坡度滑出半尺，离开玄衣的立足位置",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "瓦块滑动时带起少量浮尘",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "玄衣重心偏移的空当完全暴露，青衣剑客捕捉到破绽的动势已经启动",
+              "overlap": false,
+              "weight": 2
+            },
+            {
+              "id": "qingyi_lunge",
+              "actor": "Qingyi_Jianke",
+              "action": "捕捉到玄衣重心偏移的破绽，借着之前滑步跟进的旋身余势，拧腰转肩，寒铁长剑顺着屋脊坡度向前突进，剑尖直指玄衣大侠的颈侧空当，月白武袍的衣袂随突进的风向后扬起",
+              "result": "青衣剑客借着旋身余势突进，寒铁长剑直指玄衣颈侧，剑尖距离皮肤仅寸许，尚未触及",
+              "kind": "interaction",
+              "target": "Xuanyi_Daxia",
+              "effect": {
+                "mode": "directed_path",
+                "motion": "sweep",
+                "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                "region": "Xuanyi_Daxia颈侧的攻击路径",
+                "unaffected": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月"
+              },
+              "response": "evasion",
+              "resolution": {
+                "target_state": "剑尖距离玄衣颈侧仅寸许，尚未触及皮肤，玄衣大侠因重心偏移无法做出格挡或闪避动作",
+                "actor_state": "青衣剑客突进的力道完全释放，手臂前伸，剑尖稳定指向目标",
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "青衣突进的剑风带起周围的浮尘，在月光下形成细碎光粒",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "突进的余势保持前伸，为下一段的精准点穴击杀留下自然衔接的动势",
+              "overlap": false,
+              "weight": 1.5
+            }
+          ],
+          "key_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "continuity_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "lighting": "冷银色满月顶光从画面上方洒落，中景下人物的月白与玄色武袍轮廓镶上淡银色光边，金黄色琉璃瓦的暖反光落在人物下半身，兵器交击时溅出的细碎火星在剑刃周围形成短暂暖光，空气中的浮尘被月光照出细碎光粒，整体明暗对比突出动作的紧绷感",
+          "mood": "cinematic wuxia, tense turning point"
+        }
+      }
+    },
+    "planning_shot_003.json": {
+      "sha256": "3981e85d19930103dc1357ac0e125403cfb78908fa8ddacb47b16b2251096af4",
+      "value": {
+        "shot": {
+          "scene_id": "forbidden_city_roof_night_01",
+          "scene_description": "紫禁城主殿黄琉璃瓦屋脊偏右上段的月夜场景，青衣剑客抓住玄衣大侠重心偏移的破绽完成精准点穴击杀，玄衣僵立后顺坡坠下，青衣持剑独立屋脊，胜负分明。",
+          "visual_description": "16:9宽幅大全景，从剑尖与颈侧的近距位置缓缓拉远，完整展现倾斜的黄琉璃瓦屋脊、屋脊尽头的琉璃瑞兽、悬在皇城上空的满月与远处层叠宫殿的暗金轮廓；冷银色月光铺满瓦面，金黄色琉璃反射暖光，青衣月白袍角与玄衣玄色衣袂在夜风里扬起，剑尖点中颈侧的瞬间寒光一闪，无血迹溢出，浮尘在月光下缓缓浮动。",
+          "camera": {
+            "primary_movement": "dolly out",
+            "composition": "wide shot",
+            "start_framing": "中近景承接上镜，剑尖与玄衣颈侧位于画面视觉中心",
+            "end_framing": "大全景，青衣立于屋脊脊线，玄衣向画面右下方滑坠，满月与远处层叠宫殿纳入背景",
+            "speed": "medium",
+            "screen_positions": {
+              "Qingyi_Jianke": "画面中央偏左，随拉远稳定在屋脊脊线位置",
+              "Xuanyi_Daxia": "起始画面右半区，随后顺坡向画面右下方屋脊边缘滑坠"
+            },
+            "axis_change": "hold"
+          },
+          "blocking": {
+            "Qingyi_Jianke": {
+              "frame_position": "起始画面中央偏左，随拉远保持在屋脊脊线位置",
+              "body_orientation": "朝向画面右侧",
+              "facing_target": "Xuanyi_Daxia",
+              "eyeline_target": "Xuanyi_Daxia的颈侧",
+              "travel_direction": "原地收势站稳",
+              "action_target": "Xuanyi_Daxia的颈侧死穴"
+            },
+            "Xuanyi_Daxia": {
+              "frame_position": "起始画面右半区，随后顺坡向画面右下方滑坠",
+              "body_orientation": "朝向画面左侧，身体逐渐后仰",
+              "facing_target": "Qingyi_Jianke",
+              "eyeline_target": "Qingyi_Jianke的剑尖",
+              "travel_direction": "顺屋脊坡度向后下方滑坠",
+              "action_target": "无反击动作，身体逐渐僵立"
+            }
+          },
+          "start_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊中央偏右上段",
+            "subject": "青衣剑客突进的剑尖距玄衣大侠颈侧仅寸许，玄衣重心后仰无法做出格挡或闪避",
+            "action_phase": "击杀执行阶段，承接上镜突进余势",
+            "camera": "起始承接上镜中景跟随机位，随后拉远为大全景",
+            "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，玄衣身体向后仰",
+            "pose_and_gaze": "青衣拧腰前伸，剑尖稳定指向玄衣颈侧；玄衣握剑手臂保持格挡姿态，目光因重心偏移微散",
+            "prop_state": "寒铁长剑前伸，玄铁重剑横在玄衣身前，剑穗随动作微微晃动",
+            "open_motion": "青衣剑客前伸突进的余势保持，剑尖即将触及玄衣颈侧",
+            "lighting": "冷银色满月顶光洒落，琉璃瓦面反射暖金色光泽，人物轮廓镶淡银色光边"
+          },
+          "end_state": {
+            "location": "紫禁城主殿黄琉璃瓦屋脊偏右上段",
+            "subject": "青衣剑客收剑持剑立在屋脊上，玄衣大侠被点中后顺坡向后坠下屋脊边缘，胜负已定",
+            "action_phase": "决战结束，结果确认",
+            "camera": "大全景拉远后稳定，展现皇城月夜全貌",
+            "screen_direction": "青衣剑客在屋脊脊线中央，玄衣大侠已向画面右下方屋脊外滑出",
+            "pose_and_gaze": "青衣剑客收剑垂臂，目光平静望向玄衣坠下方向，衣袂被夜风扬起；玄衣身体僵直向后仰倒",
+            "prop_state": "寒铁长剑剑尖离开颈侧，斜垂身侧，剑穗趋于静止；玄铁重剑仍握在僵立的手中，随滑坠晃动",
+            "open_motion": "玄衣大侠顺坡坠下的动势保持，青衣剑客衣袂被夜风扬起",
+            "lighting": "冷银色月光下，剑刃寒光一闪，瓦面暖反光落在人物下半身，浮尘被月光照出细碎光粒"
+          },
+          "story_change": "青衣剑客承接突进余势，寒铁长剑精准点中玄衣大侠颈侧死穴，玄衣瞬间全身僵立且无血迹溢出，握剑手臂失去力道，随后顺着屋脊坡度向后缓缓滑坠；青衣收剑立在屋脊上，衣袂被夜风扬起，决战胜负分明。",
+          "story_state_after": "青衣剑客持剑独立于紫禁城主殿屋脊之上，成为对决胜者；玄衣大侠被点中死穴后顺屋脊坡度坠下，全程无血腥画面，皇城月夜恢复寂静，远处宫殿轮廓与满月依旧悬在夜空。",
+          "action_plan": [
+            {
+              "id": "qingyi_final_point",
+              "actor": "Qingyi_Jianke",
+              "action": "承接上镜突进前伸的余势，手腕微沉，寒铁长剑剑尖精准点向玄衣大侠颈侧死穴，点中后顺势收力，手臂不继续前送，月白袍角随收势的风向后扬起。",
+              "result": "剑尖精准触及玄衣颈侧，玄衣全身瞬间僵立，没有血迹溢出，握剑的手臂失去力道，玄铁重剑仍横在身前。",
+              "kind": "interaction",
+              "target": "Xuanyi_Daxia",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                "region": "Xuanyi_Daxia颈侧死穴位置",
+                "unaffected": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "玄衣大侠颈侧被剑尖点中，全身僵立，无血迹溢出，失去反击与移动能力。",
+                "actor_state": "青衣剑客收势站稳，剑尖离开颈侧，握剑手臂稳定。",
+                "scene_changes": [
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "被点中颈侧死穴，瞬间僵立，无血迹溢出，失去反击能力。",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "剑尖点中的剑风带起细碎浮尘，在月光下浮动。",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "玄衣僵立的身体因后仰重心顺着屋脊坡度开始向下滑坠，青衣收剑的余势自然转为独立站立姿态。",
+              "overlap": false,
+              "weight": 3
+            },
+            {
+              "id": "xuanyi_slide_fall",
+              "actor": "Xuanyi_Daxia",
+              "action": "僵立的身体顺着屋脊坡度向后缓缓滑坠，玄铁重剑随手臂自然晃动，玄色衣袂被夜风扬起，逐渐离开屋脊脊线向画面右下方滑落。",
+              "result": "玄衣大侠的身影顺着倾斜瓦面向屋脊边缘滑出，青衣剑客持剑立在脊线中央，衣袂被夜风扬起，胜负清晰。",
+              "kind": "hold",
+              "target": "Xuanyi_Daxia",
+              "weight": 2
+            }
+          ],
+          "key_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "continuity_props": [
+            "Qingyi_Jianke",
+            "Xuanyi_Daxia",
+            "ForbiddenCity_Yellow_Glazed_Main_Roof",
+            "Night_Full_Moon_Above_Imperial_City",
+            "Roof_End_Glazed_Auspicious_Beast",
+            "Distant_Layered_Imperial_Palaces",
+            "Loose_Roof_Tile_Fragments",
+            "Moonlit_Floating_Dust"
+          ],
+          "lighting": "冷银色满月顶光从画面上方洒落，金黄色琉璃瓦面反射暖金色光泽，剑尖点中颈侧时剑刃反射一瞬冷亮寒光，人物轮廓镶淡银色光边，空气中的浮尘被月光照出细碎光粒，整体明暗对比突出决战终局的肃穆感。",
+          "mood": "cinematic wuxia, decisive and solemn"
+        }
+      }
+    },
+    "planning_check.json": {
+      "sha256": "75495d5059a790bd210469fab2c7a3f70321f398cc2f6d5f0c484565e98f99a2",
+      "value": {
+        "critical": true,
+        "issues": [
+          "🚨 Shot 2/event2: 同框交互的 actor/target 必须都在 required_visible_entities",
+          "⚠ 场景集中: 所有 3 个镜头都在 'forbidden_city_roof_night_01', 请确认每镜头有不同动作或叙事推进",
+          "⚠ Shot 1 使用结构化动作合同；空格词数不作为多语言描述的执行门槛",
+          "⚠ Shot 2 使用结构化动作合同；空格词数不作为多语言描述的执行门槛",
+          "⚠ Shot 3 使用结构化动作合同；空格词数不作为多语言描述的执行门槛"
+        ]
+      }
+    },
+    "planning_compiled.json": {
+      "sha256": "7dd19ec21d26d03cf22d2b306887b514337996bb95897997b3746804164ad564",
+      "value": {
+        "title": "紫禁之巅·霜刃决",
+        "total_duration": 15,
+        "style": "cinematic",
+        "aspect_ratio": "16:9",
+        "resolution": "720p",
+        "mood": "cinematic",
+        "music_style": "cinematic orchestral",
+        "content_focus": "action",
+        "theme_elements": [
+          "紫禁皇城月夜屋脊场景",
+          "轻功飞掠帅气入场",
+          "连续流畅的武侠攻防",
+          "交手时的借势、卸力与变招",
+          "非血腥帅气击杀结局",
+          "三段式动作连贯衔接",
+          "电影级武侠质感",
+          "服务动作的动态运镜"
+        ],
+        "story_arc": {
+          "goal": "两位顶尖武林高手在紫禁城屋脊完成宿命对决，决出天下第一的归属",
+          "stakes": "对决全程不能惊扰皇城值守，败者将失去屋脊立足平衡坠下数十米高的皇城屋顶，胜者将成为武林公认的第一高手",
+          "turning_point": "连续攻防数十招后，玄衣大侠卸力时踩滑一块松动的琉璃瓦，重心出现瞬间偏移，青衣剑客抓住破绽借屋脊坡度旋身变招突进",
+          "resolution": "青衣剑客以寒铁长剑精准点中玄衣大侠颈侧死穴，对方瞬间僵立无血迹溢出，随后顺着屋脊坡度向后缓缓坠下，青衣剑客持剑立在屋脊上，衣袂被夜风扬起，胜负清晰分明"
+        },
+        "production_plan": {
+          "version": "production-plan-v8-request-shape",
+          "min_interaction_seconds": 10.5,
+          "director_intent": {
+            "source_request": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+            "content_focus": "action",
+            "pacing": "dense",
+            "intent_evidence": "两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。",
+            "ending_requirement": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+            "ending_evidence": "最后一方被另一方帅气地击杀，结局清楚、非血腥。",
+            "motion_control": "text_guided",
+            "motion_control_evidence": "",
+            "choreography": "flexible",
+            "requested_duration_seconds": 15,
+            "duration_evidence": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。",
+            "requested_shot_count": 3,
+            "shot_count_evidence": "必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。"
+          },
+          "content_focus": "action",
+          "target_duration": 15,
+          "planned_duration": 15,
+          "slots": [
+            {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            }
+          ]
+        },
+        "characters": [
+          {
+            "name": "Qingyi_Jianke",
+            "description": "身着月白暗竹纹交领武袍，墨色高马尾以银簪束起，腰系玄色牛皮革带，手持无鞘寒铁长剑，剑尾垂藏青丝穗，足蹬黑色软底轻功靴，面容清俊气质冷冽，为对决的胜者",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          },
+          {
+            "name": "Xuanyi_Daxia",
+            "description": "身着玄色暗金云纹交领武袍，长发以赤金冠束起，腰系朱红丝绦，手持宽背厚刃玄铁重剑，剑尾垂朱红丝穗，足蹬黑色厚底快靴，面容刚毅气质沉猛，为对决的败者",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          }
+        ],
+        "shots": [
+          {
+            "shot_id": 1,
+            "duration": 5,
+            "scene_id": "forbidden_city_roof_night_01",
+            "scene_description": "紫禁城主殿黄琉璃瓦屋脊的月夜场景，两位高手从两侧远殿飞掠入场，在屋脊中央完成初次兵器交击，拉开决战序幕",
+            "prompt_en": "16:9宽幅全景，冷银色满月悬在皇城上空，月光铺满金黄色琉璃瓦屋脊，远处层叠的宫殿飞檐在夜雾里泛着暗金轮廓，屋脊尽头的琉璃瑞兽剪影立在画面上缘，细碎浮尘在月光里浮动，倾斜的屋脊坡度从画面左下延伸至右上，为后续轻功与交手提供天然的运动空间 足尖轻点左侧远殿的琉璃瓦檐角，身形如掠影沿主殿屋脊的斜面向右前方飞掠，月白武袍的衣袂被夜风向后扯出流畅弧线，寒铁长剑斜垂在身侧，藏青丝穗随飞掠节奏轻晃. 从画面左边缘入画，足尖轻落在主殿屋脊的瓦面上，屈膝卸去飞掠的冲力，剑尖斜指下方瓦面，目光锁定对面来势. 足尖重踏右侧远殿的琉璃瓦檐角，身形沉猛如鹰沿主殿屋脊的斜面向左前方飞掠，玄色武袍的下摆被破风掀起，玄铁重剑横在身前，朱红丝穗随飞掠节奏扬起. 从画面右边缘入画，足尖踏在主殿屋脊的瓦面上，沉腰稳住下盘，重剑横举在胸前，目光锁定对面的青衣剑客. 借踏瓦面的沉劲拧腰转肩，玄铁重剑带着沉猛力道自上而下斜劈向青衣剑客的肩颈位置，剑风扫过瓦面带起细碎浮尘. 重剑刃部携风直落，剑影在月光下划出暗金色的弧线. 抬剑精准架住重剑的劈砍力道，顺着对方下劈的沉劲向侧方卸力，手腕一转让寒铁长剑顺着重剑剑脊滑向玄衣大侠的握剑手腕，剑刃擦过剑脊带出细碎火星. 两剑交击的位置溅出数点冷亮火星，青衣的剑尖停在玄衣握剑的手腕外侧，没有造成实际伤害.",
+            "visual_description": "16:9宽幅全景，冷银色满月悬在皇城上空，月光铺满金黄色琉璃瓦屋脊，远处层叠的宫殿飞檐在夜雾里泛着暗金轮廓，屋脊尽头的琉璃瑞兽剪影立在画面上缘，细碎浮尘在月光里浮动，倾斜的屋脊坡度从画面左下延伸至右上，为后续轻功与交手提供天然的运动空间",
+            "continuity_from_previous": "none",
+            "composition_change": "large",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "interaction_geometry": {
+              "actor": "Qingyi_Jianke",
+              "target": "Xuanyi_Daxia",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "两剑交击的接触点",
+              "effect_region": "Xuanyi_Daxia握剑的手腕外侧位置",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "初始从画面左上方远殿方向入画，最终停在屋脊中央偏左的瓦面位置",
+              "target_screen_position": "初始从画面右上方远殿方向入画，最终停在屋脊中央偏右的瓦面位置",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "setup",
+              "state_before": "两位顶尖武林高手在紫禁城屋脊完成宿命对决，决出天下第一的归属",
+              "state_change": "两位高手凭借绝顶轻功从两侧远殿飞掠至主殿屋脊，玄衣大侠率先出剑斜劈，青衣剑客抬剑格挡并顺着力道滑剑逼向对方手腕，初次兵器交击完成，震落一块松动的琉璃瓦碎片，为后续的失衡转折埋下伏笔",
+              "state_after": "两人在倾斜的琉璃瓦屋脊上相距一臂距离，兵器交抵，重心均已落稳，没有出现受伤或坠瓦的情况，进入连续攻防的预备状态，脚边的松动瓦块顺着坡度滑到玄衣大侠的立足范围附近"
+            },
+            "production_slot": {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            "primary_action": "足尖轻点左侧远殿的琉璃瓦檐角，身形如掠影沿主殿屋脊的斜面向右前方飞掠，月白武袍的衣袂被夜风向后扯出流畅弧线，寒铁长剑斜垂在身侧，藏青丝穗随飞掠节奏轻晃; 足尖重踏右侧远殿的琉璃瓦檐角，身形沉猛如鹰沿主殿屋脊的斜面向左前方飞掠，玄色武袍的下摆被破风掀起，玄铁重剑横在身前，朱红丝穗随飞掠节奏扬起; 借踏瓦面的沉劲拧腰转肩，玄铁重剑带着沉猛力道自上而下斜劈向青衣剑客的肩颈位置，剑风扫过瓦面带起细碎浮尘; 抬剑精准架住重剑的劈砍力道，顺着对方下劈的沉劲向侧方卸力，手腕一转让寒铁长剑顺着重剑剑脊滑向玄衣大侠的握剑手腕，剑刃擦过剑脊带出细碎火星",
+            "action_beats": [
+              {
+                "phase": "trigger",
+                "actor": "Qingyi_Jianke",
+                "action": "足尖轻点左侧远殿的琉璃瓦檐角，身形如掠影沿主殿屋脊的斜面向右前方飞掠，月白武袍的衣袂被夜风向后扯出流畅弧线，寒铁长剑斜垂在身侧，藏青丝穗随飞掠节奏轻晃",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "从画面左边缘入画，足尖轻落在主殿屋脊的瓦面上，屈膝卸去飞掠的冲力，剑尖斜指下方瓦面，目光锁定对面来势",
+                "start_seconds": 0,
+                "end_seconds": 1.5,
+                "activity": "transition"
+              },
+              {
+                "phase": "trigger",
+                "actor": "Xuanyi_Daxia",
+                "action": "足尖重踏右侧远殿的琉璃瓦檐角，身形沉猛如鹰沿主殿屋脊的斜面向左前方飞掠，玄色武袍的下摆被破风掀起，玄铁重剑横在身前，朱红丝穗随飞掠节奏扬起",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "从画面右边缘入画，足尖踏在主殿屋脊的瓦面上，沉腰稳住下盘，重剑横举在胸前，目光锁定对面的青衣剑客",
+                "start_seconds": 1.5,
+                "end_seconds": 2.5,
+                "activity": "transition"
+              },
+              {
+                "phase": "peak",
+                "actor": "Xuanyi_Daxia",
+                "action": "借踏瓦面的沉劲拧腰转肩，玄铁重剑带着沉猛力道自上而下斜劈向青衣剑客的肩颈位置，剑风扫过瓦面带起细碎浮尘",
+                "target": "Qingyi_Jianke",
+                "visible_result": "重剑刃部携风直落，剑影在月光下划出暗金色的弧线",
+                "outcomes": [
+                  {
+                    "entity": "Qingyi_Jianke",
+                    "state": "重剑的劈砍路径被青衣剑客抬剑精准架住，没有触及青衣的身体"
+                  },
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "玄衣大侠劈砍的力道未完全释放，手臂保持前送姿态"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "剑风扫过瓦面，带起细碎浮尘在月光下浮动",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 2.5,
+                "end_seconds": 3.5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Xuanyi_Daxia",
+                  "target": "Qingyi_Jianke",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "Xuanyi_Daxia手中的玄铁重剑",
+                  "effect_region": "Qingyi_Jianke肩颈前方的攻击路径",
+                  "reaction_scope": "重剑刃部携风直落，剑影在月光下划出暗金色的弧线",
+                  "unaffected_behavior": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "初始从画面右上方远殿方向入画，最终停在屋脊中央偏右的瓦面位置",
+                  "target_screen_position": "初始从画面左上方远殿方向入画，最终停在屋脊中央偏左的瓦面位置",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 2.9,
+                "reaction_at_seconds": 3.2,
+                "response_kind": "deflection",
+                "flow_from_previous": "玄衣劈砍的沉劲顺着剑身向前传导，为青衣后续的卸力变招提供可借的力道基础"
+              },
+              {
+                "phase": "peak",
+                "actor": "Qingyi_Jianke",
+                "action": "抬剑精准架住重剑的劈砍力道，顺着对方下劈的沉劲向侧方卸力，手腕一转让寒铁长剑顺着重剑剑脊滑向玄衣大侠的握剑手腕，剑刃擦过剑脊带出细碎火星",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "两剑交击的位置溅出数点冷亮火星，青衣的剑尖停在玄衣握剑的手腕外侧，没有造成实际伤害",
+                "outcomes": [
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "玄衣大侠被滑来的剑尖逼得手腕微抬，身体重心微微调整，尚未失去平衡"
+                  },
+                  {
+                    "entity": "Qingyi_Jianke",
+                    "state": "青衣剑客卸力后重心稳在瓦面，手臂顺着交击的余势保持前伸姿态"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Loose_Roof_Tile_Fragments",
+                    "state": "两剑交击的震力震落脚边一块松动的琉璃瓦碎片，顺着屋脊坡度向下滑出半尺距离，停在玄衣大侠的立足范围附近",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "交击溅出的火星短暂照亮周围浮动的浮尘",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 3.5,
+                "end_seconds": 5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Qingyi_Jianke",
+                  "target": "Xuanyi_Daxia",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "两剑交击的接触点",
+                  "effect_region": "Xuanyi_Daxia握剑的手腕外侧位置",
+                  "reaction_scope": "两剑交击的位置溅出数点冷亮火星，青衣的剑尖停在玄衣握剑的手腕外侧，没有造成实际伤害",
+                  "unaffected_behavior": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "初始从画面左上方远殿方向入画，最终停在屋脊中央偏左的瓦面位置",
+                  "target_screen_position": "初始从画面右上方远殿方向入画，最终停在屋脊中央偏右的瓦面位置",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 4.1,
+                "reaction_at_seconds": 4.55,
+                "response_kind": "impact",
+                "flow_from_previous": "剑尖停在玄衣手腕外侧的前伸余势没有收回，为下一段连续攻防的变招留下自然衔接的动势"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊两侧的远殿飞檐位置",
+              "subject": "青衣剑客与玄衣大侠分别在两侧远殿飞檐上蓄势，准备飞掠至主殿屋脊对决",
+              "action_phase": "轻功入场启动阶段，尚未发生兵器接触",
+              "camera": "高角度固定全景机位，纳入整段屋脊与满月背景",
+              "screen_direction": "青衣剑客从左向右运动，玄衣大侠从右向左运动，相向而行",
+              "pose_and_gaze": "两人均持出鞘兵器，目光紧盯对方位置，身体呈蹬地飞掠的预备姿态",
+              "prop_state": "寒铁长剑与玄铁重剑均出鞘持在手中，剑穗自然垂落",
+              "open_motion": "足尖蹬踏瓦面的飞掠启动动作",
+              "lighting": "冷银色满月顶光，琉璃瓦面反射暖金色光泽"
+            },
+            "end_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊中央段",
+              "subject": "两人完成初次兵器交击，剑尖停在玄衣握剑的手腕外侧，尚未出现失衡或受伤",
+              "action_phase": "初次攻防接触完成，进入连续变招的衔接节点",
+              "camera": "保持高角度全景机位，将交击的两人置于画面中央",
+              "screen_direction": "两人面对面站立，青衣在左，玄衣在右",
+              "pose_and_gaze": "两人身体微沉，重心落在瓦面，目光紧盯对方的兵器与眼神",
+              "prop_state": "寒铁长剑与玄铁重剑刃部交抵，剑穗因交击的震颤微微晃动",
+              "open_motion": "交击后兵器震颤的余势，剑尖保持前伸的动势准备下一轮攻防",
+              "lighting": "冷银色月光下，交击溅出的火星形成短暂的暖光点缀"
+            },
+            "camera": {
+              "primary_movement": "fixed",
+              "composition": "wide panoramic",
+              "start_framing": "wide shot",
+              "end_framing": "保持全景构图，将屋脊中央交击的两人置于画面视觉中心，两侧飞掠的余势收束在交击点",
+              "speed": "fixed",
+              "screen_positions": {
+                "Qingyi_Jianke": "画面左半区，从左边缘入画最终停在中央偏左位置",
+                "Xuanyi_Daxia": "画面右半区，从右边缘入画最终停在中央偏右位置"
+              },
+              "axis_change": "establish"
+            },
+            "blocking": {
+              "Qingyi_Jianke": {
+                "frame_position": "画面左半区，从左边缘入画最终停在中央偏左位置",
+                "body_orientation": "three-quarter toward Xuanyi_Daxia",
+                "facing_target": "Xuanyi_Daxia",
+                "eyeline_target": "Xuanyi_Daxia",
+                "travel_direction": "沿屋脊斜面向右前方飞掠",
+                "action_target": "Xuanyi_Daxia"
+              },
+              "Xuanyi_Daxia": {
+                "frame_position": "画面右半区，从右边缘入画最终停在中央偏右位置",
+                "body_orientation": "three-quarter toward Qingyi_Jianke",
+                "facing_target": "Qingyi_Jianke",
+                "eyeline_target": "Qingyi_Jianke",
+                "travel_direction": "沿屋脊斜面向左前方飞掠",
+                "action_target": "Qingyi_Jianke"
+              }
+            },
+            "lighting": "冷银色满月顶光从画面上方洒落，在金黄色琉璃瓦表面形成柔和的暖金色反光，人物轮廓镶上淡银色的轮廓光，阴影浅淡落在瓦面，空气中的浮尘被月光照出细碎光粒，兵器交击时溅出的火星形成短暂的暖光点缀，整体明暗对比适中，突出武侠对决的冷峻肃杀氛围",
+            "mood": "cinematic wuxia, solemn and sharp",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "continuity_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "result_admission": "review-required-v1"
+          },
+          {
+            "shot_id": 2,
+            "duration": 5,
+            "scene_id": "forbidden_city_roof_night_01",
+            "scene_description": "紫禁城主殿黄琉璃瓦屋脊的月夜场景，两人承接初次交击的余势展开连续攻防，玄衣大侠卸力时踩中松动瓦块重心偏移，青衣剑客抓住破绽突进，决战迎来关键转折",
+            "prompt_en": "16:9宽幅中景，聚焦两位高手交手的上半身与兵器，冷银色月光在寒铁长剑与玄铁重剑的刃部反射出冷亮寒光，金黄色琉璃瓦的暖金色反光落在人物下半身，背景隐约露出满月的边缘与远处宫殿的暗金轮廓，倾斜的屋脊坡度从画面左下延伸至右上，人物随交手动作向画面右上移动，细碎浮尘在剑风里浮动 顺着剑尖前伸的余势，手腕翻转，寒铁长剑从刺向手腕的路径变向，斜挑向玄衣大侠的腰侧空当，身体顺着屋脊坡度向右上滑步跟进，月白袍角扫过瓦面. 寒铁长剑斜挑向玄衣腰侧，剑风扫过带起细碎浮尘，玄衣抬起重剑剑脊精准挡住剑尖. 抬起重剑剑脊接住青衣斜挑的力道，顺着挑劲向右侧卸力，沉腰向后滑半步卸去冲力，靴底正好碾过脚边那块松动的琉璃瓦碎片. 重剑剑脊挡住斜挑的剑尖，靴底碾过瓦块的瞬间，瓦块顺着坡度打滑，玄衣的下盘重心瞬间失控. 捕捉到玄衣重心偏移的破绽，借着之前滑步跟进的旋身余势，拧腰转肩，寒铁长剑顺着屋脊坡度向前突进，剑尖直指玄衣大侠的颈侧空当，月白武袍的衣袂随突进的风向后扬起. 青衣剑客借着旋身余势突进，寒铁长剑直指玄衣颈侧，剑尖距离皮肤仅寸许，尚未触及.",
+            "visual_description": "16:9宽幅中景，聚焦两位高手交手的上半身与兵器，冷银色月光在寒铁长剑与玄铁重剑的刃部反射出冷亮寒光，金黄色琉璃瓦的暖金色反光落在人物下半身，背景隐约露出满月的边缘与远处宫殿的暗金轮廓，倾斜的屋脊坡度从画面左下延伸至右上，人物随交手动作向画面右上移动，细碎浮尘在剑风里浮动",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "interaction_geometry": {
+              "actor": "Qingyi_Jianke",
+              "target": "Xuanyi_Daxia",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+              "effect_region": "Xuanyi_Daxia颈侧的攻击路径",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "起始在画面左半区中央，随交手向画面右上移动",
+              "target_screen_position": "起始在画面右半区中央，随卸力滑步向画面右上移动后重心偏移",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "turn",
+              "state_before": "两人在倾斜的琉璃瓦屋脊上相距一臂距离，兵器交抵，重心均已落稳，没有出现受伤或坠瓦的情况，进入连续攻防的预备状态，脚边的松动瓦块顺着坡度滑到玄衣大侠的立足范围附近",
+              "state_change": "青衣剑客承接初次交击的前伸余势变招斜挑玄衣腰侧，玄衣抬剑格挡卸力向后滑步，靴底踩中此前震落的松动琉璃瓦碎片，瓦块打滑导致玄衣重心瞬间偏移，青衣捕捉破绽旋身突进，剑尖直指玄衣颈侧，决战迎来关键转折",
+              "state_after": "玄衣大侠单脚踩在打滑的瓦面上，身体向后仰出，握剑的手臂保持格挡姿态却无法做出有效反击，青衣剑客持剑突进，剑尖距离玄衣颈侧仅寸许，尚未触及皮肤，松动瓦块已顺着坡度滑离立足位置，胜负天平即将倾斜"
+            },
+            "production_slot": {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "顺着剑尖前伸的余势，手腕翻转，寒铁长剑从刺向手腕的路径变向，斜挑向玄衣大侠的腰侧空当，身体顺着屋脊坡度向右上滑步跟进，月白袍角扫过瓦面; 抬起重剑剑脊接住青衣斜挑的力道，顺着挑劲向右侧卸力，沉腰向后滑半步卸去冲力，靴底正好碾过脚边那块松动的琉璃瓦碎片; 捕捉到玄衣重心偏移的破绽，借着之前滑步跟进的旋身余势，拧腰转肩，寒铁长剑顺着屋脊坡度向前突进，剑尖直指玄衣大侠的颈侧空当，月白武袍的衣袂随突进的风向后扬起",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "Qingyi_Jianke",
+                "action": "顺着剑尖前伸的余势，手腕翻转，寒铁长剑从刺向手腕的路径变向，斜挑向玄衣大侠的腰侧空当，身体顺着屋脊坡度向右上滑步跟进，月白袍角扫过瓦面",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "寒铁长剑斜挑向玄衣腰侧，剑风扫过带起细碎浮尘，玄衣抬起重剑剑脊精准挡住剑尖",
+                "outcomes": [
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "玄衣大侠抬起重剑剑脊，精准挡住斜挑的剑尖，没有触及腰侧"
+                  },
+                  {
+                    "entity": "Qingyi_Jianke",
+                    "state": "青衣剑客滑步跟进后重心稳在瓦面，手臂保持前送姿态"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "青衣滑步跟进时带起瓦面的细碎浮尘，在月光下浮动",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 0,
+                "end_seconds": 1.5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Qingyi_Jianke",
+                  "target": "Xuanyi_Daxia",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                  "effect_region": "Xuanyi_Daxia腰侧的攻击路径",
+                  "reaction_scope": "寒铁长剑斜挑向玄衣腰侧，剑风扫过带起细碎浮尘，玄衣抬起重剑剑脊精准挡住剑尖",
+                  "unaffected_behavior": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "起始在画面左半区中央，随交手向画面右上移动",
+                  "target_screen_position": "起始在画面右半区中央，随卸力滑步向画面右上移动后重心偏移",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 0.6,
+                "reaction_at_seconds": 1.05,
+                "response_kind": "deflection"
+              },
+              {
+                "phase": "peak",
+                "actor": "Xuanyi_Daxia",
+                "action": "抬起重剑剑脊接住青衣斜挑的力道，顺着挑劲向右侧卸力，沉腰向后滑半步卸去冲力，靴底正好碾过脚边那块松动的琉璃瓦碎片",
+                "target": "Loose_Roof_Tile_Fragments",
+                "visible_result": "重剑剑脊挡住斜挑的剑尖，靴底碾过瓦块的瞬间，瓦块顺着坡度打滑，玄衣的下盘重心瞬间失控",
+                "outcomes": [
+                  {
+                    "entity": "Loose_Roof_Tile_Fragments",
+                    "state": "松动琉璃瓦碎片被靴底碾得顺着屋脊坡度向下滑出半尺，玄衣大侠的靴底踩在打滑的瓦面上，重心瞬间向左偏移，身体向后仰出半寸"
+                  },
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "玄衣大侠握剑的手臂保持格挡姿态，下盘重心失控"
+                  },
+                  {
+                    "entity": "Loose_Roof_Tile_Fragments",
+                    "state": "被玄衣靴底碾得顺着屋脊坡度滑出半尺，离开玄衣的立足位置"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "瓦块滑动时带起少量浮尘",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 1.5,
+                "end_seconds": 3.5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Xuanyi_Daxia",
+                  "target": "Loose_Roof_Tile_Fragments",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "Xuanyi_Daxia的靴底",
+                  "effect_region": "Loose_Roof_Tile_Fragments的表面",
+                  "reaction_scope": "重剑剑脊挡住斜挑的剑尖，靴底碾过瓦块的瞬间，瓦块顺着坡度打滑，玄衣的下盘重心瞬间失控",
+                  "unaffected_behavior": "其他完整琉璃瓦面、远处层叠宫殿、空中的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "起始在画面右半区中央，随卸力滑步向画面右上移动后重心偏移",
+                  "target_screen_position": "",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 2.3,
+                "reaction_at_seconds": 2.9,
+                "response_kind": "impact",
+                "flow_from_previous": "玄衣重心偏移的空当完全暴露，青衣剑客捕捉到破绽的动势已经启动"
+              },
+              {
+                "phase": "peak",
+                "actor": "Qingyi_Jianke",
+                "action": "捕捉到玄衣重心偏移的破绽，借着之前滑步跟进的旋身余势，拧腰转肩，寒铁长剑顺着屋脊坡度向前突进，剑尖直指玄衣大侠的颈侧空当，月白武袍的衣袂随突进的风向后扬起",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "青衣剑客借着旋身余势突进，寒铁长剑直指玄衣颈侧，剑尖距离皮肤仅寸许，尚未触及",
+                "outcomes": [
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "剑尖距离玄衣颈侧仅寸许，尚未触及皮肤，玄衣大侠因重心偏移无法做出格挡或闪避动作"
+                  },
+                  {
+                    "entity": "Qingyi_Jianke",
+                    "state": "青衣剑客突进的力道完全释放，手臂前伸，剑尖稳定指向目标"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "青衣突进的剑风带起周围的浮尘，在月光下形成细碎光粒",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 3.5,
+                "end_seconds": 5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Qingyi_Jianke",
+                  "target": "Xuanyi_Daxia",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                  "effect_region": "Xuanyi_Daxia颈侧的攻击路径",
+                  "reaction_scope": "青衣剑客借着旋身余势突进，寒铁长剑直指玄衣颈侧，剑尖距离皮肤仅寸许，尚未触及",
+                  "unaffected_behavior": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "起始在画面左半区中央，随交手向画面右上移动",
+                  "target_screen_position": "起始在画面右半区中央，随卸力滑步向画面右上移动后重心偏移",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 4.1,
+                "reaction_at_seconds": 4.55,
+                "response_kind": "evasion",
+                "flow_from_previous": "突进的余势保持前伸，为下一段的精准点穴击杀留下自然衔接的动势"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊中央段",
+              "subject": "两人初次交击后兵器交抵，青衣剑尖停在玄衣握剑手腕外侧，松动瓦块停在玄衣立足范围附近",
+              "action_phase": "连续攻防启动阶段，承接初次交击的余势",
+              "camera": "中景跟随机位，聚焦两人交手的上半身与兵器",
+              "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，两人面对面",
+              "pose_and_gaze": "两人身体微沉，重心落在瓦面，目光紧盯对方的兵器与重心位置",
+              "prop_state": "寒铁长剑与玄铁重剑刃部交抵，剑穗因交击震颤微微晃动",
+              "open_motion": "玄衣格挡的力道顺着剑脊传导，为玄衣后续的卸力滑步提供力道基础",
+              "lighting": "冷银色满月顶光，琉璃瓦面反射暖金色光泽，人物轮廓镶淡银色光边"
+            },
+            "end_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊中央偏右上段",
+              "subject": "玄衣大侠踩滑松动瓦块重心偏移，青衣剑客抓住破绽突进，剑尖直指玄衣颈侧",
+              "action_phase": "攻防转折完成，进入击杀前的衔接节点",
+              "camera": "保持中景跟随机位，将突进的两人置于画面中央",
+              "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，玄衣身体向后仰",
+              "pose_and_gaze": "青衣剑客拧腰前伸，目光紧盯玄衣颈侧；玄衣大侠身体后仰，目光因重心偏移微散，握剑手臂保持格挡姿态",
+              "prop_state": "寒铁长剑前伸直指玄衣颈侧，玄铁重剑横在玄衣身前，剑穗随动作晃动",
+              "open_motion": "青衣剑客突进的前伸余势保持，剑尖稳定指向目标，准备完成点穴击杀",
+              "lighting": "冷银色月光下，突进的剑刃反射冷亮寒光，瓦面暖反光落在人物下半身"
+            },
+            "camera": {
+              "primary_movement": "tracking",
+              "composition": "medium shot",
+              "start_framing": "medium shot",
+              "end_framing": "中景对准突进的青衣与后仰的玄衣，剑尖距离玄衣颈侧的位置位于画面视觉中心",
+              "speed": "medium",
+              "screen_positions": {
+                "Qingyi_Jianke": "画面左半区，随交手向画面右上移动",
+                "Xuanyi_Daxia": "画面右半区，随卸力滑步向画面右上移动后重心后仰"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "Qingyi_Jianke": {
+                "frame_position": "画面左半区，随交手向画面右上移动",
+                "body_orientation": "three-quarter toward Xuanyi_Daxia",
+                "facing_target": "Xuanyi_Daxia",
+                "eyeline_target": "Xuanyi_Daxia",
+                "travel_direction": "沿屋脊斜面向右上方滑步跟进",
+                "action_target": "Xuanyi_Daxia"
+              },
+              "Xuanyi_Daxia": {
+                "frame_position": "画面右半区，随卸力滑步向画面右上移动后重心后仰",
+                "body_orientation": "three-quarter toward Qingyi_Jianke",
+                "facing_target": "Qingyi_Jianke",
+                "eyeline_target": "Qingyi_Jianke",
+                "travel_direction": "沿屋脊斜面向右上方滑步卸力，随后因踩瓦向后仰",
+                "action_target": "Qingyi_Jianke"
+              }
+            },
+            "lighting": "冷银色满月顶光从画面上方洒落，中景下人物的月白与玄色武袍轮廓镶上淡银色光边，金黄色琉璃瓦的暖反光落在人物下半身，兵器交击时溅出的细碎火星在剑刃周围形成短暂暖光，空气中的浮尘被月光照出细碎光粒，整体明暗对比突出动作的紧绷感",
+            "mood": "cinematic wuxia, tense turning point",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "continuity_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "result_admission": "review-required-v1"
+          },
+          {
+            "shot_id": 3,
+            "duration": 5,
+            "scene_id": "forbidden_city_roof_night_01",
+            "scene_description": "紫禁城主殿黄琉璃瓦屋脊偏右上段的月夜场景，青衣剑客抓住玄衣大侠重心偏移的破绽完成精准点穴击杀，玄衣僵立后顺坡坠下，青衣持剑独立屋脊，胜负分明。",
+            "prompt_en": "16:9宽幅大全景，从剑尖与颈侧的近距位置缓缓拉远，完整展现倾斜的黄琉璃瓦屋脊、屋脊尽头的琉璃瑞兽、悬在皇城上空的满月与远处层叠宫殿的暗金轮廓；冷银色月光铺满瓦面，金黄色琉璃反射暖光，青衣月白袍角与玄衣玄色衣袂在夜风里扬起，剑尖点中颈侧的瞬间寒光一闪，无血迹溢出，浮尘在月光下缓缓浮动。 承接上镜突进前伸的余势，手腕微沉，寒铁长剑剑尖精准点向玄衣大侠颈侧死穴，点中后顺势收力，手臂不继续前送，月白袍角随收势的风向后扬起。. 剑尖精准触及玄衣颈侧，玄衣全身瞬间僵立，没有血迹溢出，握剑的手臂失去力道，玄铁重剑仍横在身前。. 僵立的身体顺着屋脊坡度向后缓缓滑坠，玄铁重剑随手臂自然晃动，玄色衣袂被夜风扬起，逐渐离开屋脊脊线向画面右下方滑落。. 玄衣大侠的身影顺着倾斜瓦面向屋脊边缘滑出，青衣剑客持剑立在脊线中央，衣袂被夜风扬起，胜负清晰。.",
+            "visual_description": "16:9宽幅大全景，从剑尖与颈侧的近距位置缓缓拉远，完整展现倾斜的黄琉璃瓦屋脊、屋脊尽头的琉璃瑞兽、悬在皇城上空的满月与远处层叠宫殿的暗金轮廓；冷银色月光铺满瓦面，金黄色琉璃反射暖光，青衣月白袍角与玄衣玄色衣袂在夜风里扬起，剑尖点中颈侧的瞬间寒光一闪，无血迹溢出，浮尘在月光下缓缓浮动。",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "interaction_geometry": {
+              "actor": "Qingyi_Jianke",
+              "target": "Xuanyi_Daxia",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+              "effect_region": "Xuanyi_Daxia颈侧死穴位置",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "起始画面中央偏左，随拉远保持在屋脊脊线位置",
+              "target_screen_position": "起始画面右半区，随后顺坡向画面右下方滑坠",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "payoff",
+              "state_before": "玄衣大侠单脚踩在打滑的瓦面上，身体向后仰出，握剑的手臂保持格挡姿态却无法做出有效反击，青衣剑客持剑突进，剑尖距离玄衣颈侧仅寸许，尚未触及皮肤，松动瓦块已顺着坡度滑离立足位置，胜负天平即将倾斜",
+              "state_change": "青衣剑客承接突进余势，寒铁长剑精准点中玄衣大侠颈侧死穴，玄衣瞬间全身僵立且无血迹溢出，握剑手臂失去力道，随后顺着屋脊坡度向后缓缓滑坠；青衣收剑立在屋脊上，衣袂被夜风扬起，决战胜负分明。",
+              "state_after": "青衣剑客持剑独立于紫禁城主殿屋脊之上，成为对决胜者；玄衣大侠被点中死穴后顺屋脊坡度坠下，全程无血腥画面，皇城月夜恢复寂静，远处宫殿轮廓与满月依旧悬在夜空。"
+            },
+            "production_slot": {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "承接上镜突进前伸的余势，手腕微沉，寒铁长剑剑尖精准点向玄衣大侠颈侧死穴，点中后顺势收力，手臂不继续前送，月白袍角随收势的风向后扬起。; 僵立的身体顺着屋脊坡度向后缓缓滑坠，玄铁重剑随手臂自然晃动，玄色衣袂被夜风扬起，逐渐离开屋脊脊线向画面右下方滑落。",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "Qingyi_Jianke",
+                "action": "承接上镜突进前伸的余势，手腕微沉，寒铁长剑剑尖精准点向玄衣大侠颈侧死穴，点中后顺势收力，手臂不继续前送，月白袍角随收势的风向后扬起。",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "剑尖精准触及玄衣颈侧，玄衣全身瞬间僵立，没有血迹溢出，握剑的手臂失去力道，玄铁重剑仍横在身前。",
+                "outcomes": [
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "玄衣大侠颈侧被剑尖点中，全身僵立，无血迹溢出，失去反击与移动能力。"
+                  },
+                  {
+                    "entity": "Qingyi_Jianke",
+                    "state": "青衣剑客收势站稳，剑尖离开颈侧，握剑手臂稳定。"
+                  },
+                  {
+                    "entity": "Xuanyi_Daxia",
+                    "state": "被点中颈侧死穴，瞬间僵立，无血迹溢出，失去反击能力。"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "Moonlit_Floating_Dust",
+                    "state": "剑尖点中的剑风带起细碎浮尘，在月光下浮动。",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 0,
+                "end_seconds": 3,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "Qingyi_Jianke",
+                  "target": "Xuanyi_Daxia",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "Qingyi_Jianke手中的寒铁长剑剑尖",
+                  "effect_region": "Xuanyi_Daxia颈侧死穴位置",
+                  "reaction_scope": "剑尖精准触及玄衣颈侧，玄衣全身瞬间僵立，没有血迹溢出，握剑的手臂失去力道，玄铁重剑仍横在身前。",
+                  "unaffected_behavior": "屋脊尽头的琉璃瑞兽、远处层叠宫殿、空中的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "起始画面中央偏左，随拉远保持在屋脊脊线位置",
+                  "target_screen_position": "起始画面右半区，随后顺坡向画面右下方滑坠",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 1.2,
+                "reaction_at_seconds": 2.1,
+                "response_kind": "impact"
+              },
+              {
+                "phase": "aftermath",
+                "actor": "Xuanyi_Daxia",
+                "action": "僵立的身体顺着屋脊坡度向后缓缓滑坠，玄铁重剑随手臂自然晃动，玄色衣袂被夜风扬起，逐渐离开屋脊脊线向画面右下方滑落。",
+                "target": "Xuanyi_Daxia",
+                "visible_result": "玄衣大侠的身影顺着倾斜瓦面向屋脊边缘滑出，青衣剑客持剑立在脊线中央，衣袂被夜风扬起，胜负清晰。",
+                "start_seconds": 3,
+                "end_seconds": 5,
+                "activity": "hold"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊中央偏右上段",
+              "subject": "青衣剑客突进的剑尖距玄衣大侠颈侧仅寸许，玄衣重心后仰无法做出格挡或闪避",
+              "action_phase": "击杀执行阶段，承接上镜突进余势",
+              "camera": "起始承接上镜中景跟随机位，随后拉远为大全景",
+              "screen_direction": "青衣剑客在画面左半区，玄衣大侠在画面右半区，玄衣身体向后仰",
+              "pose_and_gaze": "青衣拧腰前伸，剑尖稳定指向玄衣颈侧；玄衣握剑手臂保持格挡姿态，目光因重心偏移微散",
+              "prop_state": "寒铁长剑前伸，玄铁重剑横在玄衣身前，剑穗随动作微微晃动",
+              "open_motion": "玄衣僵立的身体因后仰重心顺着屋脊坡度开始向下滑坠，青衣收剑的余势自然转为独立站立姿态。",
+              "lighting": "冷银色满月顶光洒落，琉璃瓦面反射暖金色光泽，人物轮廓镶淡银色光边"
+            },
+            "end_state": {
+              "location": "紫禁城主殿黄琉璃瓦屋脊偏右上段",
+              "subject": "青衣剑客收剑持剑立在屋脊上，玄衣大侠被点中后顺坡向后坠下屋脊边缘，胜负已定",
+              "action_phase": "决战结束，结果确认",
+              "camera": "大全景拉远后稳定，展现皇城月夜全貌",
+              "screen_direction": "青衣剑客在屋脊脊线中央，玄衣大侠已向画面右下方屋脊外滑出",
+              "pose_and_gaze": "青衣剑客收剑垂臂，目光平静望向玄衣坠下方向，衣袂被夜风扬起；玄衣身体僵直向后仰倒",
+              "prop_state": "寒铁长剑剑尖离开颈侧，斜垂身侧，剑穗趋于静止；玄铁重剑仍握在僵立的手中，随滑坠晃动",
+              "open_motion": "玄衣大侠顺坡坠下的动势保持，青衣剑客衣袂被夜风扬起",
+              "lighting": "冷银色月光下，剑刃寒光一闪，瓦面暖反光落在人物下半身，浮尘被月光照出细碎光粒"
+            },
+            "camera": {
+              "primary_movement": "dolly out",
+              "composition": "wide shot",
+              "start_framing": "wide shot",
+              "end_framing": "大全景，青衣立于屋脊脊线，玄衣向画面右下方滑坠，满月与远处层叠宫殿纳入背景",
+              "speed": "medium",
+              "screen_positions": {
+                "Qingyi_Jianke": "画面中央偏左，随拉远稳定在屋脊脊线位置",
+                "Xuanyi_Daxia": "起始画面右半区，随后顺坡向画面右下方屋脊边缘滑坠"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "Qingyi_Jianke": {
+                "frame_position": "画面中央偏左，随拉远稳定在屋脊脊线位置",
+                "body_orientation": "three-quarter toward Xuanyi_Daxia",
+                "facing_target": "Xuanyi_Daxia",
+                "eyeline_target": "Xuanyi_Daxia",
+                "travel_direction": "原地收势站稳",
+                "action_target": "Xuanyi_Daxia"
+              },
+              "Xuanyi_Daxia": {
+                "frame_position": "起始画面右半区，随后顺坡向画面右下方屋脊边缘滑坠",
+                "body_orientation": "three-quarter toward Qingyi_Jianke",
+                "facing_target": "Qingyi_Jianke",
+                "eyeline_target": "Qingyi_Jianke",
+                "travel_direction": "顺屋脊坡度向后下方滑坠",
+                "action_target": "Qingyi_Jianke"
+              }
+            },
+            "lighting": "冷银色满月顶光从画面上方洒落，金黄色琉璃瓦面反射暖金色光泽，剑尖点中颈侧时剑刃反射一瞬冷亮寒光，人物轮廓镶淡银色光边，空气中的浮尘被月光照出细碎光粒，整体明暗对比突出决战终局的肃穆感。",
+            "mood": "cinematic wuxia, decisive and solemn",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "continuity_props": [
+              "Qingyi_Jianke",
+              "Xuanyi_Daxia",
+              "ForbiddenCity_Yellow_Glazed_Main_Roof",
+              "Night_Full_Moon_Above_Imperial_City",
+              "Roof_End_Glazed_Auspicious_Beast",
+              "Distant_Layered_Imperial_Palaces",
+              "Loose_Roof_Tile_Fragments",
+              "Moonlit_Floating_Dust"
+            ],
+            "result_admission": "review-required-v1"
+          }
+        ]
+      }
+    }
+  }
+}

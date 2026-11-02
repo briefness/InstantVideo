@@ -1,0 +1,169 @@
+{
+  "source": "output/20261028_205754_970264/planning_shot_001.json",
+  "sha256": "f193a18a727b057e567a4c5a576dd5b71712ab688d230fb9740eddaafd1bd7c3",
+  "identity": {
+    "title": "紫禁剑决",
+    "mood": "cinematic wuxia, tense and elegant",
+    "music_style": "cinematic orchestral with traditional Chinese wuxia percussion and string tension",
+    "theme_elements": [
+      "紫禁之巅屋脊决战",
+      "轻功入场",
+      "密集流畅剑客交锋",
+      "身法虚实与借势变招",
+      "干净利落一剑决胜",
+      "非血腥武侠质感"
+    ],
+    "story_arc": {
+      "goal": "两位剑客在紫禁之巅屋脊完成最终对决，以剑分胜负。",
+      "stakes": "落败者当场倒下不再起身，胜者收剑，结局必须清楚可见。",
+      "turning_point": "双方连续变招、闪让反击后，一方抓住对手重心偏移的破绽，以明确一剑决胜。",
+      "resolution": "落败者倒地不起，胜者顺势收剑，决战结束。"
+    },
+    "characters": [
+      {
+        "name": "Lin_Ye",
+        "description": "成年男性剑客，束发高马尾，身着玄色暗纹窄袖劲装，腰束黑色革带，足蹬黑布快靴，手持一柄无装饰的狭长黑鞘长剑，剑刃冷亮。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "Shen_Wu",
+        "description": "成年男性剑客，半束长发，身着月白镶银边交领长袍劲装，腰系素银带，足蹬白袜黑靴，手持一柄带银格的素色长剑，剑刃清冽。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ]
+  },
+  "response": {
+    "shot": {
+      "scene_id": "wuxing_roof_duel",
+      "scene_description": "紫禁之巅的重檐歇山顶屋脊，青灰筒瓦铺就的斜屋面，檐角立有鎏金脊兽，远处是层叠的琉璃瓦宫殿群与暗蓝色暮色天空，屋脊中段为开阔的青瓦对决平台。",
+      "visual_description": "全景画面，青灰筒瓦斜屋面占据画面下半部分，鎏金脊兽沿屋脊向远处延伸，暗蓝色暮色天空铺满上半部分，远处层叠的琉璃宫殿群在薄暮中泛着冷光。画面左侧边缘，玄衣剑客Lin_Ye正从檐角方向飞掠入场，衣袂被风向后扬起；画面右侧，月白衣剑客Shen_Wu持剑站定，衣袍被夜风吹得微微摆动。冷调暮色光线勾勒出两人的轮廓，瓦面泛着湿润的冷青光泽。",
+      "camera": {
+        "primary_movement": "pan right",
+        "composition": "wide shot, full body",
+        "start_framing": "全景，画面左侧预留Lin_Ye飞掠入场的空间，右侧Shen_Wu站在屋脊中段",
+        "end_framing": "全景，Lin_Ye落步在画面左侧，Shen_Wu在画面右侧，两人相距约三步对峙",
+        "speed": "fixed",
+        "screen_positions": {
+          "Lin_Ye": "左下方，从左侧入画后落步于画面左三分之一处",
+          "Shen_Wu": "右侧，站在画面右三分之一处"
+        },
+        "axis_change": "establish"
+      },
+      "blocking": {
+        "Lin_Ye": {
+          "frame_position": "画面左三分之一处",
+          "body_orientation": "侧对镜头，面向右侧Shen_Wu",
+          "facing_target": "Shen_Wu",
+          "eyeline_target": "Shen_Wu",
+          "travel_direction": "从画面左侧向右侧屋脊方向飞掠",
+          "action_target": "Shen_Wu"
+        },
+        "Shen_Wu": {
+          "frame_position": "画面右三分之一处",
+          "body_orientation": "侧对镜头，面向左侧Lin_Ye",
+          "facing_target": "Lin_Ye",
+          "eyeline_target": "Lin_Ye",
+          "travel_direction": "原地站定，未移动",
+          "action_target": "Lin_Ye"
+        }
+      },
+      "start_state": {
+        "location": "紫禁之巅重檐歇山顶屋脊",
+        "subject": "Lin_Ye飞掠入场，Shen_Wu在屋脊等候",
+        "action_phase": "轻功入场，尚未交手",
+        "camera": "全景，从左向右摇镜跟随入场",
+        "screen_direction": "Lin_Ye从左向右移动，Shen_Wu面向左侧",
+        "pose_and_gaze": "Lin_Ye身体前倾持剑前指，目光紧盯Shen_Wu；Shen_Wu右手持剑垂于身侧，目光紧盯入场的Lin_Ye",
+        "prop_state": "Lin_Ye手持无装饰狭长黑鞘长剑，剑刃冷亮；Shen_Wu手持带银格素色长剑，剑刃清冽",
+        "open_motion": "Lin_Ye正沿屋脊飞掠，衣袂扬起，尚未落步",
+        "lighting": "暮色冷调天光，侧逆光勾勒人物轮廓，瓦面泛冷青光泽"
+      },
+      "end_state": {
+        "location": "紫禁之巅重檐歇山顶屋脊",
+        "subject": "Lin_Ye落步后与Shen_Wu展开首轮剑刃交锋",
+        "action_phase": "首轮试探交锋，剑刃相击",
+        "camera": "全景，两人在画面左右三分之一处对峙",
+        "screen_direction": "Lin_Ye面向右侧，Shen_Wu面向左侧，两人相对",
+        "pose_and_gaze": "Lin_Ye落步后重心下沉，黑剑前指，目光紧盯Shen_Wu；Shen_Wu举剑格挡，目光紧盯Lin_Ye",
+        "prop_state": "两剑在身前相抵，剑刃冷亮无损伤",
+        "open_motion": "Lin_Ye刚完成上步刺剑，Shen_Wu刚完成举剑格挡，剑刃相抵的力道尚未卸去",
+        "lighting": "暮色冷调天光，侧逆光勾勒人物轮廓，瓦面泛冷青光泽"
+      },
+      "story_change": "Lin_Ye以轻功飞掠入场，落步即向Shen_Wu刺出第一剑，Shen_Wu举剑格挡，双方首轮交锋正式开启。",
+      "story_state_after": "双方在屋脊上相距三步，剑刃刚完成第一次相抵，Lin_Ye攻势刚起，Shen_Wu格挡后尚未反击，对决进入首轮试探阶段。",
+      "key_props": [
+        "无装饰狭长黑鞘长剑",
+        "带银格素色长剑",
+        "青灰筒瓦屋脊",
+        "鎏金脊兽",
+        "层叠琉璃瓦宫殿群"
+      ],
+      "continuity_props": [
+        "Lin_Ye的无装饰狭长黑鞘长剑",
+        "Shen_Wu的带银格素色长剑"
+      ],
+      "lighting": "暮色冷调天光，侧逆光勾勒人物轮廓，瓦面泛冷青光泽，整体明暗对比柔和，武侠电影质感。",
+      "mood": "cinematic wuxia, tense and elegant",
+      "action_plan": [
+        {
+          "id": "1",
+          "actor": "Lin_Ye",
+          "action": "足尖点过檐角鎏金脊兽，身形如黑鹰般沿青瓦斜面向前飞掠，衣袂被风向后扬起，右手持黑剑前指，目光紧盯前方等候的Shen_Wu。",
+          "result": "Lin_Ye从画面左侧入画，沿屋脊快速向Shen_Wu方向逼近，衣袂在暮色中划出玄色残影。",
+          "weight": 1.2,
+          "kind": "transition",
+          "target": "Shen_Wu"
+        },
+        {
+          "id": "2",
+          "actor": "Shen_Wu",
+          "action": "站在屋脊中段，右手持素色长剑垂于身侧，衣袍被夜风吹得微微摆动，目光紧盯飞掠而来的Lin_Ye，重心微微下沉做好迎击准备。",
+          "result": "Shen_Wu在画面右侧保持站立姿态，身体随重心下沉微微压低，剑身在暮色中泛着清冽冷光。",
+          "weight": 0.8,
+          "kind": "hold",
+          "target": "Lin_Ye"
+        },
+        {
+          "id": "3",
+          "actor": "Lin_Ye",
+          "action": "右脚在青瓦上重重落步，瓦面溅起细碎灰屑，借落步前冲的力道拧腰送肩，黑剑直刺Shen_Wu胸口，剑势快而沉。",
+          "result": "Lin_Ye落步在画面左三分之一处，黑剑剑尖直指Shen_Wu胸口，前冲力道带得衣摆向前翻飞。",
+          "weight": 1.5,
+          "kind": "interaction",
+          "target": "Shen_Wu",
+          "effect": {
+            "mode": "directed_path",
+            "motion": "sweep",
+            "source": "Lin_Ye手中黑剑剑尖",
+            "region": "Shen_Wu胸口前方",
+            "unaffected": "Shen_Wu下半身与身后屋脊"
+          },
+          "response": "deflection",
+          "carry": "承接飞掠入场的前冲力道，落步即转刺"
+        },
+        {
+          "id": "4",
+          "actor": "Shen_Wu",
+          "action": "右脚向后滑步半寸卸力，右手抬剑横在胸前，素色剑刃精准磕在黑剑剑脊上，将刺来的剑势向外侧带偏。",
+          "result": "两剑在两人身前相抵，金属碰撞溅起细碎冷光，Shen_Wu身体微微侧转，将Lin_Ye的刺剑力道卸向身侧。",
+          "weight": 1.5,
+          "kind": "interaction",
+          "target": "Lin_Ye",
+          "effect": {
+            "mode": "direct_contact",
+            "motion": "static",
+            "source": "两剑相抵的接触点",
+            "region": "Lin_Ye黑剑剑脊",
+            "unaffected": "两人下半身与屋脊"
+          },
+          "response": "deflection",
+          "overlap": true,
+          "carry": "承接Lin_Ye刺剑的力道，抬剑格挡"
+        }
+      ],
+      "is_final": false
+    }
+  }
+}

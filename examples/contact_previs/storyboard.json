@@ -1,0 +1,44 @@
+{
+  "aspect_ratio": "16:9",
+  "characters": [
+    {"name": "attacker", "description": "Fictional teal training mannequin", "mobility": "bipedal"},
+    {"name": "defender", "description": "Fictional orange training mannequin", "mobility": "bipedal"}
+  ],
+  "shots": [{
+    "shot_id": 1,
+    "duration": 4,
+    "scene_description": "双人训练：青色训练者向橙色训练者的防守手掌出掌，接触后橙色训练者后移收势。",
+    "prompt_en": "Two fictional training mannequins demonstrate one palm contact and recoil in a fixed wide shot.",
+    "continuity_from_previous": "none",
+    "coverage_role": "interaction",
+    "characters": ["attacker", "defender"],
+    "required_visible_entities": ["attacker", "defender"],
+    "blocking": {
+      "attacker": {"frame_position": "screen-left", "body_orientation": "facing screen-right", "facing_target": "defender", "eyeline_target": "defender", "action_target": "defender"},
+      "defender": {"frame_position": "screen-right", "body_orientation": "facing screen-left", "facing_target": "attacker", "eyeline_target": "attacker", "action_target": "attacker"}
+    },
+    "primary_action": "Attacker extends one palm into defender's stationary guard; defender recoils after contact.",
+    "interaction_geometry": {
+      "actor": "attacker", "target": "defender",
+      "interaction_mode": "direct_contact", "effect_phase": "active",
+      "outcome_scope": "single", "effect_motion": "static",
+      "source": "attacker lead palm", "effect_region": "defender lead palm",
+      "reaction_scope": "defender only", "unaffected_behavior": "no other participants",
+      "must_share_frame": true, "line_of_action_visible": true,
+      "actor_screen_position": "screen-left", "target_screen_position": "screen-right",
+      "occlusion_policy": "none"
+    },
+    "action_beats": [{
+      "phase": "peak", "actor": "attacker", "target": "defender",
+      "action": "extends lead palm into the stationary guard",
+      "visible_result": "defender shifts back only after the two lead palms meet"
+    }],
+    "start_state": {"action_phase": "both hold their guard before contact"},
+    "end_state": {"action_phase": "defender has recoiled; attacker withdraws the lead palm"},
+    "camera": {
+      "primary_movement": "fixed", "start_framing": "wide shot",
+      "end_framing": "wide shot", "axis_change": "establish",
+      "screen_positions": {"attacker": "screen-left", "defender": "screen-right"}
+    }
+  }]
+}

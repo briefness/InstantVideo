@@ -1,0 +1,829 @@
+{
+  "source": "output/20261028_214613_006867/storyboard.json",
+  "sha256": "2f205f9bb16ad41a173ece1f59bfe0109b595393e053dc626c6489df6cf7bce5",
+  "storyboard": {
+    "title": "紫禁之巅剑决",
+    "total_duration": 15,
+    "style": "cinematic",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "mood": "cinematic wuxia",
+    "music_style": "cinematic wuxia orchestral with traditional Chinese flute and drum accents",
+    "content_focus": "action",
+    "theme_elements": [
+      "武侠对决",
+      "轻功身法",
+      "紫禁之巅",
+      "屋脊决战",
+      "剑招虚实变招",
+      "干净利落击杀",
+      "无血腥武侠质感"
+    ],
+    "story_arc": {
+      "goal": "两位顶尖剑客在紫禁之巅的屋脊上完成巅峰对决，以剑定胜负。",
+      "stakes": "落败者将当场殒命，胜者赢得江湖第一剑客的名号。",
+      "turning_point": "白衫剑客在连续变招中抓住黑衫剑客的步法破绽，以一记精准的刺击完成决胜。",
+      "resolution": "黑衫剑客被一剑击杀后倒在屋脊上不再起身，白衫剑客顺势收剑，胜负清晰可见。"
+    },
+    "production_plan": {
+      "version": "production-plan-v5-payoff-events",
+      "director_intent": {
+        "source_request": "生成一部总长15秒的电影级武侠短片：两位原创成年剑客决战紫禁之巅。必须拆成3段各5秒的独立视频，由项目正式流程逐段生成、验收并拼接，成片总长15秒。轻功入场要帅，落步就接入交锋。武打要密集而流畅，有身法、虚实、借势和变招；闪让可以同时反击，同一人可以连续变招，招与招之间延续步法、重心和剑势，不要机械地一来一回，不要每招停顿复位，不要持续架剑僵持。最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。重点验证三段间的人物身份与服装兵器一致性、动作与位置连续性以及合理运镜；镜头服务于看清双方交锋、闪避和决胜，避免炫技运镜掩盖动作。保持同一屋脊场景与连贯光线，武侠电影质感，不添加额外片头片尾。请项目自行完成剧本、分镜、动作编排、运镜和后期，不需要人工修改中间结果。",
+        "content_focus": "action",
+        "pacing": "dense",
+        "intent_evidence": "武打要密集而流畅，有身法、虚实、借势和变招；闪让可以同时反击，同一人可以连续变招，招与招之间延续步法、重心和剑势，不要机械地一来一回，不要每招停顿复位，不要持续架剑僵持。",
+        "ending_requirement": "其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+        "ending_evidence": "最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+        "motion_control": "text_guided",
+        "motion_control_evidence": ""
+      },
+      "content_focus": "action",
+      "target_duration": 15,
+      "planned_duration": 15,
+      "slots": [
+        {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        }
+      ]
+    },
+    "characters": [
+      {
+        "name": "Bai Yi",
+        "description": "成年男性剑客，身着月白色交领长袍，腰束黑色革带，长发束成高马尾，手持一柄银鞘长剑，剑刃泛冷光。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "Hei Yi",
+        "description": "成年男性剑客，身着玄色劲装长袍，腰束暗纹革带，长发半束，手持一柄黑鞘长剑，剑刃泛冷光。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "shots": [
+      {
+        "shot_id": 1,
+        "duration": 5,
+        "scene_id": "wuxia_roof_duel_01",
+        "scene_description": "紫禁之巅的故宫主殿琉璃瓦屋脊，黄昏时分，远处是层叠的故宫建筑群与暮色天空。",
+        "prompt_en": "全景构图，朱红立柱与明黄色琉璃瓦占据画面下半部分，远处层叠的故宫殿宇在暮色中铺展，灰蓝色天空飘着薄云。白衫剑客从画面右侧入画，黑衫剑客立于画面左侧，两人在屋脊上对峙交锋，衣袂被风扬起，剑刃泛着冷光。 施展轻功从画面右侧掠入，衣袂飞扬，足尖轻点琉璃瓦面帅气落步，重心前倾顺势拔剑前指. 白衫剑客稳稳落在屋脊右侧，银鞘长剑出鞘，剑尖直指左侧黑衫剑客，落步带起的琉璃瓦碎屑微微扬起. 见白衫剑客落步，立刻沉腰蹬地向前突进，手中黑鞘长剑横挥，斜劈向白衫剑客的肩颈位置. 黑衫剑客的剑刃带着风声扫向白衫剑客身侧，白衫剑客侧身拧腰闪避，剑刃擦着衣袂划过，带起几片布料纤维. 闪避后顺势拧腰转身，手中银剑直刺黑衫剑客的胸口，步法跟进半步，剑势凌厉. 白衫剑客的剑尖直指黑衫剑客胸口，黑衫剑客立刻收势回剑，用剑格挡住刺来的银剑，双剑相交发出清脆的金属碰撞声.",
+        "continuity_from_previous": "none",
+        "composition_change": "large",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Bai Yi",
+          "Hei Yi"
+        ],
+        "interaction_geometry": {
+          "actor": "Bai Yi",
+          "target": "Hei Yi",
+          "interaction_mode": "direct_contact",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "白衫剑客的刺击剑招",
+          "effect_region": "黑衫剑客胸口前方的双剑相交处",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": true,
+          "line_of_action_visible": false,
+          "actor_screen_position": "画面右侧入场，后移至中央偏右",
+          "target_screen_position": "画面左侧",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "setup",
+          "state_before": "两位顶尖剑客在紫禁之巅的屋脊上完成巅峰对决，以剑定胜负。",
+          "state_change": "白衫剑客轻功帅气落步后立刻与黑衫剑客展开首轮攻防，黑衫剑客横劈被白衫剑客侧身闪避，白衫剑客顺势刺击被黑衫剑客格挡，两人进入近距离对峙。",
+          "state_after": "两位剑客在屋脊上完成首轮试探性交锋，双方均未受伤，保持戒备姿态准备下一轮变招。"
+        },
+        "production_slot": {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        "primary_action": "施展轻功从画面右侧掠入，衣袂飞扬，足尖轻点琉璃瓦面帅气落步，重心前倾顺势拔剑前指; 见白衫剑客落步，立刻沉腰蹬地向前突进，手中黑鞘长剑横挥，斜劈向白衫剑客的肩颈位置; 闪避后顺势拧腰转身，手中银剑直刺黑衫剑客的胸口，步法跟进半步，剑势凌厉",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "施展轻功从画面右侧掠入，衣袂飞扬，足尖轻点琉璃瓦面帅气落步，重心前倾顺势拔剑前指",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客稳稳落在屋脊右侧，银鞘长剑出鞘，剑尖直指左侧黑衫剑客，落步带起的琉璃瓦碎屑微微扬起",
+            "start_seconds": 0,
+            "end_seconds": 1.667,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Bai Yi的轻功入场",
+              "effect_region": "画面右侧屋脊至中央区域",
+              "reaction_scope": "白衫剑客稳稳落在屋脊右侧，银鞘长剑出鞘，剑尖直指左侧黑衫剑客，落步带起的琉璃瓦碎屑微微扬起",
+              "unaffected_behavior": "黑衫剑客的站位与姿态",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面右侧入场，后移至中央偏右",
+              "target_screen_position": "画面左侧",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.666,
+            "reaction_at_seconds": 1.166,
+            "response_kind": "evasion"
+          },
+          {
+            "phase": "peak",
+            "actor": "Hei Yi",
+            "action": "见白衫剑客落步，立刻沉腰蹬地向前突进，手中黑鞘长剑横挥，斜劈向白衫剑客的肩颈位置",
+            "target": "Bai Yi",
+            "visible_result": "黑衫剑客的剑刃带着风声扫向白衫剑客身侧，白衫剑客侧身拧腰闪避，剑刃擦着衣袂划过，带起几片布料纤维",
+            "start_seconds": 1.667,
+            "end_seconds": 3.334,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Hei Yi",
+              "target": "Bai Yi",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Hei Yi的横劈剑招",
+              "effect_region": "白衫剑客肩颈至身侧区域",
+              "reaction_scope": "黑衫剑客的剑刃带着风声扫向白衫剑客身侧，白衫剑客侧身拧腰闪避，剑刃擦着衣袂划过，带起几片布料纤维",
+              "unaffected_behavior": "白衫剑客的躯干核心",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面左侧",
+              "target_screen_position": "画面右侧入场，后移至中央偏右",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.333,
+            "reaction_at_seconds": 2.833,
+            "response_kind": "evasion",
+            "flow_from_previous": "从左侧向前突进迎击"
+          },
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "闪避后顺势拧腰转身，手中银剑直刺黑衫剑客的胸口，步法跟进半步，剑势凌厉",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客的剑尖直指黑衫剑客胸口，黑衫剑客立刻收势回剑，用剑格挡住刺来的银剑，双剑相交发出清脆的金属碰撞声",
+            "start_seconds": 3.334,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "白衫剑客的刺击剑招",
+              "effect_region": "黑衫剑客胸口前方的双剑相交处",
+              "reaction_scope": "白衫剑客的剑尖直指黑衫剑客胸口，黑衫剑客立刻收势回剑，用剑格挡住刺来的银剑，双剑相交发出清脆的金属碰撞声",
+              "unaffected_behavior": "黑衫剑客的躯干",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "画面右侧入场，后移至中央偏右",
+              "target_screen_position": "画面左侧",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 4,
+            "reaction_at_seconds": 4.5,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接闪避后的拧腰转身动作"
+          }
+        ],
+        "start_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "两位剑客轻功入场后初次交锋",
+          "action_phase": "入场后第一波攻防",
+          "camera": "全景平视，随交锋缓慢左摇",
+          "screen_direction": "白衫剑客从右向左移动，黑衫剑客从左向右迎击",
+          "pose_and_gaze": "白衫剑客刚落步，持银鞘长剑前指；黑衫剑客持黑鞘长剑戒备，目光紧盯对方",
+          "prop_state": "双剑均已出鞘，剑刃泛冷光",
+          "open_motion": "从画面右侧向左侧快速移动",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "end_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "两位剑客初次攻防后进入近距离对峙",
+          "action_phase": "第一波攻防结束，对峙待续",
+          "camera": "全景平视，停在两人交锋中央位置",
+          "screen_direction": "两人分别位于画面中央偏右与偏左，相对而立",
+          "pose_and_gaze": "白衫剑客侧身持剑，黑衫剑客收剑回防，两人目光紧盯对方",
+          "prop_state": "双剑仍出鞘，剑刃保持冷光",
+          "open_motion": "两人重心均压低，准备下一轮变招",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "camera": {
+          "primary_movement": "pan left",
+          "composition": "wide shot",
+          "start_framing": "wide shot",
+          "end_framing": "全景，两人交锋位置位于画面中央，屋脊与背景殿宇完整入镜",
+          "speed": "medium",
+          "screen_positions": {
+            "Bai Yi": "画面右侧入场，后移至中央偏右",
+            "Hei Yi": "画面左侧，后移至中央偏左"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "Bai Yi": {
+            "frame_position": "画面右侧入场，后移至中央偏右",
+            "body_orientation": "three-quarter toward Hei Yi",
+            "facing_target": "Hei Yi",
+            "eyeline_target": "Hei Yi",
+            "travel_direction": "从右向左沿屋脊移动",
+            "action_target": "Hei Yi"
+          },
+          "Hei Yi": {
+            "frame_position": "画面左侧，后移至中央偏左",
+            "body_orientation": "three-quarter toward Bai Yi",
+            "facing_target": "Bai Yi",
+            "eyeline_target": "Bai Yi",
+            "travel_direction": "向前迎向白衫剑客",
+            "action_target": "Bai Yi"
+          }
+        },
+        "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和，剑刃反射冷光",
+        "mood": "cinematic wuxia tense duel atmosphere",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Bai Yi",
+          "Hei Yi"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "银鞘长剑",
+          "黑鞘长剑",
+          "琉璃瓦屋脊",
+          "故宫殿宇背景"
+        ],
+        "continuity_props": [
+          "银鞘长剑",
+          "黑鞘长剑"
+        ]
+      },
+      {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "wuxia_roof_duel_02",
+        "scene_description": "紫禁之巅的故宫主殿琉璃瓦屋脊，黄昏时分，远处是层叠的故宫建筑群与暮色天空。",
+        "prompt_en": "中景构图，画面聚焦两位剑客的上半身与持剑交手的动作，明黄色琉璃瓦屋脊占据画面下半部分，远处暮色中的故宫殿宇作为虚化背景，暖金色侧逆光勾勒两人衣袂与剑刃的轮廓，银剑与黑剑的冷光在交锋中交错闪烁。 承接上一轮双剑相交的力道，沉腰压剑向下滑开白衫剑客的银剑，顺势变招黑剑下劈向白衫剑客的头顶. 黑衫剑客的黑剑顺着银剑剑脊滑开，带着风声劈向白衫剑客头顶，白衫剑客立刻拧腰侧身闪避，剑刃擦着发髻划过，带起几缕发丝. 侧身闪避的同时顺势拧腰，手中银剑自下而上反撩，刺向黑衫剑客的持剑手腕. 白衫剑客的银剑撩向黑衫剑客手腕，黑衫剑客立刻收腕回剑格挡，双剑再次相交，金属碰撞声清脆，两人手臂均微微震颤. 格挡后借力旋身一周，黑剑横扫向白衫剑客的腰腹位置，步法跟进半步扩大攻击范围. 黑衫剑客的黑剑带着旋身的力道横扫向白衫剑客腰腹，白衫剑客立刻足尖点地跃起，剑刃擦着衣摆划过，带起几片衣料. 跃起后落地顺势向前突进，银剑连续变招，先虚刺黑衫剑客左肩，再实刺其右肋，步法连贯不复位. 白衫剑客落地后快速突进，虚招骗过黑衫剑客的格挡方向，实刺的银剑逼得黑衫剑客连连后退，重心偏移露出步法破绽.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Hei Yi",
+          "Bai Yi"
+        ],
+        "interaction_geometry": {
+          "actor": "Bai Yi",
+          "target": "Hei Yi",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Bai Yi的连续变招刺击",
+          "effect_region": "黑衫剑客左肩至右肋区域",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "画面中央偏右",
+          "target_screen_position": "画面中央偏左",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "turn",
+          "state_before": "两位剑客在屋脊上完成首轮试探性交锋，双方均未受伤，保持戒备姿态准备下一轮变招。",
+          "state_change": "黑衫剑客借力压剑后变招下劈，白衫剑客侧身闪避同时反手撩剑，黑衫剑客旋身横扫被白衫剑客跃起避开，白衫剑客落地后连续变招逼退黑衫剑客，使其步法露出破绽。",
+          "state_after": "两位剑客在屋脊上完成第二轮密集变招交锋，双方均未受伤，黑衫剑客步法出现明显破绽，白衫剑客抓住决胜时机准备出剑。"
+        },
+        "production_slot": {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "承接上一轮双剑相交的力道，沉腰压剑向下滑开白衫剑客的银剑，顺势变招黑剑下劈向白衫剑客的头顶; 侧身闪避的同时顺势拧腰，手中银剑自下而上反撩，刺向黑衫剑客的持剑手腕; 格挡后借力旋身一周，黑剑横扫向白衫剑客的腰腹位置，步法跟进半步扩大攻击范围; 跃起后落地顺势向前突进，银剑连续变招，先虚刺黑衫剑客左肩，再实刺其右肋，步法连贯不复位",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "Hei Yi",
+            "action": "承接上一轮双剑相交的力道，沉腰压剑向下滑开白衫剑客的银剑，顺势变招黑剑下劈向白衫剑客的头顶",
+            "target": "Bai Yi",
+            "visible_result": "黑衫剑客的黑剑顺着银剑剑脊滑开，带着风声劈向白衫剑客头顶，白衫剑客立刻拧腰侧身闪避，剑刃擦着发髻划过，带起几缕发丝",
+            "start_seconds": 0,
+            "end_seconds": 1.25,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Hei Yi",
+              "target": "Bai Yi",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Hei Yi的下劈剑招",
+              "effect_region": "白衫剑客头顶至肩侧区域",
+              "reaction_scope": "黑衫剑客的黑剑顺着银剑剑脊滑开，带着风声劈向白衫剑客头顶，白衫剑客立刻拧腰侧身闪避，剑刃擦着发髻划过，带起几缕发丝",
+              "unaffected_behavior": "白衫剑客的躯干核心",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面中央偏左",
+              "target_screen_position": "画面中央偏右",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.5,
+            "reaction_at_seconds": 0.875,
+            "response_kind": "evasion"
+          },
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "侧身闪避的同时顺势拧腰，手中银剑自下而上反撩，刺向黑衫剑客的持剑手腕",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客的银剑撩向黑衫剑客手腕，黑衫剑客立刻收腕回剑格挡，双剑再次相交，金属碰撞声清脆，两人手臂均微微震颤",
+            "start_seconds": 1.25,
+            "end_seconds": 2.5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "白衫剑客的反撩剑招",
+              "effect_region": "黑衫剑客手腕前方的双剑相交处",
+              "reaction_scope": "白衫剑客的银剑撩向黑衫剑客手腕，黑衫剑客立刻收腕回剑格挡，双剑再次相交，金属碰撞声清脆，两人手臂均微微震颤",
+              "unaffected_behavior": "黑衫剑客的手腕与躯干",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "画面中央偏右",
+              "target_screen_position": "画面中央偏左",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 1.75,
+            "reaction_at_seconds": 2.125,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接下劈后的侧身闪避动作"
+          },
+          {
+            "phase": "peak",
+            "actor": "Hei Yi",
+            "action": "格挡后借力旋身一周，黑剑横扫向白衫剑客的腰腹位置，步法跟进半步扩大攻击范围",
+            "target": "Bai Yi",
+            "visible_result": "黑衫剑客的黑剑带着旋身的力道横扫向白衫剑客腰腹，白衫剑客立刻足尖点地跃起，剑刃擦着衣摆划过，带起几片衣料",
+            "start_seconds": 2.5,
+            "end_seconds": 3.75,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Hei Yi",
+              "target": "Bai Yi",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Hei Yi的旋身横扫剑招",
+              "effect_region": "白衫剑客腰腹至衣摆区域",
+              "reaction_scope": "黑衫剑客的黑剑带着旋身的力道横扫向白衫剑客腰腹，白衫剑客立刻足尖点地跃起，剑刃擦着衣摆划过，带起几片衣料",
+              "unaffected_behavior": "白衫剑客的躯干核心",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面中央偏左",
+              "target_screen_position": "画面中央偏右",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 3,
+            "reaction_at_seconds": 3.375,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接反撩后的格挡姿态"
+          },
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "跃起后落地顺势向前突进，银剑连续变招，先虚刺黑衫剑客左肩，再实刺其右肋，步法连贯不复位",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客落地后快速突进，虚招骗过黑衫剑客的格挡方向，实刺的银剑逼得黑衫剑客连连后退，重心偏移露出步法破绽",
+            "start_seconds": 3.75,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Bai Yi的连续变招刺击",
+              "effect_region": "黑衫剑客左肩至右肋区域",
+              "reaction_scope": "白衫剑客落地后快速突进，虚招骗过黑衫剑客的格挡方向，实刺的银剑逼得黑衫剑客连连后退，重心偏移露出步法破绽",
+              "unaffected_behavior": "黑衫剑客的躯干核心",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面中央偏右",
+              "target_screen_position": "画面中央偏左",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 4.25,
+            "reaction_at_seconds": 4.625,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接跃起后的落地动作"
+          }
+        ],
+        "start_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "两位剑客近距离对峙后展开第二轮密集攻防",
+          "action_phase": "第二轮连续变招交锋",
+          "camera": "中景平视，随交手小幅跟拍",
+          "screen_direction": "两人在画面中央相对而立，随攻防小幅左右移动",
+          "pose_and_gaze": "白衫剑客侧身持银剑前指，黑衫剑客沉腰持黑剑回防，两人目光紧盯对方",
+          "prop_state": "双剑均出鞘，剑刃泛冷光",
+          "open_motion": "承接上一轮双剑相交的格挡姿态",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "end_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "两位剑客第二轮攻防结束，黑衫剑客步法露出破绽",
+          "action_phase": "第二轮攻防结束，决胜契机出现",
+          "camera": "中景平视，停在两人交手位置",
+          "screen_direction": "两人分别位于画面中央偏右与偏左，黑衫剑客重心偏移",
+          "pose_and_gaze": "白衫剑客剑势前压，黑衫剑客侧身失衡，目光仍紧盯对方",
+          "prop_state": "双剑仍出鞘，剑刃保持冷光",
+          "open_motion": "白衫剑客重心前倾，准备抓住破绽刺出决胜一剑",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "camera": {
+          "primary_movement": "tracking",
+          "composition": "medium shot",
+          "start_framing": "medium shot",
+          "end_framing": "中景，两人交手位置略有移动，始终保持在画面中央区域",
+          "speed": "medium",
+          "screen_positions": {
+            "Bai Yi": "画面中央偏右，随交手小幅移动",
+            "Hei Yi": "画面中央偏左，随交手小幅移动"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Bai Yi": {
+            "frame_position": "画面中央偏右，随交手小幅移动",
+            "body_orientation": "three-quarter toward Hei Yi",
+            "facing_target": "Hei Yi",
+            "eyeline_target": "Hei Yi",
+            "travel_direction": "随交手小幅左右移步",
+            "action_target": "Hei Yi"
+          },
+          "Hei Yi": {
+            "frame_position": "画面中央偏左，随交手小幅移动",
+            "body_orientation": "three-quarter toward Bai Yi",
+            "facing_target": "Bai Yi",
+            "eyeline_target": "Bai Yi",
+            "travel_direction": "随交手小幅左右移步",
+            "action_target": "Bai Yi"
+          }
+        },
+        "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和，剑刃反射冷光",
+        "mood": "cinematic wuxia intense duel atmosphere",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Hei Yi",
+          "Bai Yi"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "银鞘长剑",
+          "黑鞘长剑",
+          "琉璃瓦屋脊",
+          "故宫殿宇背景"
+        ],
+        "continuity_props": [
+          "银鞘长剑",
+          "黑鞘长剑"
+        ]
+      },
+      {
+        "shot_id": 3,
+        "duration": 5,
+        "scene_id": "wuxia_roof_duel_03",
+        "scene_description": "紫禁之巅的故宫主殿琉璃瓦屋脊，黄昏时分，远处是层叠的故宫建筑群与暮色天空。",
+        "prompt_en": "全景构图，明黄色琉璃瓦屋脊横向贯穿画面下半部分，两位剑客位于画面中央区域，远处暮色中的故宫殿宇与橙红色晚霞作为虚化背景，暖金色侧逆光勾勒两人衣袂与剑刃的轮廓，银剑的冷光在决胜刺击中清晰可见，整体武侠电影质感浓厚。 承接上一轮前压的重心，足尖蹬地向前突进半步，手中银剑直刺向黑衫剑客的躯干破绽处，剑势干脆无多余虚招. 白衫剑客的银剑精准刺中黑衫剑客的躯干位置，黑衫剑客身体猛地一震，黑剑脱手坠落在琉璃瓦上，身形瞬间失去支撑. 被刺中后重心彻底失控，身体向后仰倒，顺着琉璃瓦的坡度缓缓倒下. 黑衫剑客仰面倒在明黄色琉璃瓦屋脊上，衣袂散落在瓦面，双目闭合不再动弹，没有再起身的迹象. 刺中后顺势收力，手腕翻转将银剑从对方身侧收回，垂落至自己身侧，站姿平稳. 白衫剑客将银剑收至身侧，剑刃的冷光在暮色中微微闪烁，他目光平静看向倒地的黑衫剑客，衣袂被晚风轻轻吹动. 保持收剑站立的姿态，静立片刻确认对方不再起身，胜负状态完全呈现. 白衫剑客静立在屋脊上，身旁是倒地不再动弹的黑衫剑客，暖金色的暮色光线笼罩两人，对决的结局清晰可见.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Bai Yi",
+          "Hei Yi"
+        ],
+        "interaction_geometry": {
+          "actor": "Bai Yi",
+          "target": "Hei Yi",
+          "interaction_mode": "indirect_effect",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Bai Yi的收剑动作",
+          "effect_region": "白衫剑客的持剑手臂与躯干",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": false,
+          "actor_screen_position": "画面中央偏右",
+          "target_screen_position": "画面中央偏左",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "payoff",
+          "state_before": "两位剑客在屋脊上完成第二轮密集变招交锋，双方均未受伤，黑衫剑客步法出现明显破绽，白衫剑客抓住决胜时机准备出剑。",
+          "state_change": "白衫剑客抓住黑衫剑客的步法破绽，一记精准刺击命中黑衫剑客躯干，黑衫剑客失去平衡倒在屋脊上不再起身，白衫剑客顺势收剑，对决胜负清晰可见。",
+          "state_after": "紫禁之巅的屋脊决战结束，白衫剑客胜出，黑衫剑客落败殒命倒在琉璃瓦屋脊上，白衫剑客持剑立于旁侧，江湖第一剑客的名号就此落定。"
+        },
+        "production_slot": {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "承接上一轮前压的重心，足尖蹬地向前突进半步，手中银剑直刺向黑衫剑客的躯干破绽处，剑势干脆无多余虚招; 被刺中后重心彻底失控，身体向后仰倒，顺着琉璃瓦的坡度缓缓倒下; 刺中后顺势收力，手腕翻转将银剑从对方身侧收回，垂落至自己身侧，站姿平稳; 保持收剑站立的姿态，静立片刻确认对方不再起身，胜负状态完全呈现",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "承接上一轮前压的重心，足尖蹬地向前突进半步，手中银剑直刺向黑衫剑客的躯干破绽处，剑势干脆无多余虚招",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客的银剑精准刺中黑衫剑客的躯干位置，黑衫剑客身体猛地一震，黑剑脱手坠落在琉璃瓦上，身形瞬间失去支撑",
+            "start_seconds": 0,
+            "end_seconds": 1.839,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Bai Yi的决胜刺击",
+              "effect_region": "黑衫剑客躯干核心区域",
+              "reaction_scope": "白衫剑客的银剑精准刺中黑衫剑客的躯干位置，黑衫剑客身体猛地一震，黑剑脱手坠落在琉璃瓦上，身形瞬间失去支撑",
+              "unaffected_behavior": "黑衫剑客的四肢与头部",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "画面中央偏右",
+              "target_screen_position": "画面中央偏左",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.735,
+            "reaction_at_seconds": 1.287,
+            "response_kind": "impact"
+          },
+          {
+            "phase": "peak",
+            "actor": "Hei Yi",
+            "action": "被刺中后重心彻底失控，身体向后仰倒，顺着琉璃瓦的坡度缓缓倒下",
+            "target": "Bai Yi",
+            "visible_result": "黑衫剑客仰面倒在明黄色琉璃瓦屋脊上，衣袂散落在瓦面，双目闭合不再动弹，没有再起身的迹象",
+            "start_seconds": 1.839,
+            "end_seconds": 3.306,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Hei Yi",
+              "target": "Bai Yi",
+              "interaction_mode": "indirect_effect",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "propagate",
+              "source": "Bai Yi的刺击冲击力",
+              "effect_region": "黑衫剑客全身",
+              "reaction_scope": "黑衫剑客仰面倒在明黄色琉璃瓦屋脊上，衣袂散落在瓦面，双目闭合不再动弹，没有再起身的迹象",
+              "unaffected_behavior": "周围的琉璃瓦屋脊",
+              "must_share_frame": false,
+              "line_of_action_visible": false,
+              "actor_screen_position": "画面中央偏左",
+              "target_screen_position": "画面中央偏右",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.425,
+            "reaction_at_seconds": 2.865,
+            "response_kind": "impact",
+            "flow_from_previous": "承接上一轮失衡的重心状态"
+          },
+          {
+            "phase": "peak",
+            "actor": "Bai Yi",
+            "action": "刺中后顺势收力，手腕翻转将银剑从对方身侧收回，垂落至自己身侧，站姿平稳",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客将银剑收至身侧，剑刃的冷光在暮色中微微闪烁，他目光平静看向倒地的黑衫剑客，衣袂被晚风轻轻吹动",
+            "start_seconds": 3.306,
+            "end_seconds": 4.4,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Bai Yi",
+              "target": "Hei Yi",
+              "interaction_mode": "indirect_effect",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Bai Yi的收剑动作",
+              "effect_region": "白衫剑客的持剑手臂与躯干",
+              "reaction_scope": "白衫剑客将银剑收至身侧，剑刃的冷光在暮色中微微闪烁，他目光平静看向倒地的黑衫剑客，衣袂被晚风轻轻吹动",
+              "unaffected_behavior": "倒地的黑衫剑客",
+              "must_share_frame": false,
+              "line_of_action_visible": false,
+              "actor_screen_position": "画面中央偏右",
+              "target_screen_position": "画面中央偏左",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 3.743,
+            "reaction_at_seconds": 4.071,
+            "response_kind": "impact",
+            "flow_from_previous": "承接突进刺击后的前冲力道"
+          },
+          {
+            "phase": "aftermath",
+            "actor": "Bai Yi",
+            "action": "保持收剑站立的姿态，静立片刻确认对方不再起身，胜负状态完全呈现",
+            "target": "Hei Yi",
+            "visible_result": "白衫剑客静立在屋脊上，身旁是倒地不再动弹的黑衫剑客，暖金色的暮色光线笼罩两人，对决的结局清晰可见",
+            "start_seconds": 4.4,
+            "end_seconds": 5,
+            "activity": "hold"
+          }
+        ],
+        "start_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "白衫剑客抓住黑衫剑客的步法破绽，准备刺出决胜一剑",
+          "action_phase": "决胜刺击阶段",
+          "camera": "全景平视，固定机位",
+          "screen_direction": "白衫剑客位于画面中央偏右，黑衫剑客位于画面中央偏左，两人相对而立",
+          "pose_and_gaze": "白衫剑客重心前倾，银剑前指，目光紧盯黑衫剑客破绽处；黑衫剑客侧身失衡，黑剑回防不及，目光仍紧盯白衫剑客",
+          "prop_state": "双剑均出鞘，剑刃泛冷光",
+          "open_motion": "承接上一轮前压的重心与剑势",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "end_state": {
+          "location": "故宫主殿琉璃瓦屋脊",
+          "subject": "黑衫剑客被一剑击杀倒在屋脊上不再起身，白衫剑客收剑站立，胜负清晰",
+          "action_phase": "对决结束，胜负已定",
+          "camera": "全景平视，固定机位",
+          "screen_direction": "白衫剑客立于画面中央偏右，黑衫剑客倒在画面中央偏左的屋脊上",
+          "pose_and_gaze": "白衫剑客收剑垂于身侧，目光平静看向倒地的黑衫剑客；黑衫剑客仰面倒在琉璃瓦上，双目闭合不再动弹",
+          "prop_state": "银剑已收至白衫剑客身侧，黑剑落在黑衫剑客身侧的屋脊上",
+          "open_motion": "无多余动作，对决结束",
+          "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和"
+        },
+        "camera": {
+          "primary_movement": "fixed",
+          "composition": "wide shot",
+          "start_framing": "wide shot",
+          "end_framing": "全景，黑衫剑客倒在屋脊上，白衫剑客持剑立于旁侧，胜负状态清晰可见",
+          "speed": "fixed",
+          "screen_positions": {
+            "Bai Yi": "画面中央偏右，持剑站立",
+            "Hei Yi": "画面中央偏左，倒在琉璃瓦屋脊上"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Bai Yi": {
+            "frame_position": "画面中央偏右，持剑站立",
+            "body_orientation": "three-quarter toward Hei Yi",
+            "facing_target": "Hei Yi",
+            "eyeline_target": "Hei Yi",
+            "travel_direction": "向前突进半步后收步站立",
+            "action_target": "Hei Yi"
+          },
+          "Hei Yi": {
+            "frame_position": "画面中央偏左，倒在琉璃瓦屋脊上",
+            "body_orientation": "three-quarter toward Bai Yi",
+            "facing_target": "Bai Yi",
+            "eyeline_target": "Bai Yi",
+            "travel_direction": "向后退半步后失去平衡倒下",
+            "action_target": "Bai Yi"
+          }
+        },
+        "lighting": "黄昏侧逆光，暖金色光线勾勒人物轮廓，背景暮色柔和，剑刃反射冷光",
+        "mood": "cinematic wuxia decisive duel atmosphere",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Bai Yi",
+          "Hei Yi"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "银鞘长剑",
+          "黑鞘长剑",
+          "琉璃瓦屋脊",
+          "故宫殿宇背景"
+        ],
+        "continuity_props": [
+          "银鞘长剑",
+          "黑鞘长剑"
+        ]
+      }
+    ]
+  }
+}

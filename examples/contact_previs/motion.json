@@ -1,0 +1,33 @@
+{
+  "version": "motion-previs-v1",
+  "shot_id": 1,
+  "source_sha256": "552340c5d5d1f251423f97973f2a251962a3802c37671cc0f916a74d52ba841f",
+  "width": 640, "height": 360, "fps": 24,
+  "contact": {
+    "frame": 48, "reaction_frame": 55,
+    "actor_joint": "lead_hand", "target_joint": "lead_hand"
+  },
+  "rigs": [
+    {
+      "entity": "attacker", "facing": "right",
+      "keyframes": [
+        {"frame": 0, "root": [0.3, 0.63], "angles": {"lead_elbow": 50.0, "lead_hand": -110.0}},
+        {"frame": 18, "root": [0.3, 0.63], "angles": {"lead_elbow": 65.0, "lead_hand": -130.0}},
+        {"frame": 39, "root": [0.3, 0.63], "angles": {"lead_elbow": 65.0, "lead_hand": -130.0}},
+        {"frame": 48, "root": [0.3, 0.63], "angles": {"lead_elbow": 0.0, "lead_hand": 0.0}},
+        {"frame": 54, "root": [0.3, 0.63], "angles": {"lead_elbow": 0.0, "lead_hand": 0.0}},
+        {"frame": 70, "root": [0.3, 0.63], "angles": {"lead_elbow": 50.0, "lead_hand": -110.0}},
+        {"frame": 95, "root": [0.3, 0.63], "angles": {"lead_elbow": 50.0, "lead_hand": -110.0}}
+      ]
+    },
+    {
+      "entity": "defender", "facing": "left",
+      "keyframes": [
+        {"frame": 0, "root": [0.6825, 0.63], "angles": {"lead_elbow": 0.0, "lead_hand": 0.0}},
+        {"frame": 54, "root": [0.6825, 0.63], "angles": {"lead_elbow": 0.0, "lead_hand": 0.0}},
+        {"frame": 55, "root": [0.6825, 0.63], "angles": {"neck": -91.0, "lead_elbow": 0.0, "lead_hand": 0.0}},
+        {"frame": 95, "root": [0.6825, 0.63], "angles": {"neck": -105.0, "head": -100.0, "lead_elbow": 50.0, "lead_hand": -110.0}}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1445 @@
+{
+  "workspace": "output/20261101_012755_711312",
+  "sources": {
+    "storyboard.json": {
+      "sha256": "fe6ee33ab3bb2d2b755125653cfcdd086921e554d09148131591d959c6350f4b",
+      "value": {
+        "title": "决战紫禁之巅：寒锋决",
+        "total_duration": 15,
+        "style": "cinematic",
+        "aspect_ratio": "16:9",
+        "resolution": "720p",
+        "mood": "cinematic",
+        "music_style": "cinematic orchestral",
+        "content_focus": "action",
+        "theme_elements": [
+          "月夜紫禁之巅决战",
+          "轻功踏瓦帅气入场",
+          "连续借势变招武打",
+          "无血腥武侠击杀",
+          "电影感动作运镜",
+          "双剑客容貌兵器全程统一"
+        ],
+        "story_arc": {
+          "goal": "两位顶尖剑客在紫禁城屋顶完成宿命对决：以帅气轻功入场，展开连续攻击、闪避、格挡与借势变招，最终由一方无血腥地击杀另一方。",
+          "stakes": "胜者将成为公认的天下第一剑客；败者当场落败，屋顶空间需保持连续，动作可读性优先，不能出现机械僵持。",
+          "turning_point": "中段缠斗中，SU_LI借格挡反震旋身变招抢攻，JUE_YING踏瓦闪避时踩碎一片琉璃瓦，身形微顿露出破绽。",
+          "resolution": "JUE_YING抓住破绽旋身突进，以黑铁长剑剑脊横压SU_LI颈侧并以内力震杀，全程无血迹；SU_LI长剑脱手，身体向后仰倒在琉璃瓦面，终结姿态清晰可见。"
+        },
+        "production_plan": {
+          "version": "production-plan-v8-request-shape",
+          "min_interaction_seconds": 10.5,
+          "director_intent": {
+            "source_request": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+            "content_focus": "action",
+            "pacing": "dense",
+            "intent_evidence": "轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。",
+            "ending_requirement": "一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。",
+            "ending_evidence": "轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。",
+            "motion_control": "text_guided",
+            "motion_control_evidence": "",
+            "choreography": "flexible",
+            "requested_duration_seconds": 15,
+            "duration_evidence": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。",
+            "requested_shot_count": 3,
+            "shot_count_evidence": "明确分成三段独立生成的视频，再由项目正式流程拼接成片。"
+          },
+          "content_focus": "action",
+          "target_duration": 15,
+          "planned_duration": 15,
+          "slots": [
+            {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0.0,
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0.0,
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。",
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            }
+          ]
+        },
+        "characters": [
+          {
+            "name": "JUE_YING",
+            "description": "三十岁上下，面容冷峻，黑发高束以银冠固定，身着绣暗银云纹的黑色窄袖武侠长袍，腰束乌革带，足蹬黑布快靴，兵器为一柄无鞘黑铁长剑，剑格刻卷云纹。",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          },
+          {
+            "name": "SU_LI",
+            "description": "二十八岁，眉目清俊，长发半束以蓝玉簪固定，身着月白镶青边的广袖武袍，腰系丝绦，足蹬白绫袜配青布靴，兵器为一柄青玉柄长剑，剑穗为冰蓝色。",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          }
+        ],
+        "shots": [
+          {
+            "shot_id": 1,
+            "duration": 5,
+            "scene_id": "MOONLIT_PALACE_ROOF_SETUP",
+            "scene_description": "满月当空的紫禁城外朝主殿琉璃屋顶，金黄色釉面瓦在月光下泛着冷光，红漆飞檐翘角向外探出，檐角立着铜制脊兽，远处是连绵成片的紫禁城宫殿天际线，夜云在月边缓缓浮动，风卷着屋顶上的浮尘与衣袂。",
+            "prompt_en": "16:9宽幅深焦构图，冷银色月光铺满整片金琉璃瓦面，将瓦面的釉质反光拉成连续的银带；高悬的满月位于画面上半区中心，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎的光点；两位剑客的黑袍与月白广袖被风向后扬起，黑铁剑与青玉柄剑的冷光在暗部中格外醒目，画面留出左右两侧的轻功入场空间，动作区域集中在屋顶中央。 从画面左侧红漆飞檐外的夜空中掠入，足尖连续轻点金琉璃瓦面，沿斜屋顶向右高速突进，黑铁长剑斜垂身侧，绣暗银云纹的黑袍被风向后扯成紧绷的弧线. JUE_YING如一道黑色流影掠过瓦面，足尖点瓦时带起细碎浮尘，在距屋顶中央三步的位置收住冲势，重心微沉站稳. 从画面右侧铜脊兽的檐角位置借力蹬踏，沿斜屋顶向左高速飞掠，青玉柄长剑横于腰侧，月白镶青边的广袖被风向后扬起. SU_LI如一道月白流影掠过瓦面，在距JUE_YING三步远的位置收住冲势，丝绦在风里飘起，与JUE_YING面对面站定. 借飞掠收势的向前余劲拧腰，手腕翻转将黑铁长剑从身侧斜挑而出，剑刃划向SU_LI的右肩外侧，以试探性抢攻开场. 黑铁剑的冷光在月下划出一道短促弧线，直逼SU_LI肩侧. 抬臂将青玉柄长剑斜架在肩侧，精准格住黑铁剑的剑刃，借两剑相碰的反震力旋身半步，剑刃顺着黑铁剑的剑脊向下滑削，指向JUE_YING的持剑手腕. 两剑相碰发出清脆的金属鸣响，SU_LI旋身时广袖扫过瓦面带起细尘，剑刃滑到JUE_YING的手腕位置.",
+            "visual_description": "16:9宽幅深焦构图，冷银色月光铺满整片金琉璃瓦面，将瓦面的釉质反光拉成连续的银带；高悬的满月位于画面上半区中心，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎的光点；两位剑客的黑袍与月白广袖被风向后扬起，黑铁剑与青玉柄剑的冷光在暗部中格外醒目，画面留出左右两侧的轻功入场空间，动作区域集中在屋顶中央。",
+            "continuity_from_previous": "none",
+            "composition_change": "large",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "JUE_YING",
+              "SU_LI"
+            ],
+            "interaction_geometry": {
+              "actor": "SU_LI",
+              "target": "JUE_YING",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "JADE_HILT_SWORD",
+              "effect_region": "JUE_YING持剑的右手腕位置",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "right third of frame",
+              "target_screen_position": "left third of frame",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "setup",
+              "state_before": "两位顶尖剑客在紫禁城屋顶完成宿命对决：以帅气轻功入场，展开连续攻击、闪避、格挡与借势变招，最终由一方无血腥地击杀另一方。",
+              "state_change": "两位顶尖剑客以帅气轻功从紫禁屋顶两端飞掠入场，在满月下的瓦面中央相对站定，完成首轮试探性攻防，宿命对决的紧张格局正式建立。",
+              "state_after": "JUE_YING与SU_LI在月光琉璃屋顶中央相距三步，经首轮斜挑、格挡、旋身滑削的连续攻防后双方均未受伤，保持连贯的攻击势能，即将展开更激烈的近身缠斗。"
+            },
+            "production_slot": {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0.0,
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            "primary_action": "从画面左侧红漆飞檐外的夜空中掠入，足尖连续轻点金琉璃瓦面，沿斜屋顶向右高速突进，黑铁长剑斜垂身侧，绣暗银云纹的黑袍被风向后扯成紧绷的弧线; 从画面右侧铜脊兽的檐角位置借力蹬踏，沿斜屋顶向左高速飞掠，青玉柄长剑横于腰侧，月白镶青边的广袖被风向后扬起; 借飞掠收势的向前余劲拧腰，手腕翻转将黑铁长剑从身侧斜挑而出，剑刃划向SU_LI的右肩外侧，以试探性抢攻开场; 抬臂将青玉柄长剑斜架在肩侧，精准格住黑铁剑的剑刃，借两剑相碰的反震力旋身半步，剑刃顺着黑铁剑的剑脊向下滑削，指向JUE_YING的持剑手腕",
+            "action_beats": [
+              {
+                "phase": "trigger",
+                "actor": "JUE_YING",
+                "action": "从画面左侧红漆飞檐外的夜空中掠入，足尖连续轻点金琉璃瓦面，沿斜屋顶向右高速突进，黑铁长剑斜垂身侧，绣暗银云纹的黑袍被风向后扯成紧绷的弧线",
+                "target": "JUE_YING",
+                "visible_result": "JUE_YING如一道黑色流影掠过瓦面，足尖点瓦时带起细碎浮尘，在距屋顶中央三步的位置收住冲势，重心微沉站稳",
+                "start_seconds": 0.0,
+                "end_seconds": 1.3,
+                "activity": "transition"
+              },
+              {
+                "phase": "trigger",
+                "actor": "SU_LI",
+                "action": "从画面右侧铜脊兽的檐角位置借力蹬踏，沿斜屋顶向左高速飞掠，青玉柄长剑横于腰侧，月白镶青边的广袖被风向后扬起",
+                "target": "JUE_YING",
+                "visible_result": "SU_LI如一道月白流影掠过瓦面，在距JUE_YING三步远的位置收住冲势，丝绦在风里飘起，与JUE_YING面对面站定",
+                "start_seconds": 1.3,
+                "end_seconds": 2.6,
+                "activity": "transition"
+              },
+              {
+                "phase": "peak",
+                "actor": "JUE_YING",
+                "action": "借飞掠收势的向前余劲拧腰，手腕翻转将黑铁长剑从身侧斜挑而出，剑刃划向SU_LI的右肩外侧，以试探性抢攻开场",
+                "target": "SU_LI",
+                "visible_result": "黑铁剑的冷光在月下划出一道短促弧线，直逼SU_LI肩侧",
+                "outcomes": [
+                  {
+                    "entity": "SU_LI",
+                    "state": "黑铁剑的剑刃被青玉剑精准架住，停在距SU_LI右肩两寸处"
+                  },
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING拧腰前压的姿态保持，重心落在前脚，出剑的冲势未消"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "BLACK_IRON_SWORD",
+                    "state": "剑刃与青玉剑刃相抵，处于斜挑的姿态",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 2.6,
+                "end_seconds": 3.8,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "JUE_YING",
+                  "target": "SU_LI",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "BLACK_IRON_SWORD",
+                  "effect_region": "SU_LI右肩外侧的身前空间",
+                  "reaction_scope": "黑铁剑的冷光在月下划出一道短促弧线，直逼SU_LI肩侧",
+                  "unaffected_behavior": "屋顶其他区域、远处紫禁城天际线、高悬的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "left third of frame",
+                  "target_screen_position": "right third of frame",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 3.08,
+                "reaction_at_seconds": 3.44,
+                "response_kind": "deflection",
+                "flow_from_previous": "承接上一单元JUE_YING飞掠收势的向前冲劲，没有停顿直接拧腰出剑"
+              },
+              {
+                "phase": "peak",
+                "actor": "SU_LI",
+                "action": "抬臂将青玉柄长剑斜架在肩侧，精准格住黑铁剑的剑刃，借两剑相碰的反震力旋身半步，剑刃顺着黑铁剑的剑脊向下滑削，指向JUE_YING的持剑手腕",
+                "target": "JUE_YING",
+                "visible_result": "两剑相碰发出清脆的金属鸣响，SU_LI旋身时广袖扫过瓦面带起细尘，剑刃滑到JUE_YING的手腕位置",
+                "outcomes": [
+                  {
+                    "entity": "JUE_YING",
+                    "state": "青玉剑的剑刃滑到距JUE_YING持剑手腕一寸处，被JUE_YING错步撤开半寸的动作躲开"
+                  },
+                  {
+                    "entity": "SU_LI",
+                    "state": "SU_LI旋身的姿态保持，重心落在后脚，滑削的剑势未停"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "JADE_HILT_SWORD",
+                    "state": "剑刃顺着黑铁剑脊下滑，指向JUE_YING手腕",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 3.8,
+                "end_seconds": 5.0,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "SU_LI",
+                  "target": "JUE_YING",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "JADE_HILT_SWORD",
+                  "effect_region": "JUE_YING持剑的右手腕位置",
+                  "reaction_scope": "两剑相碰发出清脆的金属鸣响，SU_LI旋身时广袖扫过瓦面带起细尘，剑刃滑到JUE_YING的手腕位置",
+                  "unaffected_behavior": "屋顶其他区域、背景夜空、高悬的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "right third of frame",
+                  "target_screen_position": "left third of frame",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 4.28,
+                "reaction_at_seconds": 4.64,
+                "response_kind": "impact",
+                "flow_from_previous": "承接上一单元两剑相碰的反震力，SU_LI没有硬架僵持，直接借反震旋身变招滑削"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶",
+              "subject": "两位剑客从屋顶两端的空中飞掠入场",
+              "action_phase": "轻功入场阶段",
+              "camera": "宽幅跟拍镜头，建立屋顶空间关系",
+              "screen_direction": "JUE_YING从画面左侧向右移动，SU_LI从画面右侧向左移动",
+              "pose_and_gaze": "两人尚未站定，衣袍被风向后扬起，目光锁定对方",
+              "prop_state": "黑铁长剑与青玉柄长剑均已出鞘，持于手中",
+              "open_motion": "两人沿琉璃瓦面高速飞掠，足尖连续点瓦的轻功动作",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "end_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶中央",
+              "subject": "两位剑客完成首轮试探攻防，相对站定",
+              "action_phase": "入场完成，首轮试探攻防结束，进入连续缠斗准备阶段",
+              "camera": "宽幅定格在两人相对的构图",
+              "screen_direction": "JUE_YING在画面左，SU_LI在画面右，面对面",
+              "pose_and_gaze": "两人重心微沉，握剑的手稳在身前，目光紧紧锁定对方",
+              "prop_state": "黑铁剑与青玉剑刃相错，剑身在月光下泛冷光",
+              "open_motion": "飞掠与出剑的冲势未消，衣袍被风扬起的余势仍在",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "camera": {
+              "primary_movement": "tracking",
+              "composition": "wide deep-focus establishing shot, 16:9, moon centered in upper frame, palace roof spanning lower two-thirds",
+              "start_framing": "wide shot",
+              "end_framing": "wide shot",
+              "speed": "smooth slow tracking",
+              "screen_positions": {
+                "JUE_YING": "left third of frame",
+                "SU_LI": "right third of frame"
+              },
+              "axis_change": "establish"
+            },
+            "blocking": {
+              "JUE_YING": {
+                "frame_position": "left third of frame",
+                "body_orientation": "profile toward screen-right",
+                "facing_target": "SU_LI",
+                "eyeline_target": "SU_LI",
+                "travel_direction": "rightward across roof tiles",
+                "action_target": "SU_LI"
+              },
+              "SU_LI": {
+                "frame_position": "right third of frame",
+                "body_orientation": "profile toward screen-left",
+                "facing_target": "JUE_YING",
+                "eyeline_target": "JUE_YING",
+                "travel_direction": "leftward across roof tiles",
+                "action_target": "JUE_YING"
+              }
+            },
+            "lighting": "冷银色满月柔光从正上方倾泻，在金琉璃瓦面形成连续的冷调高光，人物轮廓镶上薄银边，暗部保留深靛蓝色夜空的层次，远处紫禁城的暖黄宫灯作为弱对比点缀，无生硬阴影。",
+            "mood": "冷峻肃杀，武侠史诗氛围感",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "JUE_YING",
+              "SU_LI"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD"
+            ],
+            "continuity_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD"
+            ]
+          },
+          {
+            "shot_id": 2,
+            "duration": 5,
+            "scene_id": "MOONLIT_PALACE_ROOF_SETUP",
+            "scene_description": "满月当空的紫禁城外朝主殿琉璃屋顶，金黄色釉面瓦在月光下泛着冷光，红漆飞檐翘角向外探出，檐角立着铜制脊兽，远处是连绵成片的紫禁城宫殿天际线，夜云在月边缓缓浮动，风卷着屋顶上的浮尘与衣袂。",
+            "prompt_en": "16:9宽幅中景构图，冷银色月光聚焦在两人近身缠斗的剑斗区域，金琉璃瓦面的釉质反光在人物脚边形成连续银带；高悬的满月位于画面上半区边缘，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎光点；黑袍与月白广袖的翻飞动态清晰，剑刃的冷光在暗部中醒目，碎瓦屑在月光下反射细碎银光，动作区域集中在画面中心。 承接上一镜两剑相抵的反震余劲，不回收剑势，直接拧腰旋身半周，将原本滑向JUE_YING手腕的青玉剑转成正手斜劈，剑刃带着旋身的离心力直取JUE_YING的右肩，脚步随旋身向前压进半步. 青玉剑在月下划出一道冷亮的弧线，SU_LI的月白广袖随旋身扫过瓦面，带起一圈细尘，剑刃直逼JUE_YING右肩. 躲开斜劈的同时，手腕翻转将黑铁长剑从身侧斜抬，精准格住SU_LI跟进横扫的剑刃，借两剑相碰的反震力向后连续错步滑退，黑布快靴在金琉璃瓦面上带出细碎的擦痕. 两剑相碰发出清脆的金属鸣响，JUE_YING向后滑退两步，黑袍下摆扫过瓦面带起细尘. 向后滑退的第三步，足尖重重踩在一块金琉璃瓦的边缘，瓦面受力碎裂，他的重心因为踩空微微下沉，握剑的手随重心晃动微微偏移，露出腰侧的防守空当. 金琉璃瓦瞬间裂成数块，碎瓦屑顺着斜屋顶向下滚落，JUE_YING身形微顿，黑铁剑的位置偏移到身侧，腰侧空当完全露出.",
+            "visual_description": "16:9宽幅中景构图，冷银色月光聚焦在两人近身缠斗的剑斗区域，金琉璃瓦面的釉质反光在人物脚边形成连续银带；高悬的满月位于画面上半区边缘，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎光点；黑袍与月白广袖的翻飞动态清晰，剑刃的冷光在暗部中醒目，碎瓦屑在月光下反射细碎银光，动作区域集中在画面中心。",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "SU_LI",
+              "JUE_YING",
+              "GOLDEN_YELLOW_GLAZED_TILES"
+            ],
+            "interaction_geometry": {
+              "actor": "JUE_YING",
+              "target": "GOLDEN_YELLOW_GLAZED_TILES",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "JUE_YING的黑布快靴足尖",
+              "effect_region": "JUE_YING脚下的金琉璃瓦面位置",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "left third initially, shifting to center-left as he retreats",
+              "target_screen_position": "left third initially, shifting to center-left as he retreats",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "turn",
+              "state_before": "JUE_YING与SU_LI在月光琉璃屋顶中央相距三步，经首轮斜挑、格挡、旋身滑削的连续攻防后双方均未受伤，保持连贯的攻击势能，即将展开更激烈的近身缠斗。",
+              "state_change": "SU_LI借两剑相抵的反震力连续旋身变招抢攻，JUE_YING连续错步闪避、抬剑格挡后向后滑退，第三步足尖踩碎一块金琉璃瓦，身形微顿露出腰侧防守空当，缠斗从势均力敌进入破绽出现的转折时刻。",
+              "state_after": "JUE_YING在闪避滑退中踩碎琉璃瓦，重心微顿，腰侧防守空当暴露；SU_LI已经抢身半步，剑势蓄势待发，双方均未受伤，即将进入最终的攻防决胜阶段。"
+            },
+            "production_slot": {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0.0,
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "承接上一镜两剑相抵的反震余劲，不回收剑势，直接拧腰旋身半周，将原本滑向JUE_YING手腕的青玉剑转成正手斜劈，剑刃带着旋身的离心力直取JUE_YING的右肩，脚步随旋身向前压进半步; 躲开斜劈的同时，手腕翻转将黑铁长剑从身侧斜抬，精准格住SU_LI跟进横扫的剑刃，借两剑相碰的反震力向后连续错步滑退，黑布快靴在金琉璃瓦面上带出细碎的擦痕; 向后滑退的第三步，足尖重重踩在一块金琉璃瓦的边缘，瓦面受力碎裂，他的重心因为踩空微微下沉，握剑的手随重心晃动微微偏移，露出腰侧的防守空当",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "SU_LI",
+                "action": "承接上一镜两剑相抵的反震余劲，不回收剑势，直接拧腰旋身半周，将原本滑向JUE_YING手腕的青玉剑转成正手斜劈，剑刃带着旋身的离心力直取JUE_YING的右肩，脚步随旋身向前压进半步",
+                "target": "JUE_YING",
+                "visible_result": "青玉剑在月下划出一道冷亮的弧线，SU_LI的月白广袖随旋身扫过瓦面，带起一圈细尘，剑刃直逼JUE_YING右肩",
+                "outcomes": [
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING向左侧错步滑开，剑刃擦着他的黑袍右肩位置劈空，未触碰到衣物"
+                  },
+                  {
+                    "entity": "SU_LI",
+                    "state": "SU_LI旋身压进半步的姿态保持，重心落在前脚，斜劈的剑势未消"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "JADE_HILT_SWORD",
+                    "state": "剑刃斜劈在JUE_YING身侧的空处，保持斜向下的姿态",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 0.0,
+                "end_seconds": 1.548,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "SU_LI",
+                  "target": "JUE_YING",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "JADE_HILT_SWORD",
+                  "effect_region": "JUE_YING右肩外侧的身前空间",
+                  "reaction_scope": "青玉剑在月下划出一道冷亮的弧线，SU_LI的月白广袖随旋身扫过瓦面，带起一圈细尘，剑刃直逼JUE_YING右肩",
+                  "unaffected_behavior": "屋顶远端区域、远处紫禁城天际线、高悬的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "right third initially, shifting to center-right as he presses forward",
+                  "target_screen_position": "left third initially, shifting to center-left as he retreats",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 0.619,
+                "reaction_at_seconds": 1.083,
+                "response_kind": "evasion"
+              },
+              {
+                "phase": "peak",
+                "actor": "JUE_YING",
+                "action": "躲开斜劈的同时，手腕翻转将黑铁长剑从身侧斜抬，精准格住SU_LI跟进横扫的剑刃，借两剑相碰的反震力向后连续错步滑退，黑布快靴在金琉璃瓦面上带出细碎的擦痕",
+                "target": "SU_LI",
+                "visible_result": "两剑相碰发出清脆的金属鸣响，JUE_YING向后滑退两步，黑袍下摆扫过瓦面带起细尘",
+                "outcomes": [
+                  {
+                    "entity": "SU_LI",
+                    "state": "青玉剑的横扫剑势被黑铁剑架住，停在距JUE_YING腰侧两寸的位置"
+                  },
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING向后滑退的姿态保持，重心落在后脚，握剑的手稳在身前"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "BLACK_IRON_SWORD",
+                    "state": "剑刃斜架住青玉剑的横扫剑刃，处于格挡姿态",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 1.548,
+                "end_seconds": 3.095,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "JUE_YING",
+                  "target": "SU_LI",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "BLACK_IRON_SWORD",
+                  "effect_region": "两剑刃相抵的接触位置",
+                  "reaction_scope": "两剑相碰发出清脆的金属鸣响，JUE_YING向后滑退两步，黑袍下摆扫过瓦面带起细尘",
+                  "unaffected_behavior": "屋顶远端区域、背景夜空、远处宫灯光点",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "left third initially, shifting to center-left as he retreats",
+                  "target_screen_position": "right third initially, shifting to center-right as he presses forward",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 2.166,
+                "reaction_at_seconds": 2.63,
+                "response_kind": "deflection",
+                "flow_from_previous": "承接上一单元JUE_YING向左侧错步躲开斜劈的动作，没有停顿，直接抬剑格住SU_LI跟进的横扫剑势，借反震力向后滑退"
+              },
+              {
+                "phase": "peak",
+                "actor": "JUE_YING",
+                "action": "向后滑退的第三步，足尖重重踩在一块金琉璃瓦的边缘，瓦面受力碎裂，他的重心因为踩空微微下沉，握剑的手随重心晃动微微偏移，露出腰侧的防守空当",
+                "target": "GOLDEN_YELLOW_GLAZED_TILES",
+                "visible_result": "金琉璃瓦瞬间裂成数块，碎瓦屑顺着斜屋顶向下滚落，JUE_YING身形微顿，黑铁剑的位置偏移到身侧，腰侧空当完全露出",
+                "outcomes": [
+                  {
+                    "entity": "GOLDEN_YELLOW_GLAZED_TILES",
+                    "state": "脚下的琉璃瓦碎裂成数块，碎瓦屑散落在瓦面上"
+                  },
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING重心微沉，身形微顿，握剑的手偏移到身侧，腰侧露出明显的防守空当"
+                  },
+                  {
+                    "entity": "GOLDEN_YELLOW_GLAZED_TILES",
+                    "state": "JUE_YING脚下的一块琉璃瓦碎裂，露出下方的深色瓦胎"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "BROKEN_TILE_DEBRIS",
+                    "state": "碎瓦屑散落在JUE_YING脚边的瓦面上，顺着斜屋顶微微滚动",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 3.095,
+                "end_seconds": 5.0,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "JUE_YING",
+                  "target": "GOLDEN_YELLOW_GLAZED_TILES",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "propagate",
+                  "source": "JUE_YING的黑布快靴足尖",
+                  "effect_region": "JUE_YING脚下的金琉璃瓦面位置",
+                  "reaction_scope": "金琉璃瓦瞬间裂成数块，碎瓦屑顺着斜屋顶向下滚落，JUE_YING身形微顿，黑铁剑的位置偏移到身侧，腰侧空当完全露出",
+                  "unaffected_behavior": "其他完好的瓦面、背景夜空、高悬的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "left third initially, shifting to center-left as he retreats",
+                  "target_screen_position": "",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 3.857,
+                "reaction_at_seconds": 4.428,
+                "response_kind": "impact",
+                "flow_from_previous": "承接上一单元JUE_YING借反震力向后连续错步滑退的动作，第三步的力道没有收住，直接踩在瓦面边缘"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶中央",
+              "subject": "两位剑客近身缠斗，剑刃刚完成首轮相抵",
+              "action_phase": "连续攻防变招阶段，承接首轮试探后的缠斗",
+              "camera": "中景跟拍镜头，聚焦两人近身剑斗区域",
+              "screen_direction": "JUE_YING在画面左，SU_LI在画面右，面对面",
+              "pose_and_gaze": "JUE_YING刚错步撤开持剑手腕，重心在后脚，目光紧盯SU_LI；SU_LI旋身滑削的剑势未停，重心在前脚",
+              "prop_state": "黑铁长剑与青玉长剑刚完成相抵，剑身在月光下泛冷光",
+              "open_motion": "承接上一镜结尾SU_LI滑削到JUE_YING手腕的未消剑势，顺着两剑相碰的反震力直接旋身变招斜劈，没有收剑停顿",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "end_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶中央偏左位置",
+              "subject": "缠斗中出现关键破绽，JUE_YING踩碎瓦面身形微顿",
+              "action_phase": "缠斗转折阶段，防守空当暴露",
+              "camera": "中景跟拍定格在破绽出现的瞬间",
+              "screen_direction": "JUE_YING在画面中心偏左，SU_LI在画面中心偏右，面对面",
+              "pose_and_gaze": "JUE_YING重心微沉，身形微顿，目光紧盯SU_LI；SU_LI握剑前指，重心前倾，紧盯JUE_YING露出的腰侧空当",
+              "prop_state": "黑铁剑偏移在JUE_YING身侧，青玉剑指向前方，脚边散落碎瓦屑",
+              "open_motion": "碎瓦屑顺着斜屋顶微微滚动，SU_LI抢攻的冲势已经蓄起",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "camera": {
+              "primary_movement": "tracking",
+              "composition": "medium shot, 16:9, framing fighters from knees up to capture full sword motion",
+              "start_framing": "medium shot",
+              "end_framing": "中景，JUE_YING踩碎瓦的位置在画面中心偏左，SU_LI在中心偏右，碎瓦屑散落在两人脚边",
+              "speed": "smooth fast tracking",
+              "screen_positions": {
+                "JUE_YING": "left third initially, shifting to center-left as he retreats",
+                "SU_LI": "right third initially, shifting to center-right as he presses forward",
+                "GOLDEN_YELLOW_GLAZED_TILES": "right midground"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "JUE_YING": {
+                "frame_position": "left third initially, shifting to center-left as he retreats",
+                "body_orientation": "profile toward screen-right",
+                "facing_target": "GOLDEN_YELLOW_GLAZED_TILES",
+                "eyeline_target": "GOLDEN_YELLOW_GLAZED_TILES",
+                "travel_direction": "leftward evasion then backward retreat across roof tiles",
+                "action_target": "GOLDEN_YELLOW_GLAZED_TILES"
+              },
+              "SU_LI": {
+                "frame_position": "right third initially, shifting to center-right as he presses forward",
+                "body_orientation": "facing left",
+                "facing_target": "JUE_YING",
+                "eyeline_target": "JUE_YING",
+                "travel_direction": "leftward pressing forward across roof tiles",
+                "action_target": "JUE_YING"
+              }
+            },
+            "lighting": "冷银色满月柔光从正上方倾泻，在金琉璃瓦面形成连续的冷调高光，人物轮廓镶上薄银边，剑刃的冷光在暗部中格外醒目，碎瓦屑在月光下反射细碎银光，暗部保留深靛蓝色夜空的层次，远处紫禁城的暖黄宫灯作为弱对比点缀，无生硬阴影。",
+            "mood": "凌厉紧绷，缠斗的压迫感随破绽出现达到张力顶点。",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "SU_LI",
+              "JUE_YING"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "BROKEN_TILE_DEBRIS",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES"
+            ],
+            "continuity_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "BROKEN_TILE_DEBRIS",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES"
+            ]
+          },
+          {
+            "shot_id": 3,
+            "duration": 5,
+            "scene_id": "MOONLIT_PALACE_ROOF_SETUP",
+            "scene_description": "满月当空的紫禁城外朝主殿琉璃屋顶，金黄色釉面瓦在月光下泛着冷光，红漆飞檐翘角向外探出，檐角立着铜制脊兽，远处是连绵成片的紫禁城宫殿天际线，夜云在月边缓缓浮动，风卷着屋顶上的浮尘与衣袂。",
+            "prompt_en": "16:9宽幅全景构图，冷银色月光聚焦在屋顶决战区域，金琉璃瓦面的釉质反光在人物脚边形成连续银带；高悬的满月位于画面上半区，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎光点；黑袍与月白广袖的翻飞动态清晰，黑铁剑与青玉剑的冷光在暗部中醒目，最终仰倒姿态完整入镜，全程无血腥表现。 承接上一镜抢攻蓄势，不待JUE_YING重心回稳，拧腰送肩，青玉剑直刺JUE_YING露出的腰侧空当，脚步向前跨出半步，月白广袖随刺击前送。. 青玉剑刃带着冷光直取JUE_YING腰侧，SU_LI重心完全压向前脚。. 错步让过刺击的同时，手腕翻转黑铁剑斜抬，剑脊格住青玉剑的剑身中段，借两剑相碰的反震力旋身半周，黑铁剑顺着旋身的离心力横摆，直取SU_LI颈侧，脚步随旋身向前贴进半步。. 两剑相碰发出清越鸣响，JUE_YING黑袍随旋身大幅扬起，黑铁剑脊横在SU_LI颈侧位置。. 旋身贴定后，握剑的手微微沉劲，以内力顺着剑脊震向SU_LI颈侧，同时黑铁剑保持横压姿态不移动，衣袍被内力带起的微风吹得向后扬起。. SU_LI身体猛地一僵，握剑的手指瞬间松开，青玉剑脱手坠落在瓦面上，他的眼神失焦，身体失去支撑向后仰倒。. 保持横剑姿态站在原地，目光落在仰倒的SU_LI身上，风卷着两人衣袂和脚边碎瓦屑微微浮动。. 终结姿态完全清晰，JUE_YING立于画面左侧，SU_LI仰倒在右侧瓦面，满月与紫禁城天际线作为背景。.",
+            "visual_description": "16:9宽幅全景构图，冷银色月光聚焦在屋顶决战区域，金琉璃瓦面的釉质反光在人物脚边形成连续银带；高悬的满月位于画面上半区，深靛蓝色夜空作为暗部背景，远处紫禁城的暖黄宫灯是细碎光点；黑袍与月白广袖的翻飞动态清晰，黑铁剑与青玉剑的冷光在暗部中醒目，最终仰倒姿态完整入镜，全程无血腥表现。",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "SU_LI",
+              "JUE_YING"
+            ],
+            "interaction_geometry": {
+              "actor": "JUE_YING",
+              "target": "SU_LI",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "BLACK_IRON_SWORD",
+              "effect_region": "SU_LI颈侧与剑脊接触的位置",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "center-left initially, shifting to left third after counter",
+              "target_screen_position": "center-right initially, shifting to right third as he falls",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "payoff",
+              "state_before": "JUE_YING在闪避滑退中踩碎琉璃瓦，重心微顿，腰侧防守空当暴露；SU_LI已经抢身半步，剑势蓄势待发，双方均未受伤，即将进入最终的攻防决胜阶段。",
+              "state_change": "SU_LI抓住JUE_YING踩碎瓦面露出的腰侧空当直刺，JUE_YING错步让过并以黑铁剑格开青玉剑，借反震力旋身突进，将黑铁剑脊横压在SU_LI颈侧，以内力震杀；全程无血迹，SU_LI握剑的手指松开，青玉剑脱手坠瓦，身体向后仰倒在琉璃瓦面上，决战分出胜负。",
+              "state_after": "JUE_YING获胜立于屋顶，SU_LI仰倒在瓦面落败，双方兵器位置清晰，紫禁之巅的宿命对决结束。"
+            },
+            "production_slot": {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0.0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。",
+              "choreography": "flexible",
+              "creative_brief": "制作一部约15秒（总时长可适当增减）的武侠电影短片：两大高手决战紫禁之巅。明确分成三段独立生成的视频，再由项目正式流程拼接成片。轻功入场要帅，武打动作要多，攻击、闪避、格挡之间有借势和连续变招，不要机械地一来一回或长时间持剑僵持；最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现。三段保持同一人物的容貌、服装与兵器一致，前后动作和空间关系连续，运镜有电影质感并服务于动作可读性。项目自行规划剧本、分镜、全片节奏和运镜。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "承接上一镜抢攻蓄势，不待JUE_YING重心回稳，拧腰送肩，青玉剑直刺JUE_YING露出的腰侧空当，脚步向前跨出半步，月白广袖随刺击前送。; 错步让过刺击的同时，手腕翻转黑铁剑斜抬，剑脊格住青玉剑的剑身中段，借两剑相碰的反震力旋身半周，黑铁剑顺着旋身的离心力横摆，直取SU_LI颈侧，脚步随旋身向前贴进半步。; 旋身贴定后，握剑的手微微沉劲，以内力顺着剑脊震向SU_LI颈侧，同时黑铁剑保持横压姿态不移动，衣袍被内力带起的微风吹得向后扬起。; 保持横剑姿态站在原地，目光落在仰倒的SU_LI身上，风卷着两人衣袂和脚边碎瓦屑微微浮动。",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "SU_LI",
+                "action": "承接上一镜抢攻蓄势，不待JUE_YING重心回稳，拧腰送肩，青玉剑直刺JUE_YING露出的腰侧空当，脚步向前跨出半步，月白广袖随刺击前送。",
+                "target": "JUE_YING",
+                "visible_result": "青玉剑刃带着冷光直取JUE_YING腰侧，SU_LI重心完全压向前脚。",
+                "outcomes": [
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING向左侧错步拧腰，剑刃擦着黑袍腰侧刺空，未触碰到衣物"
+                  },
+                  {
+                    "entity": "SU_LI",
+                    "state": "SU_LI刺击落空，前冲的剑势向前送出，重心前倾"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "JADE_HILT_SWORD",
+                    "state": "剑刃刺在JUE_YING身侧空处，剑尖指向前方",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 0.0,
+                "end_seconds": 1.038,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "SU_LI",
+                  "target": "JUE_YING",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "JADE_HILT_SWORD",
+                  "effect_region": "JUE_YING腰侧空当前方的刺击路径",
+                  "reaction_scope": "青玉剑刃带着冷光直取JUE_YING腰侧，SU_LI重心完全压向前脚。",
+                  "unaffected_behavior": "屋顶远端区域、远处紫禁城天际线、高悬的满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "center-right initially, shifting to right third as he falls",
+                  "target_screen_position": "center-left initially, shifting to left third after counter",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 0.415,
+                "reaction_at_seconds": 0.726,
+                "response_kind": "evasion"
+              },
+              {
+                "phase": "peak",
+                "actor": "JUE_YING",
+                "action": "错步让过刺击的同时，手腕翻转黑铁剑斜抬，剑脊格住青玉剑的剑身中段，借两剑相碰的反震力旋身半周，黑铁剑顺着旋身的离心力横摆，直取SU_LI颈侧，脚步随旋身向前贴进半步。",
+                "target": "SU_LI",
+                "visible_result": "两剑相碰发出清越鸣响，JUE_YING黑袍随旋身大幅扬起，黑铁剑脊横在SU_LI颈侧位置。",
+                "outcomes": [
+                  {
+                    "entity": "SU_LI",
+                    "state": "青玉剑的刺击被黑铁剑格偏，停在JUE_YING身侧；黑铁剑脊横压在SU_LI颈侧，未割破皮肤"
+                  },
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING旋身贴进的姿态稳定，握剑的手横在身前，重心落在前脚"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "BLACK_IRON_SWORD",
+                    "state": "剑脊横压在SU_LI颈侧，剑刃未割破皮肤",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "JADE_HILT_SWORD",
+                    "state": "被格偏，剑尖斜指下方瓦面",
+                    "importance": "required"
+                  }
+                ],
+                "start_seconds": 1.038,
+                "end_seconds": 2.547,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "JUE_YING",
+                  "target": "SU_LI",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "BLACK_IRON_SWORD",
+                  "effect_region": "青玉剑剑身中段与黑铁剑相抵的位置",
+                  "reaction_scope": "两剑相碰发出清越鸣响，JUE_YING黑袍随旋身大幅扬起，黑铁剑脊横在SU_LI颈侧位置。",
+                  "unaffected_behavior": "屋顶远端区域、远处紫禁城天际线、高悬的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "center-left initially, shifting to left third after counter",
+                  "target_screen_position": "center-right initially, shifting to right third as he falls",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 1.641,
+                "reaction_at_seconds": 2.094,
+                "response_kind": "deflection",
+                "flow_from_previous": "承接上一单元JUE_YING向左侧错步拧腰让过刺击的动作，顺势抬剑格挡，借反震力旋身突进，没有收剑停顿。"
+              },
+              {
+                "phase": "peak",
+                "actor": "JUE_YING",
+                "action": "旋身贴定后，握剑的手微微沉劲，以内力顺着剑脊震向SU_LI颈侧，同时黑铁剑保持横压姿态不移动，衣袍被内力带起的微风吹得向后扬起。",
+                "target": "SU_LI",
+                "visible_result": "SU_LI身体猛地一僵，握剑的手指瞬间松开，青玉剑脱手坠落在瓦面上，他的眼神失焦，身体失去支撑向后仰倒。",
+                "outcomes": [
+                  {
+                    "entity": "SU_LI",
+                    "state": "SU_LI颈侧无可见血迹，身体向后仰倒在琉璃瓦面上，青玉剑脱手落在身侧瓦面"
+                  },
+                  {
+                    "entity": "JUE_YING",
+                    "state": "JUE_YING保持横剑的姿态，重心稳定，目光落在倒下的SU_LI身上"
+                  },
+                  {
+                    "entity": "SU_LI",
+                    "state": "仰倒在金琉璃瓦面上，肢体松弛，颈侧无可见血迹"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "JADE_HILT_SWORD",
+                    "state": "脱手坠落在SU_LI身侧瓦面，冰蓝剑穗垂落",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "WIND_TOSSED_ROBES",
+                    "state": "衣袍被内力带起的微风向后扬起",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 2.547,
+                "end_seconds": 4.245,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "JUE_YING",
+                  "target": "SU_LI",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "propagate",
+                  "source": "BLACK_IRON_SWORD",
+                  "effect_region": "SU_LI颈侧与剑脊接触的位置",
+                  "reaction_scope": "SU_LI身体猛地一僵，握剑的手指瞬间松开，青玉剑脱手坠落在瓦面上，他的眼神失焦，身体失去支撑向后仰倒。",
+                  "unaffected_behavior": "屋顶远端区域、远处紫禁城天际线、高悬的满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "center-left initially, shifting to left third after counter",
+                  "target_screen_position": "center-right initially, shifting to right third as he falls",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 3.226,
+                "reaction_at_seconds": 3.735,
+                "response_kind": "impact",
+                "flow_from_previous": "承接上一单元JUE_YING旋身贴进、剑脊横在SU_LI颈侧的姿态，直接沉劲发内力，没有额外挥剑动作。"
+              },
+              {
+                "phase": "aftermath",
+                "actor": "JUE_YING",
+                "action": "保持横剑姿态站在原地，目光落在仰倒的SU_LI身上，风卷着两人衣袂和脚边碎瓦屑微微浮动。",
+                "target": "SU_LI",
+                "visible_result": "终结姿态完全清晰，JUE_YING立于画面左侧，SU_LI仰倒在右侧瓦面，满月与紫禁城天际线作为背景。",
+                "start_seconds": 4.245,
+                "end_seconds": 5.0,
+                "activity": "hold"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶中央偏左位置",
+              "subject": "JUE_YING踩碎瓦面身形微顿，SU_LI抢攻蓄势待发",
+              "action_phase": "最终决胜阶段，破绽出现后攻防反转",
+              "camera": "全景镜头，承接破绽瞬间，聚焦两人全身动作",
+              "screen_direction": "JUE_YING在画面中心偏左，SU_LI在画面中心偏右，面对面",
+              "pose_and_gaze": "JUE_YING重心微沉，握剑偏移在身侧，目光紧盯SU_LI；SU_LI握剑前指，重心前倾，紧盯JUE_YING腰侧空当",
+              "prop_state": "黑铁剑偏移在JUE_YING身侧，青玉剑指向前方，脚边散落碎瓦屑",
+              "open_motion": "承接上一镜SU_LI紧盯腰侧空当、抢攻冲势已蓄的状态，直接送剑刺出，没有收招停顿。",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "end_state": {
+              "location": "紫禁城外朝主殿的月光琉璃屋顶中央偏左位置",
+              "subject": "JUE_YING以剑脊震杀SU_LI，SU_LI仰倒落败",
+              "action_phase": "决战终结，结果已确立",
+              "camera": "全景定格，完整呈现胜者站立与败者仰倒的姿态",
+              "screen_direction": "JUE_YING在画面左侧持剑站立，SU_LI仰倒在画面右侧瓦面",
+              "pose_and_gaze": "JUE_YING握剑立于原地，目光落在SU_LI身上；SU_LI仰面躺倒，肢体松弛，视线失焦",
+              "prop_state": "黑铁剑垂在JUE_YING身侧，青玉剑脱手落在SU_LI身侧瓦面，脚边碎瓦屑仍在",
+              "open_motion": "风卷着两人衣袂与碎瓦屑微微浮动，动作完全停止",
+              "lighting": "冷银色满月顶光，暗部为深靛蓝色夜空，远处宫灯暖光点缀"
+            },
+            "camera": {
+              "primary_movement": "dolly in",
+              "composition": "wide full shot, 16:9, framing fighters from head to feet with roof surface and full moon in upper frame",
+              "start_framing": "wide shot",
+              "end_framing": "全景，JUE_YING立于画面左侧持剑，SU_LI仰倒在右侧瓦面，完整呈现终结姿态，上方保留满月与紫禁城天际线",
+              "speed": "smooth fast during counter, settling slowly after kill",
+              "screen_positions": {
+                "JUE_YING": "center-left initially, shifting to left third after counter",
+                "SU_LI": "center-right initially, shifting to right third as he falls"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "JUE_YING": {
+                "frame_position": "center-left initially, shifting to left third after counter",
+                "body_orientation": "profile toward screen-right",
+                "facing_target": "SU_LI",
+                "eyeline_target": "SU_LI",
+                "travel_direction": "rightward旋身突进 then stop",
+                "action_target": "SU_LI"
+              },
+              "SU_LI": {
+                "frame_position": "center-right initially, shifting to right third as he falls",
+                "body_orientation": "profile toward screen-left",
+                "facing_target": "JUE_YING",
+                "eyeline_target": "JUE_YING",
+                "travel_direction": "leftward thrust then backward fall",
+                "action_target": "JUE_YING"
+              }
+            },
+            "lighting": "冷银色满月柔光从正上方倾泻，在金琉璃瓦面形成连续的冷调高光，人物轮廓镶上薄银边，剑刃的冷光在暗部中格外醒目，碎瓦屑在月光下反射细碎银光，暗部保留深靛蓝色夜空的层次，远处紫禁城的暖黄宫灯作为弱对比点缀，无生硬阴影。",
+            "mood": "凌厉决绝，终结时刻的张力完全释放。",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "SU_LI",
+              "JUE_YING"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "BROKEN_TILE_DEBRIS",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES"
+            ],
+            "continuity_props": [
+              "MOONLIT_PALACE_ROOF",
+              "GOLDEN_YELLOW_GLAZED_TILES",
+              "RED_LACQUER_EAVES",
+              "FORBIDDEN_CITY_SKYLINE",
+              "FULL_MOON",
+              "BROKEN_TILE_DEBRIS",
+              "BLACK_IRON_SWORD",
+              "JADE_HILT_SWORD",
+              "COPPER_RIDGE_BEAST_SCULPTURE",
+              "NIGHT_CLOUD_BANK",
+              "WIND_TOSSED_ROBES"
+            ]
+          }
+        ]
+      }
+    },
+    "planning_semantic_review.json": {
+      "sha256": "33f6b2b5ecfc94f571dd844a0092dba3a8ed3eca3cfd0dc76cadad275dfed942",
+      "value": {
+        "fingerprint": "741f95e87d6ff679f2d497d52b94cf0cc2e96fc1d2c6e7bd6ef488881dc4bc4e",
+        "verdict": {
+          "units": [
+            {
+              "shot_id": 1,
+              "beat_index": 0,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "JUE_YING从画面左侧飞掠入场，目标为自身，属于轻功入场的移动过渡，与transition类型匹配，动作描述与结果一致，无外部交互需求。"
+            },
+            {
+              "shot_id": 1,
+              "beat_index": 1,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "SU_LI从画面右侧飞掠入场，目标为JUE_YING，属于轻功入场的移动过渡，与transition类型匹配，动作描述与结果一致，无外部交互需求。"
+            },
+            {
+              "shot_id": 1,
+              "beat_index": 2,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "JUE_YING主动出剑攻击SU_LI，SU_LI做出格挡反应，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "SU_LI: 黑铁剑的剑刃被青玉剑精准架住，停在距SU_LI右肩两寸处",
+                    "basis": "response",
+                    "evidence": "黑铁剑的冷光在月下划出一道短促弧线，直逼SU_LI肩侧",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JUE_YING: JUE_YING拧腰前压的姿态保持，重心落在前脚，出剑的冲势未消",
+                    "basis": "direction",
+                    "evidence": "借飞掠收势的向前余劲拧腰，手腕翻转将黑铁长剑从身侧斜挑而出",
+                    "minimal": true
+                  },
+                  {
+                    "source": "BLACK_IRON_SWORD: 剑刃与青玉剑刃相抵，处于斜挑的姿态",
+                    "basis": "response",
+                    "evidence": "黑铁剑的冷光在月下划出一道短促弧线，直逼SU_LI肩侧",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为JUE_YING试探性出剑攻击，结果明确为SU_LI格挡住剑刃，攻防逻辑清晰，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的飞掠冲势，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 1,
+              "beat_index": 3,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "SU_LI主动格挡后旋身滑削攻击JUE_YING，JUE_YING做出撤步躲避反应，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "JUE_YING: 青玉剑的剑刃滑到距JUE_YING持剑手腕一寸处，被JUE_YING错步撤开半寸的动作躲开",
+                    "basis": "response",
+                    "evidence": "两剑相碰发出清脆的金属鸣响，SU_LI旋身时广袖扫过瓦面带起细尘，剑刃滑到JUE_YING的手腕位置",
+                    "minimal": true
+                  },
+                  {
+                    "source": "SU_LI: SU_LI旋身的姿态保持，重心落在后脚，滑削的剑势未停",
+                    "basis": "direction",
+                    "evidence": "抬臂将青玉柄长剑斜架在肩侧，精准格住黑铁剑的剑刃，借两剑相碰的反震力旋身半步",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JADE_HILT_SWORD: 剑刃顺着黑铁剑脊下滑，指向JUE_YING手腕",
+                    "basis": "response",
+                    "evidence": "剑刃顺着黑铁剑的剑脊向下滑削，指向JUE_YING的持剑手腕",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为SU_LI借反震旋身变招滑削，结果明确为JUE_YING撤步躲开，攻防逻辑清晰，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的两剑相碰反震，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 2,
+              "beat_index": 0,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "SU_LI主动旋身斜劈攻击JUE_YING，JUE_YING做出错步躲避反应，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "JUE_YING: JUE_YING向左侧错步滑开，剑刃擦着他的黑袍右肩位置劈空，未触碰到衣物",
+                    "basis": "response",
+                    "evidence": "青玉剑在月下划出一道冷亮的弧线，SU_LI的月白广袖随旋身扫过瓦面，带起一圈细尘，剑刃直逼JUE_YING右肩",
+                    "minimal": true
+                  },
+                  {
+                    "source": "SU_LI: SU_LI旋身压进半步的姿态保持，重心落在前脚，斜劈的剑势未消",
+                    "basis": "direction",
+                    "evidence": "承接上一镜两剑相抵的反震余劲，不回收剑势，直接拧腰旋身半周",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JADE_HILT_SWORD: 剑刃斜劈在JUE_YING身侧的空处，保持斜向下的姿态",
+                    "basis": "response",
+                    "evidence": "剑刃带着旋身的离心力直取JUE_YING的右肩",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为SU_LI旋身变招斜劈，结果明确为JUE_YING错步躲开，攻防逻辑清晰，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的两剑相抵反震余劲，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 2,
+              "beat_index": 1,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "JUE_YING主动抬剑格挡SU_LI的横扫攻击，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "SU_LI: 青玉剑的横扫剑势被黑铁剑架住，停在距JUE_YING腰侧两寸的位置",
+                    "basis": "response",
+                    "evidence": "两剑相碰发出清脆的金属鸣响，JUE_YING向后滑退两步，黑袍下摆扫过瓦面带起细尘",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JUE_YING: JUE_YING向后滑退的姿态保持，重心落在后脚，握剑的手稳在身前",
+                    "basis": "direction",
+                    "evidence": "躲开斜劈的同时，手腕翻转将黑铁长剑从身侧斜抬，精准格住SU_LI跟进横扫的剑刃",
+                    "minimal": true
+                  },
+                  {
+                    "source": "BLACK_IRON_SWORD: 剑刃斜架住青玉剑的横扫剑刃，处于格挡姿态",
+                    "basis": "response",
+                    "evidence": "借两剑相碰的反震力向后连续错步滑退",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为JUE_YING格挡SU_LI的横扫攻击，结果明确为剑刃相抵、JUE_YING向后滑退，攻防逻辑清晰，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的错步躲避，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 2,
+              "beat_index": 2,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "JUE_YING后退时踩碎琉璃瓦，导致自身重心下沉露出破绽，属于interaction类型，作用对象为琉璃瓦，结果符合物理逻辑，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "GOLDEN_YELLOW_GLAZED_TILES: 脚下的琉璃瓦碎裂成数块，碎瓦屑散落在瓦面上",
+                    "basis": "response",
+                    "evidence": "金琉璃瓦瞬间裂成数块，碎瓦屑顺着斜屋顶向下滚落",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JUE_YING: JUE_YING重心微沉，身形微顿，握剑的手偏移到身侧，腰侧露出明显的防守空当",
+                    "basis": "continuity",
+                    "evidence": "/shots/3/start_state/pose_and_gaze",
+                    "minimal": true
+                  },
+                  {
+                    "source": "GOLDEN_YELLOW_GLAZED_TILES: JUE_YING脚下的一块琉璃瓦碎裂，露出下方的深色瓦胎",
+                    "basis": "direction",
+                    "evidence": "向后滑退的第三步，足尖重重踩在一块金琉璃瓦的边缘，瓦面受力碎裂",
+                    "minimal": true
+                  },
+                  {
+                    "source": "BROKEN_TILE_DEBRIS: 碎瓦屑散落在JUE_YING脚边的瓦面上，顺着斜屋顶微微滚动",
+                    "basis": "response",
+                    "evidence": "碎瓦屑顺着斜屋顶向下滚落",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为JUE_YING后退踩碎琉璃瓦露出破绽，结果明确为瓦面碎裂、JUE_YING身形微顿露空当，是后续SU_LI刺击的必要前提，露出瓦胎属于可替换的细节，不影响核心结局，动作承接上一单元的向后滑退，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 3,
+              "beat_index": 0,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "SU_LI抓住JUE_YING的破绽主动直刺攻击，JUE_YING做出错步躲避反应，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "JUE_YING: JUE_YING向左侧错步拧腰，剑刃擦着黑袍腰侧刺空，未触碰到衣物",
+                    "basis": "response",
+                    "evidence": "青玉剑刃带着冷光直取JUE_YING腰侧，SU_LI重心完全压向前脚",
+                    "minimal": true
+                  },
+                  {
+                    "source": "SU_LI: SU_LI刺击落空，前冲的剑势向前送出，重心前倾",
+                    "basis": "direction",
+                    "evidence": "承接上一镜抢攻蓄势，不待JUE_YING重心回稳，拧腰送肩，青玉剑直刺JUE_YING露出的腰侧空当",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JADE_HILT_SWORD: 剑刃刺在JUE_YING身侧空处，剑尖指向前方",
+                    "basis": "response",
+                    "evidence": "脚步向前跨出半步，月白广袖随刺击前送",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为SU_LI抓住破绽直刺，结果明确为JUE_YING错步躲开，攻防逻辑清晰，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的破绽暴露状态，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 3,
+              "beat_index": 1,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "JUE_YING主动格挡SU_LI的刺击并旋身将剑脊横压在SU_LI颈侧，属于interaction类型，攻防逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "SU_LI: 青玉剑的刺击被黑铁剑格偏，停在JUE_YING身侧；黑铁剑脊横压在SU_LI颈侧，未割破皮肤",
+                    "basis": "response",
+                    "evidence": "两剑相碰发出清越鸣响，JUE_YING黑袍随旋身大幅扬起，黑铁剑脊横在SU_LI颈侧位置",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JUE_YING: JUE_YING旋身贴进的姿态稳定，握剑的手横在身前，重心落在前脚",
+                    "basis": "direction",
+                    "evidence": "错步让过刺击的同时，手腕翻转黑铁剑斜抬，剑脊格住青玉剑的剑身中段",
+                    "minimal": true
+                  },
+                  {
+                    "source": "BLACK_IRON_SWORD: 剑脊横压在SU_LI颈侧，剑刃未割破皮肤",
+                    "basis": "user",
+                    "evidence": "采用无血腥的武侠电影表现",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JADE_HILT_SWORD: 被格偏，剑尖斜指下方瓦面",
+                    "basis": "response",
+                    "evidence": "借两剑相碰的反震力旋身半周，黑铁剑顺着旋身的离心力横摆",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为JUE_YING格挡反击将剑脊横压在SU_LI颈侧，结果明确为剑脊横压、无割破皮肤，符合无血腥要求，姿态描述属于可替换的动作细节，不影响核心结局，动作承接上一单元的错步躲避，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 3,
+              "beat_index": 2,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "JUE_YING以内力震击SU_LI颈侧，导致SU_LI脱力仰倒、青玉剑脱手，属于interaction类型，作用逻辑清晰，参与者与作用对象对应正确。",
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": [
+                  {
+                    "source": "SU_LI: SU_LI颈侧无可见血迹，身体向后仰倒在琉璃瓦面上，青玉剑脱手落在身侧瓦面",
+                    "basis": "user",
+                    "evidence": "最后一方被另一方帅气击杀，终结动作与败方结果清楚可见，采用无血腥的武侠电影表现",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JUE_YING: JUE_YING保持横剑的姿态，重心稳定，目光落在倒下的SU_LI身上",
+                    "basis": "direction",
+                    "evidence": "旋身贴定后，握剑的手微微沉劲，以内力顺着剑脊震向SU_LI颈侧",
+                    "minimal": true
+                  },
+                  {
+                    "source": "SU_LI: 仰倒在金琉璃瓦面上，肢体松弛，颈侧无可见血迹",
+                    "basis": "user",
+                    "evidence": "终结动作与败方结果清楚可见，采用无血腥的武侠电影表现",
+                    "minimal": true
+                  },
+                  {
+                    "source": "JADE_HILT_SWORD: 脱手坠落在SU_LI身侧瓦面，冰蓝剑穗垂落",
+                    "basis": "user",
+                    "evidence": "终结动作与败方结果清楚可见",
+                    "minimal": true
+                  },
+                  {
+                    "source": "WIND_TOSSED_ROBES: 衣袍被内力带起的微风向后扬起",
+                    "basis": "direction",
+                    "evidence": "衣袍被内力带起的微风吹得向后扬起",
+                    "minimal": true
+                  }
+                ],
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "该单元为JUE_YING以内力震杀SU_LI，结果明确为SU_LI仰倒、青玉剑脱手、无血迹，完全符合用户要求的无血腥击杀结局，衣袍扬起属于可替换的细节，不影响核心结局，动作承接上一单元的剑脊横压姿态，表演连贯。"
+              }
+            },
+            {
+              "shot_id": 3,
+              "beat_index": 3,
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "JUE_YING保持横剑姿态站立，注视仰倒的SU_LI，属于结果展示的hold类型，与描述匹配，无外部交互需求。"
+            }
+          ],
+          "continuity_valid": true,
+          "requested_outcome_valid": true,
+          "reason": "全片三镜场景统一为紫禁城外朝主殿月光琉璃屋顶，人物容貌、服装、兵器全程一致，动作从轻功入场、连续攻防变招到最终击杀的叙事链条连贯，空间关系前后衔接，最终结局满足用户要求的无血腥击杀、败方结果清晰可见的需求。"
+        }
+      }
+    }
+  }
+}

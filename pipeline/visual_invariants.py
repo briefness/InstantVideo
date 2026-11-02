@@ -8,9 +8,10 @@ import re
 from dataclasses import dataclass
 
 from pipeline.causality import EFFECT_PHASES, interaction_geometry
+from pipeline.camera_contract import compile_camera
 
 
-VISUAL_INVARIANTS_VERSION = "visual-invariants-v1"
+VISUAL_INVARIANTS_VERSION = "visual-invariants-v3-subject-motion"
 _POSITION_TERMS = (
     "left", "center", "right", "foreground", "midground", "background",
 )
@@ -92,9 +93,48 @@ def compile_visual_invariants(shot: dict) -> CompiledVisualInvariants:
             )
         )
 
+    camera_parts, camera_projection = compile_camera(shot)
+    orientations = safe_body_orientations(shot.get("blocking"))
+    if orientations:
+        projection["body_orientations"] = orientations
+        projection["body_orientation_scope"] = "initial; subject pose and camera-relative view may evolve with contracted actions"
+        prompt_parts.append(
+            "positive lock - begin with these body orientations; allow subject turns and camera-relative changes required by the Action Contract, even with a fixed camera: "
+            + ", ".join(f"{entity}={orientation}" for entity, orientation in orientations.items())
+        )
+    prompt_parts.extend(camera_parts)
+    projection.update(camera_projection)
+
     if len(projection) == 1:
         return CompiledVisualInvariants((), {})
     return CompiledVisualInvariants(tuple(prompt_parts), projection)
+
+
+def safe_body_orientations(value: object) -> dict[str, str]:
+    """只传递明确、可枚举的朝向；不把自由动作描述带入安全重试。"""
+    if not isinstance(value, dict):
+        return {}
+    result = {}
+    for entity, blocking in value.items():
+        if not isinstance(entity, str) or not entity.strip() or not isinstance(blocking, dict):
+            continue
+        raw = blocking.get("body_orientation")
+        if not isinstance(raw, str):
+            continue
+        text = " ".join(raw.casefold().split())
+        profile = re.fullmatch(r"(?:facing|profile toward) screen-(left|right)", text)
+        if profile:
+            result[entity] = f"profile toward screen-{profile[1]}"
+        elif text in {"facing camera", "toward camera", "front toward camera"}:
+            result[entity] = "facing camera"
+        elif text in {"away from camera", "back to camera"}:
+            result[entity] = "back to camera"
+        elif re.fullmatch(
+            r"three-quarter toward (?:screen-(?:left|right) and )?(?:foreground|background), "
+            r"(?:toward|away from) camera", text
+        ):
+            result[entity] = text
+    return result
 
 
 def visual_invariants_fingerprint(shot: dict) -> str | None:

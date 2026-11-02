@@ -9,10 +9,18 @@ import tempfile
 from dataclasses import dataclass, asdict, field, replace
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from openai import OpenAI
 
 import config
+from pipeline.llm_options import structured_output_options
+from pipeline.structured_response import load_unique_json, StructuredResponseError, completion_response_record
+from pipeline.performance import measured_performance
+from pipeline.review_observability import (
+    OBSERVABILITY_INSTRUCTION, nullable_observation_schema, unobservable_fields,
+    project_boundary_observations,
+)
 from pipeline.causality import (
     CompiledActionContract,
     compile_action_contract,
@@ -32,7 +40,7 @@ from tools.frame_extractor import (
 )
 
 
-SEMANTIC_REVIEW_VERSION = "continuity-v18-temporal-causality"
+SEMANTIC_REVIEW_VERSION = "continuity-v24-boundary-applicability"
 _STANDARD_SAMPLING_POLICY = "five-point-v1"
 _CAUSAL_SAMPLING_POLICY = "adaptive-nine-point-v1"
 _STANDARD_COMPLETION_TOKENS = 4096
@@ -104,6 +112,10 @@ class SemanticReview:
     screen_direction_valid: bool = True
     prop_continuity_valid: bool = True
     visual_invariants_valid: bool = True
+    action_timing_valid: bool = True
+    requested_outcome_valid: bool = True
+    action_sequence_valid: bool = True
+    creative_brief_valid: bool = True
     identity_crop_boxes: dict[str, tuple[float, float, float, float]] = field(
         default_factory=dict
     )
@@ -119,7 +131,22 @@ class SemanticReview:
         require_blocking: bool = False,
         require_composition: bool = False,
         require_visual_invariants: bool = False,
+        require_timing: bool = False,
+        require_outcome: bool = False,
+        require_sequence: bool = False,
+        require_creative_brief: bool = False,
+        require_observability: bool = False,
     ) -> "SemanticReview":
+        if require_observability and any(name not in value for name in ('identity_continuity_valid', 'boundary_continuity_valid')):
+            raise SemanticReviewUnavailableError('身份或连续性观察缺失；保留原片，不自动重拍')
+        boolean_schema = {'type': 'object', 'properties': {
+            name: {'type': 'boolean'} for name, definition in cls.__dataclass_fields__.items()
+            if definition.type in (bool, 'bool')
+        }}
+        boolean_schema['properties']['required_entities_visible'] = {
+            'type': 'array', 'items': {'type': 'boolean'}}
+        if unobservable_fields(value, boolean_schema):
+            raise SemanticReviewUnavailableError('画面观察不足，不能确认验收；保留原片，不自动重拍')
         required = value.get("required_entities_visible", {})
         observed = value.get("observed_end_state", {})
         review = cls(
@@ -200,6 +227,14 @@ class SemanticReview:
                 "visual_invariants_valid",
                 default=not require_visual_invariants,
             ),
+            action_timing_valid=_strict_bool(value.get('action_timing_valid'), 'action_timing_valid',
+                                            default=not require_timing),
+            requested_outcome_valid=_strict_bool(value.get('requested_outcome_valid'), 'requested_outcome_valid',
+                                                default=not require_outcome),
+            action_sequence_valid=_strict_bool(value.get('action_sequence_valid'), 'action_sequence_valid',
+                                               default=not require_sequence),
+            creative_brief_valid=_strict_bool(value.get('creative_brief_valid'), 'creative_brief_valid',
+                                              default=not require_creative_brief),
             identity_crop_boxes=_parse_crop_boxes(
                 value.get("identity_crop_boxes")
             ),
@@ -221,6 +256,10 @@ class SemanticReview:
             and review.screen_direction_valid
             and review.prop_continuity_valid
             and review.visual_invariants_valid
+            and review.action_timing_valid
+            and review.requested_outcome_valid
+            and review.action_sequence_valid
+            and review.creative_brief_valid
         )
         reason = "" if objectively_valid else review.failure_reason
         if not objectively_valid and not reason:
@@ -264,6 +303,14 @@ def _objective_failure_reason(review: SemanticReview) -> str:
         reasons.append("持续道具或武器形态不连续")
     if not review.visual_invariants_valid:
         reasons.append("镜头违反声明的环境、主体、道具、灯光或空间不变量")
+    if not review.action_timing_valid:
+        reasons.append("有效动作时间或结果建立与持续确认不符合时间契约")
+    if not review.requested_outcome_valid:
+        reasons.append("未实现用户明确要求的可见结局；完成分镜动作不能替代用户目标")
+    if not review.action_sequence_valid:
+        reasons.append("有序动作事件的执行者、作用、反应或时间窗未逐一成立")
+    if not review.creative_brief_valid:
+        reasons.append("未满足本镜应呈现的用户原始要求；编舞自由不能取消明确要求")
     return "；".join(reasons) or "语义验收未通过"
 
 
@@ -327,11 +374,27 @@ class SemanticTakeReviewer:
         *,
         previous_frame_path: str | None = None,
         identity_reference_paths: list[str] | None = None,
+        identity_reference_entities: list[str] | None = None,
         boundary_context: dict[str, Any] | None = None,
         identity_crop_entities: list[str] | None = None,
     ) -> SemanticReview:
+        supplied_references = [path for path in [previous_frame_path, *(identity_reference_paths or [])]
+                               if path is not None]
+        if any(not path or not Path(path).is_file() for path in supplied_references):
+            raise SemanticReviewUnavailableError('已指定的验收参考素材缺失；保留原片，不自动重拍')
+        if identity_reference_entities is not None and (
+            len(identity_reference_entities) != len(identity_reference_paths or [])
+            or any(not isinstance(name, str) or not name.strip() for name in identity_reference_entities)
+            or len(set(identity_reference_entities)) != len(identity_reference_entities)
+        ):
+            raise SemanticReviewUnavailableError('身份参考与人物绑定不完整或重复；未开始评审')
         video_hash = _sha256_file(Path(video_path))
         contract = _review_contract(shot)
+        from pipeline.media_selection import media_selection_policy, resolve_media_window
+        selection = media_selection_policy(shot)
+        window = resolve_media_window(shot, video_path)
+        if selection:
+            contract['media_selection'] = selection
         invariant_review = bool(contract.get("visual_invariants"))
         causal_review = requires_causal_review(shot)
         boundary_review = bool(
@@ -350,7 +413,9 @@ class SemanticTakeReviewer:
             causal_review or state_handoff_review
         )
         action_contract = compile_action_contract(shot)
-        evidence_review = action_contract.requires_evidence
+        action_events = action_contract.review_projection.get('action_events') or []
+        outcome_review = (action_contract.review_projection.get('performance_policy') or {}).get('version') == 'performance-v2-outcomes'
+        evidence_review = action_contract.requires_evidence and not action_events
         narrative_review = requires_narrative_review(shot)
         blocking_review = bool(shot.get("blocking"))
         production_slot = shot.get("production_slot")
@@ -365,8 +430,11 @@ class SemanticTakeReviewer:
             and shot.get("composition_change") in {"medium", "large"}
         )
         contract["boundary_context"] = boundary_context or {}
+        contract['observation_scope'] = {'cross_shot_boundary': boundary_review}
         crop_entities = list(dict.fromkeys(identity_crop_entities or []))
         contract["identity_crop_entities"] = crop_entities
+        if identity_reference_entities is not None:
+            contract['identity_reference_entities'] = identity_reference_entities
         contract_hash = hashlib.sha256(
             json.dumps(contract, sort_keys=True, ensure_ascii=False).encode()
         ).hexdigest()
@@ -379,7 +447,7 @@ class SemanticTakeReviewer:
             "model": self.model,
             "reviewer_version": SEMANTIC_REVIEW_VERSION,
             "sampling_policy": (
-                _CAUSAL_SAMPLING_POLICY
+                'outcome-coverage-4fps-max64-v1' if outcome_review else _CAUSAL_SAMPLING_POLICY
                 if causal_review else _STANDARD_SAMPLING_POLICY
             ),
             "image_detail": config.SEMANTIC_REVIEW_IMAGE_DETAIL,
@@ -392,6 +460,7 @@ class SemanticTakeReviewer:
                 "midpoint" if first_frame_handoff else "first-sample"
             ),
             "causal_evidence_policy": (
+                "ordered-events-v1" if action_events else
                 "ordered-samples-v2" if evidence_review else "legacy-aggregate"
             ),
             "boundary_evidence_policy": (
@@ -400,6 +469,8 @@ class SemanticTakeReviewer:
             "response_format_policy": "strict-json-schema-v1",
             "max_completion_tokens": completion_token_budget,
         }
+        if window:
+            evaluator['media_selection'] = window
         evaluator_hash = hashlib.sha256(
             json.dumps(evaluator, sort_keys=True).encode()
         ).hexdigest()
@@ -412,12 +483,21 @@ class SemanticTakeReviewer:
         ):
             try:
                 cached_review = dict(cached["review"])
+                gaps = unobservable_fields(cached.get('action_event_evidence'), action_contract.event_evidence_schema())
+                if evidence_review:
+                    gaps.extend(unobservable_fields(cached.get('causal_sample_evidence'),
+                        action_contract.evidence_json_schema(len(cached.get('sample_timestamps') or []))))
+                if gaps:
+                    raise SemanticReviewUnavailableError('缓存画面观察不足；保留原片，不自动重拍')
                 if evidence_review:
                     _apply_causal_evidence_verdict(
                         cached_review,
                         action_contract,
                         cached.get("causal_sample_evidence"),
                     )
+                if action_events:
+                    _apply_event_evidence_verdict(cached_review, action_contract, cached.get('action_event_evidence'),
+                                                  timestamps=cached.get('sample_timestamps'), media_duration=cached.get('media_duration'))
                 return SemanticReview.from_dict(
                     cached_review,
                     require_causality=causal_review,
@@ -425,6 +505,11 @@ class SemanticTakeReviewer:
                     require_blocking=blocking_review,
                     require_composition=composition_review,
                     require_visual_invariants=invariant_review,
+                    require_timing=bool(action_contract.review_projection.get('action_timing')),
+                    require_outcome=bool(action_contract.review_projection.get('required_final_outcome')),
+                    require_sequence=bool(action_events),
+                    require_creative_brief=bool(action_contract.review_projection.get('performance_policy')),
+                    require_observability=True,
                 )
             except ValueError:
                 pass
@@ -433,8 +518,30 @@ class SemanticTakeReviewer:
             api_key=config.ARK_API_KEY,
             base_url=config.ARK_BASE_URL,
         )
-        duration = get_video_duration(video_path)
+        duration = window['duration'] if window else get_video_duration(video_path)
         timestamps = _sample_timestamps(duration, dense=causal_review)
+        timing = action_contract.review_projection.get('action_timing')
+        if timing:
+            # 覆盖每段动作内部，尤其是很短的结果保持区；不只按全片等距抽样。
+            centers = [(item['start_seconds'] + item['end_seconds']) / 2 for item in timing['intervals']]
+            timestamps = tuple(sorted(set((*timestamps, *(round(min(duration - .05, t), 3) for t in centers)))))
+        if action_events:
+            event_times = [t for e in action_events for t in (
+                e['effect_at_seconds'], e['reaction_at_seconds'],
+                (e['reaction_at_seconds'] + e['end_seconds']) / 2)]
+            event_times.extend(t for e in action_events if e.get('flow_from_previous')
+                               for t in (e['start_seconds'] - .1, e['start_seconds'] + .1))
+            timestamps = tuple(sorted(set((*timestamps, *(round(max(0, min(duration - .05, t)), 3) for t in event_times)))))
+        if outcome_review:
+            # Uniform coverage makes gaps visible independently of the planned choreography.
+            # Bound vision payloads for longer clips; the actual gaps remain in the evidence.
+            count = min(64, max(2, int(duration * 4) + 1))
+            timestamps = tuple(round(min(duration - .05, i * duration / (count - 1)), 3)
+                               for i in range(count))
+        if window:
+            # 末端观察与续拍使用同一个仍在剪辑区间内的样本。
+            timestamps = tuple(sorted(set([*(t for t in timestamps if 0 <= t <= window['last_sample_seconds']),
+                                           window['last_sample_seconds']])))
         required_entities = [
             str(entity) for entity in contract.get("required_visible_entities") or []
         ]
@@ -459,6 +566,22 @@ class SemanticTakeReviewer:
             "visual_invariants_valid, " if invariant_review else ""
         )
         causal_instruction = action_contract.review_instruction
+        if action_events:
+            causal_instruction = action_contract.event_review_instruction()
+        if action_contract.review_projection.get('required_final_outcome'):
+            causal_instruction += (
+                ' Return requested_outcome_valid=false unless the actual frames visibly satisfy '
+                'required_final_outcome from the user, independently of the storyboard-authored '
+                'endpoint and causal evidence. A weaker storyboard outcome cannot replace it. '
+            )
+        if timing and not action_contract.review_projection.get('performance_policy'):
+            causal_instruction += (
+                ' Return action_timing_valid=false if interaction windows are mostly posing, '
+                'waiting or camera-only movement, if actions occur out of order, or if the '
+                'final held outcome has not first been visibly established. Judge the actual '
+                'timestamped samples, not the schedule text. Sparse samples do not certify '
+                'frame-exact timing; reject when the required activity is not visibly supported. '
+            )
         causal_evidence_instruction = (
             action_contract.evidence_prompt(len(timestamps))
             if evidence_review else ""
@@ -502,6 +625,10 @@ class SemanticTakeReviewer:
             "position, body orientation, facing target, eyeline, travel direction, and "
             "action target. Reject a readable effect when the body, weapon, gaze, or effect "
             "source points away from its target. "
+            "Body orientation is an initial camera-relative "
+            "constraint: subjects may turn during contracted actions even with a fixed camera; "
+            "its apparent view may also evolve with a moving camera, while physical targeting "
+            "and the declared screen-axis rule must remain coherent. "
             if blocking_review else ""
         )
         plan_instruction = (
@@ -555,16 +682,16 @@ class SemanticTakeReviewer:
                 "text": (
                     "Shot contract:\n"
                     + json.dumps(contract, ensure_ascii=False)
-                    + "\nReturn strict JSON booleans for accepted, "
+                    + "\nReturn JSON boolean-or-null observations for accepted, "
                     + "action_geometry_valid, "
                     + causal_fields
                     + narrative_fields
                     + blocking_fields
                     + composition_fields
                     + invariant_fields
-                    + "primary_action_completed, boundary_continuity_valid, and "
+                    + "primary_action_completed, and "
                     "identity_continuity_valid. When a previous-shot tail is supplied, "
-                    "also return strict booleans for environment_continuity_valid, "
+                    "also return boolean-or-null observations for boundary_continuity_valid, environment_continuity_valid, "
                     "action_handoff_valid, screen_direction_valid, and "
                     "prop_continuity_valid. Return observed_end_state with "
                     + ", ".join(_OBSERVED_STATE_KEYS)
@@ -596,12 +723,12 @@ class SemanticTakeReviewer:
                     _image_content(Path(previous_frame_path)),
                 ])
             for index, path in enumerate(identity_reference_paths or [], start=1):
-                if not Path(path).is_file():
-                    continue
+                label = (json.dumps(identity_reference_entities[index - 1], ensure_ascii=False)
+                         if identity_reference_entities is not None else str(index))
                 content.extend([
                     {
                         "type": "text",
-                        "text": f"Canonical identity reference {index}:",
+                        "text": f"Canonical identity reference {index} for character {label}:",
                     },
                     _image_content(Path(path)),
                 ])
@@ -628,8 +755,8 @@ class SemanticTakeReviewer:
                         "You are a strict film continuity supervisor. Review the candidate "
                         "frames against the shot contract and supplied accepted references. "
                         "Reject identity drift, unmotivated boundary changes, or when a "
-                        "required entity is absent or unreadable, the contracted spatial "
-                        "relationship is not readable, action direction is wrong, or the "
+                        "required entity is visibly absent, the contracted spatial "
+                        "relationship is visibly violated, action direction is wrong, or the "
                         "primary action is not completed. Camera polish cannot compensate "
                         "for failed action geography. "
                         + causal_instruction
@@ -650,7 +777,7 @@ class SemanticTakeReviewer:
                         "excuse a redesigned street, character, weapon, subject count, or reset "
                         "action. identity_continuity_valid must reject armor, silhouette, color, "
                         "face, or weapon-mount drift even when no canonical identity image exists. "
-                        "Return JSON only."
+                        "Return JSON only. " + OBSERVABILITY_INSTRUCTION
                     ),
                 },
                 {
@@ -659,6 +786,9 @@ class SemanticTakeReviewer:
                 },
             ]
             parsed = None
+            response_path = self.cache_dir / 'responses' / video_hash / f'{uuid4().hex}.json'
+            response_path.parent.mkdir(parents=True, exist_ok=True)
+            received = []
             for attempt in range(1, _MAX_RESPONSE_ATTEMPTS + 1):
                 response = client.chat.completions.create(
                     model=self.model,
@@ -666,14 +796,25 @@ class SemanticTakeReviewer:
                     temperature=0,
                     response_format=response_format,
                     max_completion_tokens=completion_token_budget,
+                    **structured_output_options(self.model),
                 )
+                received.append(completion_response_record(response, model=self.model))
+                _atomic_write_json(response_path, {
+                    'video_hash': video_hash, 'contract_hash': contract_hash,
+                    'evaluator_hash': evaluator_hash, 'attempts': received,
+                })
                 raw, diagnostic, refused = _completion_payload(response)
                 if refused:
                     raise SemanticReviewUnavailableError(
                         f"语义验收被服务端拒绝，未重试 ({diagnostic})"
                     )
                 try:
-                    candidate = json.loads(raw)
+                    candidate = load_unique_json(raw)
+                except StructuredResponseError as exc:
+                    # 冲突判断不能按 JSON 格式修复，否则后值可能覆盖否定证据。
+                    raise SemanticReviewUnavailableError(
+                        '语义验收响应包含重复字段；保留原片，未重试或提交重拍'
+                    ) from exc
                 except (TypeError, json.JSONDecodeError) as exc:
                     if attempt < _MAX_RESPONSE_ATTEMPTS:
                         print(
@@ -685,6 +826,17 @@ class SemanticTakeReviewer:
                         f"语义验收连续 {_MAX_RESPONSE_ATTEMPTS} 次未返回可解析 JSON "
                         f"({diagnostic}): {exc}"
                     ) from exc
+                observed_candidate = candidate
+                candidate = project_boundary_observations(candidate, applicable=boundary_review,
+                    fields=('boundary_continuity_valid', *_BOUNDARY_REVIEW_FIELDS))
+                gaps = unobservable_fields(candidate, response_format['json_schema']['schema'])
+                if gaps:
+                    _atomic_write_json(self.cache_dir / f'{video_hash}.evidence.json', {
+                        'video_hash': video_hash, 'contract_hash': contract_hash, 'evaluator_hash': evaluator_hash,
+                        'sample_timestamps': timestamps, 'media_duration': duration,
+                        'status': 'unavailable', 'unobservable_fields': gaps,
+                        'observation_scope': contract['observation_scope'], 'response': observed_candidate})
+                    raise SemanticReviewUnavailableError('画面观察不足或看不清，无法确认验收；保留原片，不自动重拍')
                 shape_issues = _response_shape_issues(
                     candidate,
                     required_entities=required_entities,
@@ -727,6 +879,19 @@ class SemanticTakeReviewer:
                 break
         assert parsed is not None
         causal_evidence = None
+        event_evidence = parsed.get('action_event_evidence') if action_events else None
+        if action_events:
+            try:
+                _apply_event_evidence_verdict(parsed, action_contract, event_evidence, timestamps=timestamps, media_duration=duration)
+            except SemanticReviewUnavailableError:
+                # Evidence failure is recoverable review work, never a rejected take/paid retake.
+                _atomic_write_json(self.cache_dir / f'{video_hash}.evidence.json', {
+                    'video_hash': video_hash, 'contract_hash': contract_hash, 'evaluator_hash': evaluator_hash,
+                    'sample_timestamps': timestamps, 'action_event_evidence': event_evidence,
+                    'media_duration': duration,
+                    'status': 'unavailable', 'observation_scope': contract['observation_scope'],
+                    'response': parsed})
+                raise
         if evidence_review:
             causal_evidence = parsed.get("causal_sample_evidence")
             _apply_causal_evidence_verdict(
@@ -835,6 +1000,11 @@ class SemanticTakeReviewer:
                 require_blocking=blocking_review,
                 require_composition=composition_review,
                 require_visual_invariants=invariant_review,
+                require_timing=bool(action_contract.review_projection.get('action_timing')),
+                require_outcome=bool(action_contract.review_projection.get('required_final_outcome')),
+                require_sequence=bool(action_events),
+                require_creative_brief=bool(action_contract.review_projection.get('performance_policy')),
+                require_observability=True,
             )
         except ValueError as exc:
             raise SemanticReviewUnavailableError(
@@ -854,7 +1024,13 @@ class SemanticTakeReviewer:
             "evaluator": evaluator,
             "composition_similarity": composition_similarity,
             "causal_sample_evidence": causal_evidence,
+            "action_event_evidence": event_evidence,
+            "sample_timestamps": timestamps,
+            "media_duration": duration,
+            "timing_assessment": parsed.get('timing_assessment'),
+            "action_contract": asdict(action_contract) if outcome_review else None,
             "boundary_state_evidence": boundary_state_evidence,
+            "observation_scope": contract['observation_scope'],
             "review": asdict(review),
         })
         return review
@@ -871,11 +1047,43 @@ def _review_contract(shot: dict) -> dict[str, Any]:
         )
     }
     contract.update(compile_action_contract(shot).review_projection)
+    if (contract.get('performance_policy') or {}).get('version') == 'performance-v2-outcomes':
+        # 自由编舞的计划时间不是观测依据；只给验收器实际采样时间和时长要求。
+        # 冻结计划与精确动作复现仍保留原时间表，不在这里修改共享合同。
+        contract.pop('action_timing', None)
+        for event in contract['action_events']:
+            for key in ('start_seconds', 'end_seconds', 'effect_at_seconds', 'reaction_at_seconds'):
+                event.pop(key, None)
     visual_invariants = compile_visual_invariants(shot)
     if visual_invariants.required:
         contract["visual_invariants"] = visual_invariants.review_projection
     contract["narrative_carriers"] = list(compile_narrative_carriers(contract))
     return contract
+
+
+def _apply_event_evidence_verdict(value: dict, contract: CompiledActionContract, evidence: object,
+                                  *, timestamps=None, media_duration=None) -> None:
+    issues = contract.event_evidence_issues(evidence)
+    policy = contract.review_projection.get('performance_policy') or {}
+    if policy.get('version') == 'performance-v2-outcomes':
+        # An invalid observation is not evidence that spending on another video helps.
+        try:
+            if contract.event_evidence_shape_issues(evidence):
+                raise ValueError('时间证据结构无效')
+            measurement = measured_performance(evidence,
+                {**policy, 'duration': media_duration} if media_duration is not None else policy, timestamps)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise SemanticReviewUnavailableError('时间证据无效或缺少采样来源；保留原片，不自动重拍') from exc
+        value['timing_assessment'] = measurement
+        if measurement['status'] == 'uncertain' and not issues:
+            raise SemanticReviewUnavailableError('时间证据的采样范围跨越验收阈值，无法确定达标；保留原片，不自动重拍')
+        if measurement['status'] == 'failed':
+            issues.append('采样范围已确认实际交互时长或结果保持不足')
+        value['action_timing_valid'] = measurement['status'] == 'passed'
+    value['action_sequence_valid'] = not issues
+    if issues:
+        value['accepted'] = False
+        value['failure_reason'] = '；'.join(issues)
 
 
 def _completion_token_budget(causal_review: bool) -> int:
@@ -908,7 +1116,14 @@ def _response_shape_issues(
         "accepted",
         "action_geometry_valid",
         "primary_action_completed",
+        "identity_continuity_valid",
     ]
+    if action_contract.review_projection.get('action_timing'):
+        required_booleans.append('action_timing_valid')
+    if action_contract.review_projection.get('required_final_outcome'):
+        required_booleans.append('requested_outcome_valid')
+    if action_contract.review_projection.get('performance_policy'):
+        required_booleans.append('creative_brief_valid')
     if causal_review and not evidence_review:
         required_booleans.extend([
             "effect_path_valid",
@@ -923,12 +1138,15 @@ def _response_shape_issues(
     if invariant_review:
         required_booleans.append("visual_invariants_valid")
     if boundary_review:
+        required_booleans.append('boundary_continuity_valid')
         required_booleans.extend(_BOUNDARY_REVIEW_FIELDS)
     issues = [
         f"{field} 必须是布尔值"
         for field in required_booleans
         if not isinstance(value.get(field), bool)
     ]
+    if action_contract.review_projection.get('action_events'):
+        issues.extend(action_contract.event_evidence_shape_issues(value.get('action_event_evidence')))
 
     visibility = value.get("required_entities_visible")
     if isinstance(visibility, list):
@@ -1001,7 +1219,6 @@ def _review_response_format(
         },
         "action_geometry_valid": {"type": "boolean"},
         "primary_action_completed": {"type": "boolean"},
-        "boundary_continuity_valid": {"type": "boolean"},
         "identity_continuity_valid": {"type": "boolean"},
         "observed_end_state": {
             "type": "object",
@@ -1034,6 +1251,14 @@ def _review_response_format(
         },
         "failure_reason": {"type": "string"},
     }
+    if action_contract.review_projection.get('action_timing'):
+        properties['action_timing_valid'] = {'type': 'boolean'}
+    if action_contract.review_projection.get('required_final_outcome'):
+        properties['requested_outcome_valid'] = {'type': 'boolean'}
+    if action_contract.review_projection.get('performance_policy'):
+        properties['creative_brief_valid'] = {'type': 'boolean'}
+    if action_contract.review_projection.get('action_events'):
+        properties['action_event_evidence'] = action_contract.event_evidence_schema()
     if causal_review:
         properties.update({
             "effect_path_valid": {"type": "boolean"},
@@ -1052,6 +1277,7 @@ def _review_response_format(
     if invariant_review:
         properties["visual_invariants_valid"] = {"type": "boolean"}
     if boundary_review:
+        properties['boundary_continuity_valid'] = {'type': 'boolean'}
         properties.update({
             field: {"type": "boolean"}
             for field in _BOUNDARY_REVIEW_FIELDS
@@ -1083,31 +1309,42 @@ def _review_response_format(
         "json_schema": {
             "name": "semantic_take_review",
             "strict": True,
-            "schema": {
+            "schema": nullable_observation_schema({
                 "type": "object",
                 "properties": properties,
                 "required": list(properties),
                 "additionalProperties": False,
-            },
+            }),
         },
     }
 
 
 def _completion_payload(response: Any) -> tuple[str, str, bool]:
     choices = getattr(response, "choices", None) or []
+    if len(choices) != 1:
+        raise SemanticReviewUnavailableError('语义验收必须返回一个完整判断；保留原片，未重试')
     choice = choices[0] if choices else None
     message = getattr(choice, "message", None)
     content = getattr(message, "content", None)
     raw = content if isinstance(content, str) else ""
-    finish_reason = str(getattr(choice, "finish_reason", None) or "unknown")
+    finish = getattr(choice, "finish_reason", None)
+    finish_reason = finish if isinstance(finish, str) and finish in (
+        'stop', 'length', 'tool_calls', 'function_call', 'content_filter', 'safety',
+    ) else 'unknown'
     refusal = getattr(message, "refusal", None)
     usage = getattr(response, "usage", None)
     completion_tokens = getattr(usage, "completion_tokens", None)
+    if type(completion_tokens) is not int or completion_tokens < 0:
+        completion_tokens = None
     diagnostic = (
         f"finish_reason={finish_reason}, content_length={len(raw)}, "
         f"completion_tokens={completion_tokens if completion_tokens is not None else 'unknown'}"
     )
     refused = bool(refusal) or finish_reason in {"content_filter", "safety"}
+    if not refused and finish_reason != 'stop':
+        raise SemanticReviewUnavailableError(
+            f'语义验收响应未完整结束；保留原片，未重试 ({diagnostic})'
+        )
     return raw, diagnostic, refused
 
 

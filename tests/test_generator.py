@@ -1025,7 +1025,7 @@ async def test_offline_revalidated_take_is_reused_on_next_resume_with_tail(
         def accepted_identity_crop_boxes(self, _path):
             return {}
 
-    def persist_tail(shot_id, _path):
+    def persist_tail(shot_id, _path, shot=None):
         tail = generator.output_dir / "shots" / f"shot_{shot_id:03d}_lastframe.jpg"
         tail.write_bytes(b"tail")
         return str(tail)
@@ -1144,6 +1144,7 @@ async def test_accepted_resume_restores_cached_identity_crops_without_review(
         "shot_id": 1,
         "video_path": str(accepted),
         "crop_boxes": crop_boxes,
+        "shot": shot,
     }]
 
 

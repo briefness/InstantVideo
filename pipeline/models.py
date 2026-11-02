@@ -5,9 +5,10 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
 
 import config
+from pipeline.action_results import SceneChangeSpec, scene_change_issues
 
 
 class CameraSpec(BaseModel):
@@ -60,6 +61,14 @@ class CharacterBlockingSpec(BaseModel):
     action_target: str = ""
 
 
+class VisibleOutcomeSpec(BaseModel):
+    """Observable state obligation, separate from the director's chosen maneuver."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    entity: str = Field(min_length=1, max_length=1600)
+    state: str = Field(min_length=1, max_length=1600)
+
+
 class ActionBeatSpec(BaseModel):
     """One causal phase inside a shot, kept separate from camera movement."""
 
@@ -70,11 +79,39 @@ class ActionBeatSpec(BaseModel):
     action: str = Field(min_length=1)
     target: str = ""
     visible_result: str = ""
+    outcomes: list[VisibleOutcomeSpec] | None = Field(default=None, min_length=1, max_length=16)
+    scene_changes: list[SceneChangeSpec] | None = Field(default=None, max_length=14)
+    result_directions: list[str] | None = Field(default=None, max_length=30)
+    start_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
+    end_seconds: float | None = Field(default=None, gt=0, strict=True, allow_inf_nan=False)
+    activity: Literal["interaction", "transition", "hold"] | None = None
+    interaction_geometry: InteractionGeometrySpec | None = None
+    effect_at_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
+    reaction_at_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
+    response_kind: Literal["impact", "evasion", "deflection"] | None = None
+    flow_from_previous: str | None = Field(default=None, min_length=1, max_length=800)
+
+    @model_validator(mode='after')
+    def owned_outcomes(self):
+        if self.outcomes is not None:
+            entities = [outcome.entity for outcome in self.outcomes]
+            if (self.activity != 'interaction' or self.target not in entities
+                    or (self.scene_changes is None and len(entities) != len(set(entities)))
+                    or not set(entities) <= {self.actor, self.target}):
+                raise ValueError('可见结果只能属于本次交互参与者且必须覆盖目标')
+        return self
 
     @field_validator("actor", "action", "target", "visible_result", mode="before")
     @classmethod
     def strip_beat_text(cls, value: Any) -> Any:
         return value.strip() if isinstance(value, str) else value
+
+    @field_validator("interaction_geometry")
+    @classmethod
+    def canonicalize_empty_event_geometry(cls, value: InteractionGeometrySpec | None) -> InteractionGeometrySpec | None:
+        # 显式全空的 none 对象与缺省表示同一含义；任何实际作用字段都必须保留供校验。
+        empty = InteractionGeometrySpec(effect_phase="none", outcome_scope="none", effect_motion="none")
+        return None if value == empty else value
 
 
 class CharacterSpec(BaseModel):
@@ -303,6 +340,49 @@ class NarrativeBeatSpec(BaseModel):
         return "progress"
 
 
+class DirectorIntentSpec(BaseModel):
+    """Frozen semantic reading with evidence from the unmodified user request."""
+
+    model_config = ConfigDict(extra="forbid")
+    source_request: str = Field(min_length=1, max_length=16000)
+    content_focus: Literal["action", "product", "balanced"]
+    pacing: Literal["dense", "balanced", "atmospheric"]
+    intent_evidence: str = Field(min_length=1, max_length=16000)
+    ending_requirement: str = Field(default="", max_length=1200)
+    ending_evidence: str = Field(default="", max_length=16000)
+    motion_control: Literal["text_guided", "reference_motion"] = "text_guided"
+    motion_control_evidence: str = Field(default="", max_length=16000)
+    choreography: Literal["exact", "flexible"] | None = None
+    requested_duration_seconds: int | None = Field(default=None, strict=True, ge=4, le=600)
+    duration_evidence: str | None = Field(default=None, min_length=1, max_length=16000)
+    requested_shot_count: int | None = Field(default=None, strict=True, ge=1, le=150)
+    shot_count_evidence: str | None = Field(default=None, min_length=1, max_length=16000)
+
+    @model_validator(mode="after")
+    def grounded_intent(self) -> "DirectorIntentSpec":
+        for value, evidence in ((self.requested_duration_seconds, self.duration_evidence),
+                                (self.requested_shot_count, self.shot_count_evidence)):
+            if (value is None) != (evidence is None):
+                raise ValueError('时长或段数要求与原文依据必须成对提供')
+            if evidence is not None and (not evidence.strip() or evidence not in self.source_request):
+                raise ValueError('时长或段数要求必须逐字引用原文')
+        if not self.intent_evidence.strip() or self.intent_evidence not in self.source_request:
+            raise ValueError("意图依据必须逐字引用用户原文")
+        if self.pacing == "dense" and self.content_focus != "action":
+            raise ValueError("密集交互节奏必须与动作重心一致")
+        if self.ending_requirement:
+            if not self.ending_evidence.strip() or self.ending_evidence not in self.source_request:
+                raise ValueError("结局要求必须有原文依据")
+        elif self.ending_evidence:
+            raise ValueError("结局依据缺少对应要求")
+        if self.motion_control == "reference_motion":
+            if not self.motion_control_evidence.strip() or self.motion_control_evidence not in self.source_request:
+                raise ValueError("动作参考要求必须有原文依据")
+        elif self.motion_control_evidence:
+            raise ValueError("动作参考依据缺少对应要求")
+        return self
+
+
 class ProductionSlotSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -317,6 +397,12 @@ class ProductionSlotSpec(BaseModel):
     ] = Field(min_length=1)
     outcome_scope: Literal["none", "single", "subset", "all"] | None = None
     requires_visible_result: bool
+    min_interaction_seconds: float = Field(default=0, ge=0, allow_inf_nan=False)
+    min_interaction_events: int = Field(default=0, ge=0, le=12, strict=True)
+    result_hold_seconds: float = Field(default=0, ge=0, allow_inf_nan=False)
+    required_outcome: str | None = Field(default=None, max_length=1200)
+    choreography: Literal["exact", "flexible"] | None = None
+    creative_brief: str | None = Field(default=None, max_length=16000)
     coverage_roles: list[
         Literal[
             "establish", "action_subject", "target_reaction",
@@ -333,17 +419,50 @@ class ProductionSlotSpec(BaseModel):
 class ProductionPlanSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    version: Literal["production-plan-v1"]
+    version: Literal["production-plan-v1", "production-plan-v2-short-payoff", "production-plan-v3-intent-timing", "production-plan-v4-events", "production-plan-v5-payoff-events", "production-plan-v6-performance", "production-plan-v7-film-rhythm", "production-plan-v8-request-shape"]
+    min_interaction_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
+    director_intent: DirectorIntentSpec | None = None
     content_focus: Literal["balanced", "action", "product"]
     target_duration: int = Field(gt=0)
     planned_duration: int = Field(gt=0)
     slots: list[ProductionSlotSpec] = Field(min_length=1)
 
 
+class MotionReferenceSpec(BaseModel):
+    """Local snapshot plus an explicitly bound provider asset; never observed state."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, hide_input_in_errors=True)
+
+    path: str = Field(min_length=1, max_length=512)
+    sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    model: Literal[
+        "doubao-seedance-2-0-mini-260615",
+        "doubao-seedance-2-0-fast-260128",
+        "doubao-seedance-2-0-260128",
+        "doubao-seedance-2.0-mini",
+        "doubao-seedance-2.0-fast",
+        "doubao-seedance-2.0",
+    ]
+    asset_uri: str | None = Field(default=None, pattern=r"^asset://[A-Za-z0-9_-]{1,128}$")
+    video_url: str | None = None
+
+    @model_validator(mode="after")
+    def require_one_reference_location(self) -> "MotionReferenceSpec":
+        if self.asset_uri is not None and self.video_url is not None:
+            raise ValueError("素材 ID 与公网链接只能选择一个")
+        if self.video_url is not None:
+            from tools.reference_video_url import validate_public_video_url
+
+            validate_public_video_url(self.video_url)
+        return self
+
+
 class ShotSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     shot_id: int = Field(gt=0)
+    motion_reference: MotionReferenceSpec | None = None
     duration: int = Field(
         default=config.DEFAULT_DURATION,
         ge=config.MIN_SHOT_DURATION,
@@ -354,10 +473,17 @@ class ShotSpec(BaseModel):
     scene_id: str = ""
     scene_description: str = Field(min_length=1)
     prompt_en: str = Field(min_length=1)
+    # 独立视觉设计不能只藏在旧 prompt_en 中；缺省不迁移历史镜头。
+    visual_description: str | None = Field(default=None, min_length=1, max_length=1600)
     continuity_from_previous: Literal[
         "none", "seamless", "intentional_cut"
     ] = "none"
     composition_change: Literal["small", "medium", "large"] = "medium"
+    result_admission: Literal['review-required-v1', 'reviewed-results-v1'] | None = None
+    # 新编译稿显式启用；历史任务缺省保持原提示、合同指纹和恢复语义。
+    generation_rhythm: Literal['allocated-v1'] | None = None
+    generation_direction: Literal['authored-staging-v1'] | None = None
+    media_selection: Literal['planned-prefix-v1'] | None = None
     coverage_role: Literal[
         "establish", "action_subject", "target_reaction",
         "interaction", "aftermath", "insert",
@@ -369,7 +495,7 @@ class ShotSpec(BaseModel):
     narrative_beat: NarrativeBeatSpec | None = None
     production_slot: ProductionSlotSpec | None = None
     primary_action: str = ""
-    action_beats: list[ActionBeatSpec] = Field(default_factory=list, max_length=3)
+    action_beats: list[ActionBeatSpec] = Field(default_factory=list, max_length=12)
     start_state: ContinuityStateSpec = Field(default_factory=ContinuityStateSpec)
     end_state: ContinuityStateSpec = Field(default_factory=ContinuityStateSpec)
     observed_end_state: ContinuityStateSpec | None = None
@@ -385,6 +511,14 @@ class ShotSpec(BaseModel):
     extract_character_ref: bool = False
     key_props: list[str] = Field(default_factory=list)
     continuity_props: list[str] = Field(default_factory=list)
+
+    @model_validator(mode='after')
+    def registered_scene_results(self):
+        if any(beat.scene_changes is not None or beat.result_directions is not None for beat in self.action_beats):
+            issues = scene_change_issues(self.model_dump(mode='json'))
+            if issues:
+                raise ValueError('；'.join(issues))
+        return self
 
     @field_validator("action_beats", mode="before")
     @classmethod
@@ -592,6 +726,19 @@ class RunOptions(BaseModel):
     music_path: str | None = None
     platforms: list[str] = Field(default_factory=lambda: ["youtube", "tiktok"], min_length=1)
     paid_take_budget: int | None = Field(default=None, ge=0)
+    # Missing on disk means the original submission policy; new entrypoints select explicitly.
+    take_policy: Literal['legacy', 'completion_first', 'single_pass'] = 'legacy'
+    # Preserve the existing review gate for workspaces saved before delivery modes.
+    delivery_mode: Literal['reviewed', 'preview'] = 'reviewed'
+    motion_control: Literal["auto", "text_guided", "reference_motion"] = "auto"
+
+    @model_serializer(mode="wrap")
+    def serialize_options(self, handler):
+        data = handler(self)
+        # Default mode must keep existing checkpoint hashes and experiment identities.
+        if data.get("delivery_mode") == "reviewed":
+            data.pop("delivery_mode")
+        return data
 
     @field_validator("resolution")
     @classmethod

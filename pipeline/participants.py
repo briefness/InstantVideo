@@ -231,6 +231,16 @@ def iter_structured_entity_references(
         references.append(StructuredEntityReference(
             "action_beats.target", beat.get("target"), "target"
         ))
+        for change in beat.get('scene_changes') or []:
+            if isinstance(change, dict):
+                references.append(StructuredEntityReference(
+                    'action_beats.scene_changes.entity', change.get('entity'), 'target'))
+        geometry = beat.get("interaction_geometry")
+        if isinstance(geometry, dict):
+            for field, kind in (("actor", "character"), ("target", "target")):
+                references.append(StructuredEntityReference(
+                    f"action_beats.interaction_geometry.{field}", geometry.get(field), kind
+                ))
 
     geometry = shot.get("interaction_geometry", {})
     if isinstance(geometry, dict):
@@ -358,6 +368,10 @@ def normalize_shot_participants(
         if isinstance(beat, dict):
             for field in ("actor", "target"):
                 beat[field] = replace(beat.get(field, ""))
+            geometry = beat.get("interaction_geometry")
+            if isinstance(geometry, dict):
+                for field in ("actor", "target"):
+                    geometry[field] = replace(geometry.get(field, ""))
 
     geometry = shot.get("interaction_geometry")
     if isinstance(geometry, dict):
@@ -463,6 +477,16 @@ def normalize_structured_entity_references(
             beat["target"] = resolve(
                 "action_beats.target", beat.get("target"), "target", exclude=[actor]
             )
+            geometry = beat.get("interaction_geometry")
+            if isinstance(geometry, dict):
+                event_actor = resolve(
+                    "action_beats.interaction_geometry.actor", geometry.get("actor"), "character"
+                )
+                geometry["actor"] = event_actor
+                geometry["target"] = resolve(
+                    "action_beats.interaction_geometry.target", geometry.get("target"),
+                    "target", exclude=[event_actor],
+                )
 
     geometry = shot.get("interaction_geometry")
     if isinstance(geometry, dict):

@@ -1,0 +1,33 @@
+{
+  "source": "output/20261101_140601_984099/planning_shot_001.json",
+  "source_sha256": "978f749c3da698792b1ae60eae156d555ec3a416bbca99169dd50fc6bac8cff2",
+  "source_path": "shot/action_plan/2",
+  "annotation": "Unchanged captured unit. carry describes this attack's deflection result, not the preceding entry. Not an accepted new-protocol response.",
+  "unit": {
+    "id": "attack_lingfeng",
+    "actor": "Lingfeng",
+    "action": "足尖刚落稳，借前冲余势拧腰，精钢长剑由下向上斜挑Zhenwei持刀右腕，剑走直线不留复位间隙。",
+    "result": "剑锋直逼Zhenwei右腕，劲风扫开瓦面薄霜；Zhenwei沉腕抬刀，刀背贴住剑脊将剑锋引向斜瓦。",
+    "kind": "interaction",
+    "target": "Zhenwei",
+    "effect": {
+      "mode": "directed_path",
+      "motion": "sweep",
+      "source": "Lingfeng的精钢长剑",
+      "region": "Zhenwei右腕至斜瓦坡面",
+      "unaffected": "Zhenwei躯干与下肢",
+      "scope": "single"
+    },
+    "response": "deflection",
+    "resolution": {
+      "target_state": "Zhenwei右腕未被剑锋划伤，刀背已贴住剑脊",
+      "actor_state": "Lingfeng前冲拧腰，剑势被引偏向瓦面",
+      "scene_changes": [
+        {"entity": "瓦面残留的薄秋霜", "state": "被剑风扫开一小片，露出下方明黄琉璃", "importance": "incidental"}
+      ]
+    },
+    "carry": "剑脊被刀背带偏的反震力顺着Lingfeng手臂传到腰胯，前冲余势未消",
+    "overlap": false,
+    "weight": 1.4
+  }
+}

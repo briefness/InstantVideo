@@ -1,0 +1,1476 @@
+{
+  "workspace": "output/20261101_114005_425790",
+  "sources": {
+    "storyboard.json": {
+      "sha256": "814c4b93429f552d4146379b2228765182c9b665f5413575f085d467b5edc335",
+      "value": {
+        "title": "紫禁檐上决",
+        "total_duration": 15,
+        "style": "cinematic",
+        "aspect_ratio": "16:9",
+        "resolution": "480p",
+        "mood": "冷调月夜下的肃杀武侠氛围，高对比度电影质感，动作飘逸凌厉，全程聚焦高手对决的张力，无冗余叙事",
+        "music_style": "融合京板鼓节奏的国风武侠管弦乐，节奏随攻防快慢动态起伏，击杀节点配短促利落的重音",
+        "content_focus": "action",
+        "theme_elements": [
+          "月夜紫禁城高空屋脊决战",
+          "飘逸凌厉的轻功入场",
+          "含借势、卸力、变招的连续流畅武打",
+          "非血腥的利落击杀收尾",
+          "高对比度电影武侠质感",
+          "三段式动作连贯衔接"
+        ],
+        "story_arc": {
+          "goal": "两位顶尖武林高手为决出公认的武林第一，在紫禁城最高的屋脊上展开无限制的轻功与武学对决",
+          "stakes": "对决无第三方干扰，落败者将主动退出武林顶尖序列，全程在高空屋脊进行，稍有不慎便会坠下檐台",
+          "turning_point": "双方连续交手十余招，不断借助屋脊瓦面、脊兽的支撑点腾挪变招，互相卸去对方的凌厉攻势，在一次对手借力蹬踏脊兽腾空变招的间隙，占优的高手捕捉到对方旧力已尽新力未生的防守空当",
+          "resolution": "占优的高手以精准剑招点中对手的持剑腕与肩颈穴位，无血腥画面，对手失去战力顺着琉璃瓦面平稳滑坐，胜负分明，对决收尾"
+        },
+        "production_plan": {
+          "version": "production-plan-v8-request-shape",
+          "min_interaction_seconds": 10.5,
+          "director_intent": {
+            "source_request": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+            "content_focus": "action",
+            "pacing": "dense",
+            "intent_evidence": "两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。",
+            "ending_requirement": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+            "ending_evidence": "最后一方被另一方帅气地击杀，结局清楚、非血腥。",
+            "motion_control": "text_guided",
+            "motion_control_evidence": "",
+            "choreography": "flexible",
+            "requested_duration_seconds": 15,
+            "duration_evidence": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。",
+            "requested_shot_count": 3,
+            "shot_count_evidence": "必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。"
+          },
+          "content_focus": "action",
+          "target_duration": 15,
+          "planned_duration": 15,
+          "slots": [
+            {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            }
+          ]
+        },
+        "characters": [
+          {
+            "name": "ShenYan",
+            "description": "束利落高马尾，额间系黑色发带，身着玄色暗银云纹织锦劲装，腰束嵌玉银带，足蹬黑色软底快靴，手持一柄剑身泛冷光的精钢长剑，剑格为兽首造型，衣摆随轻功动作大幅扬起",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          },
+          {
+            "name": "LingXiao",
+            "description": "半束墨色长发，余发被风扬起，身着月白色绣银竹宽袖武侠长袍，内搭黑色紧身劲装，足蹬白色软底靴，手持一柄薄刃软剑，剑柄垂藏青色丝质剑穗",
+            "mobility": "bipedal",
+            "reference_mode": "identity"
+          }
+        ],
+        "shots": [
+          {
+            "shot_id": 1,
+            "duration": 5,
+            "scene_id": "紫禁最高主屋脊月夜对决第一镜",
+            "scene_description": "月夜下紫禁城最高处的金色琉璃瓦主屋脊，两侧是连片延伸的古建飞檐，屋脊上整齐排列着铜制鎏金脊兽，夜空里薄云绕着满月，高空风势强劲，两位高手从两侧飞掠入场，在屋脊中段展开第一波对决攻防",
+            "prompt_en": "16:9宽幅高对比度电影质感画面，冷调月光打在金色琉璃瓦上泛着冷金属光泽，远处连片飞檐在夜色中沉为深黛色剪影，固定宽景将整个屋脊的横向延伸、夜空满月、檐口轮廓完整纳入构图，人物衣摆被风掀动的轮廓清晰锐利，突出高空屋脊的肃杀武侠氛围 从画面左侧远处的紫禁城连片飞檐上足尖连续点过檐角，施展上乘轻功斜向掠向最高主屋脊的中段，玄色暗银云纹劲装的衣摆与高马尾被高空劲风向后扯得笔直，兽首精钢长剑垂在身侧维持平衡. ShenYan足尖轻落于屋脊中段偏左的金色琉璃瓦面，落脚力道极轻，仅蹭落数片细碎琉璃瓦块，身体微屈成戒备姿态，视线牢牢锁定从右侧掠来的LingXiao. 从画面右侧的连片飞檐上连续踏过铜制鎏金脊兽借力，施展轻功斜向掠向屋脊中段，月白色绣银竹宽袖长袍被风扬起，薄刃软剑垂在身侧，藏青色剑穗在空中划出柔和弧线. LingXiao足尖轻落于屋脊中段偏右的琉璃瓦面，落脚时蹭下少量瓦块，与ShenYan相距三步对峙，身体微屈持剑戒备，视线紧盯ShenYan的剑路. 借着落脚的前冲惯性，挺手中精钢长剑直刺LingXiao的持剑右腕，剑路平直凌厉，没有多余的花哨动作. 剑刃带着冷光直逼LingXiao腕部，LingXiao立刻抬手中的薄刃软剑斜向上格开ShenYan的来剑，两剑剑刃相击发出清脆的金属鸣响，两人的手臂都被震得微沉. 顺着刚才格剑的侧向反震力，手腕翻转让薄刃软剑顺着ShenYan的剑脊向下滑削，直取ShenYan的持剑手指，剑路柔中带刚. 软剑贴着ShenYan的剑脊滑下，ShenYan立刻撤腕收剑向后小步错身，躲开软剑的削击，两人的剑刃分开，在屋脊上保持三步的攻防距离.",
+            "visual_description": "16:9宽幅高对比度电影质感画面，冷调月光打在金色琉璃瓦上泛着冷金属光泽，远处连片飞檐在夜色中沉为深黛色剪影，固定宽景将整个屋脊的横向延伸、夜空满月、檐口轮廓完整纳入构图，人物衣摆被风掀动的轮廓清晰锐利，突出高空屋脊的肃杀武侠氛围",
+            "continuity_from_previous": "none",
+            "composition_change": "large",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "interaction_geometry": {
+              "actor": "LingXiao",
+              "target": "ShenYan",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "LingXiao手中的薄刃软剑",
+              "effect_region": "两剑之间的屋脊空间",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面右侧入画，最终停在画面中心偏右位置",
+              "target_screen_position": "从画面左侧入画，最终停在画面中心偏左位置",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "setup",
+              "state_before": "两位顶尖武林高手为决出公认的武林第一，在紫禁城最高的屋脊上展开无限制的轻功与武学对决",
+              "state_change": "两位顶尖武林高手分别从紫禁城两侧的连片飞檐上施展轻功，掠至最高主屋脊的中段位置，正式拉开紫禁之巅决战的序幕，双方完成第一波攻防试探，没有分出高下",
+              "state_after": "双方在屋脊中段相距三步对峙，ShenYan刚撤步躲开LingXiao的滑剑削击，两人都保持连续进攻的姿态，即将进入更密集的连续交手阶段"
+            },
+            "production_slot": {
+              "shot_id": 1,
+              "duration": 5,
+              "narrative_function": "setup",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 2,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "independent"
+            },
+            "primary_action": "从画面左侧远处的紫禁城连片飞檐上足尖连续点过檐角，施展上乘轻功斜向掠向最高主屋脊的中段，玄色暗银云纹劲装的衣摆与高马尾被高空劲风向后扯得笔直，兽首精钢长剑垂在身侧维持平衡; 从画面右侧的连片飞檐上连续踏过铜制鎏金脊兽借力，施展轻功斜向掠向屋脊中段，月白色绣银竹宽袖长袍被风扬起，薄刃软剑垂在身侧，藏青色剑穗在空中划出柔和弧线; 借着落脚的前冲惯性，挺手中精钢长剑直刺LingXiao的持剑右腕，剑路平直凌厉，没有多余的花哨动作; 顺着刚才格剑的侧向反震力，手腕翻转让薄刃软剑顺着ShenYan的剑脊向下滑削，直取ShenYan的持剑手指，剑路柔中带刚",
+            "action_beats": [
+              {
+                "phase": "trigger",
+                "actor": "ShenYan",
+                "action": "从画面左侧远处的紫禁城连片飞檐上足尖连续点过檐角，施展上乘轻功斜向掠向最高主屋脊的中段，玄色暗银云纹劲装的衣摆与高马尾被高空劲风向后扯得笔直，兽首精钢长剑垂在身侧维持平衡",
+                "target": "ShenYan",
+                "visible_result": "ShenYan足尖轻落于屋脊中段偏左的金色琉璃瓦面，落脚力道极轻，仅蹭落数片细碎琉璃瓦块，身体微屈成戒备姿态，视线牢牢锁定从右侧掠来的LingXiao",
+                "start_seconds": 0,
+                "end_seconds": 1.2,
+                "activity": "transition"
+              },
+              {
+                "phase": "trigger",
+                "actor": "LingXiao",
+                "action": "从画面右侧的连片飞檐上连续踏过铜制鎏金脊兽借力，施展轻功斜向掠向屋脊中段，月白色绣银竹宽袖长袍被风扬起，薄刃软剑垂在身侧，藏青色剑穗在空中划出柔和弧线",
+                "target": "ShenYan",
+                "visible_result": "LingXiao足尖轻落于屋脊中段偏右的琉璃瓦面，落脚时蹭下少量瓦块，与ShenYan相距三步对峙，身体微屈持剑戒备，视线紧盯ShenYan的剑路",
+                "start_seconds": 1.2,
+                "end_seconds": 2.4,
+                "activity": "transition"
+              },
+              {
+                "phase": "peak",
+                "actor": "ShenYan",
+                "action": "借着落脚的前冲惯性，挺手中精钢长剑直刺LingXiao的持剑右腕，剑路平直凌厉，没有多余的花哨动作",
+                "target": "LingXiao",
+                "visible_result": "剑刃带着冷光直逼LingXiao腕部，LingXiao立刻抬手中的薄刃软剑斜向上格开ShenYan的来剑，两剑剑刃相击发出清脆的金属鸣响，两人的手臂都被震得微沉",
+                "outcomes": [
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao成功用薄刃软剑格开ShenYan的刺剑，持剑腕部没有被刺中，姿态稳定"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan的刺剑被格开，顺着反震力拧腰准备变招，没有后退复位"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "两剑交击的余震带动脚边碎块沿琉璃瓦面向雕花石质檐口滑动",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 2.4,
+                "end_seconds": 3.7,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "ShenYan",
+                  "target": "LingXiao",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "ShenYan手中的兽首精钢长剑",
+                  "effect_region": "屋脊中段两剑相交的空间位置",
+                  "reaction_scope": "剑刃带着冷光直逼LingXiao腕部，LingXiao立刻抬手中的薄刃软剑斜向上格开ShenYan的来剑，两剑剑刃相击发出清脆的金属鸣响，两人的手臂都被震得微沉",
+                  "unaffected_behavior": "屋脊上的铜制鎏金脊兽、远处连片飞檐、夜空里的薄云与满月",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "从画面左侧入画，最终停在画面中心偏左位置",
+                  "target_screen_position": "从画面右侧入画，最终停在画面中心偏右位置",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 2.92,
+                "reaction_at_seconds": 3.31,
+                "response_kind": "deflection",
+                "flow_from_previous": "LingXiao落定后刚调整好持剑姿态，ShenYan借着落脚的前冲惯性抢先出招，不给对方先站稳的空隙"
+              },
+              {
+                "phase": "peak",
+                "actor": "LingXiao",
+                "action": "顺着刚才格剑的侧向反震力，手腕翻转让薄刃软剑顺着ShenYan的剑脊向下滑削，直取ShenYan的持剑手指，剑路柔中带刚",
+                "target": "ShenYan",
+                "visible_result": "软剑贴着ShenYan的剑脊滑下，ShenYan立刻撤腕收剑向后小步错身，躲开软剑的削击，两人的剑刃分开，在屋脊上保持三步的攻防距离",
+                "outcomes": [
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan成功撤步错身躲开LingXiao的滑剑削击，持剑手指没有受伤"
+                  },
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao的削击落空，顺着前送的剑势保持进攻姿态，没有收势复位"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "ShenYan撤步错身时蹭落少量新的琉璃瓦碎块，沿瓦面滑向檐口",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 3.7,
+                "end_seconds": 5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "LingXiao",
+                  "target": "ShenYan",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "LingXiao手中的薄刃软剑",
+                  "effect_region": "两剑之间的屋脊空间",
+                  "reaction_scope": "软剑贴着ShenYan的剑脊滑下，ShenYan立刻撤腕收剑向后小步错身，躲开软剑的削击，两人的剑刃分开，在屋脊上保持三步的攻防距离",
+                  "unaffected_behavior": "屋脊上的铜制鎏金脊兽、远处连片飞檐、夜空里的薄云与满月",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "从画面右侧入画，最终停在画面中心偏右位置",
+                  "target_screen_position": "从画面左侧入画，最终停在画面中心偏左位置",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 4.22,
+                "reaction_at_seconds": 4.61,
+                "response_kind": "evasion",
+                "flow_from_previous": "两剑格开的侧向反震力没有让两人后退，LingXiao顺着反震的力道翻转手腕，让软剑顺着ShenYan的剑脊滑下变招"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城最高处的金色琉璃瓦主屋脊",
+              "subject": "空无一人的月夜屋脊场景",
+              "action_phase": "对决尚未开始，等待双方高手入场",
+              "camera": "固定宽幅大全景，对称构图",
+              "screen_direction": "左右对称，无人物",
+              "pose_and_gaze": "无人物",
+              "prop_state": "金色琉璃瓦在满月冷光下泛着金属光泽，铜制鎏金脊兽整齐排列，薄云轻绕满月",
+              "open_motion": "高空夜风拂过屋脊，瓦面反光微动，远处飞檐的轮廓在夜色中稳定",
+              "lighting": "冷调满月柔光，高对比度"
+            },
+            "end_state": {
+              "location": "紫禁城最高处的金色琉璃瓦主屋脊中段",
+              "subject": "ShenYan与LingXiao完成入场，展开第一波攻防",
+              "action_phase": "对决开场，双方刚完成两次剑刃交击，进入连续攻防的起始状态",
+              "camera": "固定宽幅大全景，聚焦中心交手的两人",
+              "screen_direction": "ShenYan在画面左侧，LingXiao在画面右侧，保持左右对打的固定轴线",
+              "pose_and_gaze": "两人持剑微倾身体，眼神紧盯对方的破绽，衣摆被交手的劲风掀动",
+              "prop_state": "两人落脚与交手蹭落的琉璃瓦碎块顺着瓦面向檐口滑动",
+              "open_motion": "剑刃分开后的余劲让两人的衣摆还在晃动，保持随时变招的进攻姿态",
+              "lighting": "冷调满月柔光，人物轮廓被月光勾出亮边"
+            },
+            "camera": {
+              "primary_movement": "fixed",
+              "composition": "16:9宽幅大全景，横向铺满金色琉璃主屋脊，画面上方三分之一留给夜空满月与薄云，下方露出屋脊边缘的雕花石质檐口轮廓，远处连片紫禁城飞檐作为深黛色背景",
+              "start_framing": "wide shot",
+              "end_framing": "wide shot",
+              "speed": "fixed",
+              "screen_positions": {
+                "ShenYan": "画面中心偏左",
+                "LingXiao": "画面中心偏右",
+                "夜空里的薄云与满月": "画面上中位置",
+                "屋脊边缘的雕花石质檐口": "画面下边缘"
+              },
+              "axis_change": "establish"
+            },
+            "blocking": {
+              "ShenYan": {
+                "frame_position": "画面中心偏左",
+                "body_orientation": "three-quarter toward LingXiao",
+                "facing_target": "LingXiao",
+                "eyeline_target": "LingXiao",
+                "travel_direction": "从画面左侧向中心移动",
+                "action_target": "LingXiao"
+              },
+              "LingXiao": {
+                "frame_position": "画面中心偏右",
+                "body_orientation": "three-quarter toward ShenYan",
+                "facing_target": "ShenYan",
+                "eyeline_target": "ShenYan",
+                "travel_direction": "从画面右侧向中心移动",
+                "action_target": "ShenYan"
+              }
+            },
+            "lighting": "冷调满月柔光从斜上方洒落，在金色琉璃瓦面形成冷金属高光，人物轮廓被月光勾出清晰亮边，暗部沉为深黑色，整体高对比度电影质感",
+            "mood": "冷调月夜下的肃杀武侠氛围，高对比度电影质感，动作飘逸凌厉，全程聚焦高手对决的张力，无冗余叙事",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ],
+            "continuity_props": [
+              "ShenYan",
+              "LingXiao",
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ]
+          },
+          {
+            "shot_id": 2,
+            "duration": 5,
+            "scene_id": "紫禁最高主屋脊月夜对决第二镜",
+            "scene_description": "月夜下紫禁城最高处的金色琉璃瓦主屋脊中段偏右区域，铜制鎏金脊兽排列在屋脊一侧，两人的连续交手从屋脊中段向右侧雕花石质檐口移动，远处连片飞檐在夜色中沉为深黛剪影，夜空薄云绕着满月",
+            "prompt_en": "16:9中景跟拍画面，冷调月光在金色琉璃瓦面打出冷金属高光，人物玄色与月白色衣装形成鲜明对比，剑刃反光锐利；背景保留夜空满月、薄云与远处飞檐剪影，脚下瓦面与檐口轮廓清晰，突出连续交手的凌厉张力 借着撤步错身的拧腰余劲，玄色衣摆随旋身扬起，手中兽首精钢长剑从下向上斜撩LingXiao腰侧，剑路走弧线，没有收剑复位. 剑刃带着冷光划向LingXiao腰侧，LingXiao立刻蹬瓦面向后小步仰身卸力，同时用薄刃软剑剑脊搭住ShenYan的剑脊向下压引，将斜撩攻势引向瓦面外侧，两剑轻触发出细碎金属鸣响. 顺着压剑引偏的侧向力道，手腕翻转让薄刃软剑缠上ShenYan的剑身，带剑向ShenYan持剑右腕绞削，藏青色剑穗随翻腕甩出柔和弧线. 软剑贴着ShenYan剑身滑向腕部，ShenYan不硬接，借绞带的侧向力道旋身，足尖点向身旁的铜制鎏金脊兽借力腾空，软剑擦着他的玄色衣摆削空. 借着蹬脊兽的反弹上升力，在空中拧腰沉肩，手中精钢长剑自上而下直劈LingXiao肩颈，衣摆随腾空动作大幅扬起. 剑刃带着冷光劈向LingXiao肩颈，LingXiao立刻抬臂用薄刃软剑剑脊向上硬架，两剑在头顶上方相撞发出清脆金属鸣响，LingXiao被下劈力道压得屈膝半蹲. 顺着架住下劈剑的反震力向上送剑，薄刃软剑顺着ShenYan的剑脊滑出，直刺空中ShenYan的胸腹，剑路柔快. 软剑带着冷光刺向ShenYan胸腹，ShenYan借着两剑相交的反震力在空中拧腰侧翻，软剑擦着他的玄色衣摆刺空，他足尖落在屋脊边缘的雕花石质檐口上，身体微倾保持平衡.",
+            "visual_description": "16:9中景跟拍画面，冷调月光在金色琉璃瓦面打出冷金属高光，人物玄色与月白色衣装形成鲜明对比，剑刃反光锐利；背景保留夜空满月、薄云与远处飞檐剪影，脚下瓦面与檐口轮廓清晰，突出连续交手的凌厉张力",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "interaction_geometry": {
+              "actor": "LingXiao",
+              "target": "ShenYan",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "LingXiao手中的薄刃软剑",
+              "effect_region": "LingXiao头顶到空中ShenYan胸腹的空间",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面中心偏右随交手向右侧瓦面移动",
+              "target_screen_position": "从画面中心偏左随交手向右侧檐口移动",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "turn",
+              "state_before": "双方在屋脊中段相距三步对峙，ShenYan刚撤步躲开LingXiao的滑剑削击，两人都保持连续进攻的姿态，即将进入更密集的连续交手阶段",
+              "state_change": "双方进入密集连续攻防，ShenYan借撤步旋身斜撩，LingXiao压剑引偏后顺势绞削，ShenYan蹬脊兽腾空下劈，LingXiao架住后送剑刺空，LingXiao前冲力道带得旧力将尽，ShenYan落在檐口边缘捕捉到防守空当，胜负天平开始倾斜",
+              "state_after": "ShenYan足尖抵在雕花石质檐口边缘，身体微倾，剑势已对准LingXiao的空当；LingXiao上半身前倾，持剑前送未收，新力未生，即将进入最终决胜阶段"
+            },
+            "production_slot": {
+              "shot_id": 2,
+              "duration": 5,
+              "narrative_function": "turn",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 3,
+              "result_hold_seconds": 0,
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "medium",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "借着撤步错身的拧腰余劲，玄色衣摆随旋身扬起，手中兽首精钢长剑从下向上斜撩LingXiao腰侧，剑路走弧线，没有收剑复位; 顺着压剑引偏的侧向力道，手腕翻转让薄刃软剑缠上ShenYan的剑身，带剑向ShenYan持剑右腕绞削，藏青色剑穗随翻腕甩出柔和弧线; 借着蹬脊兽的反弹上升力，在空中拧腰沉肩，手中精钢长剑自上而下直劈LingXiao肩颈，衣摆随腾空动作大幅扬起; 顺着架住下劈剑的反震力向上送剑，薄刃软剑顺着ShenYan的剑脊滑出，直刺空中ShenYan的胸腹，剑路柔快",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "ShenYan",
+                "action": "借着撤步错身的拧腰余劲，玄色衣摆随旋身扬起，手中兽首精钢长剑从下向上斜撩LingXiao腰侧，剑路走弧线，没有收剑复位",
+                "target": "LingXiao",
+                "visible_result": "剑刃带着冷光划向LingXiao腰侧，LingXiao立刻蹬瓦面向后小步仰身卸力，同时用薄刃软剑剑脊搭住ShenYan的剑脊向下压引，将斜撩攻势引向瓦面外侧，两剑轻触发出细碎金属鸣响",
+                "outcomes": [
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao成功用软剑剑脊引开斜撩剑，腰侧未被划伤，仰身卸力后姿态稳定"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan的斜撩被引偏，顺着旋身惯性向前踏半步，剑势不收回，继续压向LingXiao"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "LingXiao蹬瓦卸力时蹭落数块碎琉璃，沿瓦面向檐口滑动",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 0,
+                "end_seconds": 1.212,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "ShenYan",
+                  "target": "LingXiao",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "ShenYan手中的兽首精钢长剑与LingXiao手中的薄刃软剑剑脊相触处",
+                  "effect_region": "屋脊中段两人腰侧高度的空间",
+                  "reaction_scope": "剑刃带着冷光划向LingXiao腰侧，LingXiao立刻蹬瓦面向后小步仰身卸力，同时用薄刃软剑剑脊搭住ShenYan的剑脊向下压引，将斜撩攻势引向瓦面外侧，两剑轻触发出细碎金属鸣响",
+                  "unaffected_behavior": "夜空里的薄云与满月、远处连片飞檐、未被蹬踏的铜制鎏金脊兽",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "从画面中心偏左随交手向右侧檐口移动",
+                  "target_screen_position": "从画面中心偏右随交手向右侧瓦面移动",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 0.484,
+                "reaction_at_seconds": 0.848,
+                "response_kind": "deflection"
+              },
+              {
+                "phase": "peak",
+                "actor": "LingXiao",
+                "action": "顺着压剑引偏的侧向力道，手腕翻转让薄刃软剑缠上ShenYan的剑身，带剑向ShenYan持剑右腕绞削，藏青色剑穗随翻腕甩出柔和弧线",
+                "target": "ShenYan",
+                "visible_result": "软剑贴着ShenYan剑身滑向腕部，ShenYan不硬接，借绞带的侧向力道旋身，足尖点向身旁的铜制鎏金脊兽借力腾空，软剑擦着他的玄色衣摆削空",
+                "outcomes": [
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan旋身蹬脊兽腾空，持剑腕未被软剑绞伤，身体保持腾空进攻姿态"
+                  },
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao绞削落空，前送的剑势未收，足尖蹬瓦面准备跟进"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "屋脊上排列的铜制鎏金脊兽",
+                    "state": "被ShenYan足尖蹬踏借力，表面留下极浅的靴底蹭痕",
+                    "importance": "incidental"
+                  },
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "ShenYan旋身蹬瓦时蹭落少量新碎块，沿瓦面滑向檐口",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 1.212,
+                "end_seconds": 2.424,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "LingXiao",
+                  "target": "ShenYan",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "LingXiao手中的薄刃软剑",
+                  "effect_region": "两剑之间到ShenYan持剑腕的空间",
+                  "reaction_scope": "软剑贴着ShenYan剑身滑向腕部，ShenYan不硬接，借绞带的侧向力道旋身，足尖点向身旁的铜制鎏金脊兽借力腾空，软剑擦着他的玄色衣摆削空",
+                  "unaffected_behavior": "夜空里的薄云与满月、远处连片飞檐、雕花石质檐口",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "从画面中心偏右随交手向右侧瓦面移动",
+                  "target_screen_position": "从画面中心偏左随交手向右侧檐口移动",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 1.696,
+                "reaction_at_seconds": 2.06,
+                "response_kind": "evasion",
+                "flow_from_previous": "LingXiao压剑引偏的力道没有让两人拉开距离，顺势翻腕缠剑绞削；ShenYan借绞带侧劲旋身，足尖点脊兽腾空"
+              },
+              {
+                "phase": "peak",
+                "actor": "ShenYan",
+                "action": "借着蹬脊兽的反弹上升力，在空中拧腰沉肩，手中精钢长剑自上而下直劈LingXiao肩颈，衣摆随腾空动作大幅扬起",
+                "target": "LingXiao",
+                "visible_result": "剑刃带着冷光劈向LingXiao肩颈，LingXiao立刻抬臂用薄刃软剑剑脊向上硬架，两剑在头顶上方相撞发出清脆金属鸣响，LingXiao被下劈力道压得屈膝半蹲",
+                "outcomes": [
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao屈膝半蹲架住下劈剑，肩颈未被劈中，双臂受力但未脱手"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan下劈力道被架住，身体悬在半空，顺着反震力准备翻落下沉"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "LingXiao屈膝半蹲时膝盖蹭落数块琉璃碎块，沿瓦面滑动",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 2.424,
+                "end_seconds": 3.712,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "ShenYan",
+                  "target": "LingXiao",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "ShenYan手中的兽首精钢长剑与LingXiao手中的薄刃软剑剑脊相触处",
+                  "effect_region": "LingXiao头顶上方的空间",
+                  "reaction_scope": "剑刃带着冷光劈向LingXiao肩颈，LingXiao立刻抬臂用薄刃软剑剑脊向上硬架，两剑在头顶上方相撞发出清脆金属鸣响，LingXiao被下劈力道压得屈膝半蹲",
+                  "unaffected_behavior": "夜空里的薄云与满月、远处连片飞檐、雕花石质檐口",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "从画面中心偏左随交手向右侧檐口移动",
+                  "target_screen_position": "从画面中心偏右随交手向右侧瓦面移动",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 2.939,
+                "reaction_at_seconds": 3.325,
+                "response_kind": "deflection",
+                "flow_from_previous": "ShenYan蹬脊兽腾空的上升力直接转化为下劈攻势，不在空中停顿或收势"
+              },
+              {
+                "phase": "peak",
+                "actor": "LingXiao",
+                "action": "顺着架住下劈剑的反震力向上送剑，薄刃软剑顺着ShenYan的剑脊滑出，直刺空中ShenYan的胸腹，剑路柔快",
+                "target": "ShenYan",
+                "visible_result": "软剑带着冷光刺向ShenYan胸腹，ShenYan借着两剑相交的反震力在空中拧腰侧翻，软剑擦着他的玄色衣摆刺空，他足尖落在屋脊边缘的雕花石质檐口上，身体微倾保持平衡",
+                "outcomes": [
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan侧翻躲开刺击，胸腹未被刺中，足尖落在檐口边缘保持平衡，视线锁定LingXiao的空当"
+                  },
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao送剑刺空，前冲力道带得他上半身前倾，旧力已尽新力未生，防守露出空当"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "屋脊边缘的雕花石质檐口",
+                    "state": "ShenYan足尖落于檐口边缘，蹭下极少量石屑",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 3.712,
+                "end_seconds": 5,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "LingXiao",
+                  "target": "ShenYan",
+                  "interaction_mode": "directed_path",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "sweep",
+                  "source": "LingXiao手中的薄刃软剑",
+                  "effect_region": "LingXiao头顶到空中ShenYan胸腹的空间",
+                  "reaction_scope": "软剑带着冷光刺向ShenYan胸腹，ShenYan借着两剑相交的反震力在空中拧腰侧翻，软剑擦着他的玄色衣摆刺空，他足尖落在屋脊边缘的雕花石质檐口上，身体微倾保持平衡",
+                  "unaffected_behavior": "夜空里的薄云与满月、远处连片飞檐、铜制鎏金脊兽",
+                  "must_share_frame": false,
+                  "line_of_action_visible": true,
+                  "actor_screen_position": "从画面中心偏右随交手向右侧瓦面移动",
+                  "target_screen_position": "从画面中心偏左随交手向右侧檐口移动",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 4.227,
+                "reaction_at_seconds": 4.613,
+                "response_kind": "evasion",
+                "flow_from_previous": "LingXiao架住下劈剑的反震力直接变成送剑刺击的前推动力；ShenYan借反震力侧翻，落向檐口边缘"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城最高处的金色琉璃瓦主屋脊中段",
+              "subject": "ShenYan与LingXiao完成开场试探，进入连续密集攻防",
+              "action_phase": "连续攻防展开，双方借势卸力变招",
+              "camera": "中景右摇跟拍，保持左右对打轴线",
+              "screen_direction": "ShenYan在画面左侧，LingXiao在画面右侧",
+              "pose_and_gaze": "两人持剑微倾，眼神紧盯对方破绽，衣摆被劲风掀动",
+              "prop_state": "开场交手蹭落的琉璃瓦碎块沿瓦面向檐口滑动",
+              "open_motion": "承接上一镜ShenYan撤步躲开滑剑削击的拧腰转势，不收回剑架，直接旋身带出斜撩攻势",
+              "lighting": "冷调满月柔光，高对比度"
+            },
+            "end_state": {
+              "location": "紫禁城最高处的金色琉璃瓦主屋脊右侧近雕花石质檐口处",
+              "subject": "ShenYan与LingXiao完成一轮连续攻防，胜负天平开始倾斜",
+              "action_phase": "转折节点：LingXiao旧力已尽新力未生，ShenYan捕捉到防守空当",
+              "camera": "中景右摇跟拍，停在檐口边缘",
+              "screen_direction": "ShenYan在画面右侧檐口，LingXiao在画面中心偏右",
+              "pose_and_gaze": "ShenYan侧翻落定微倾，眼神锁定LingXiao前倾的空当；LingXiao上半身前倾，持剑前送未收",
+              "prop_state": "连续交手蹭落的琉璃瓦碎块沿瓦面滑向檐口，铜制鎏金脊兽留下浅靴痕",
+              "open_motion": "两人衣摆随高空劲风晃动，剑势处于下一轮决胜前的临界状态",
+              "lighting": "冷调满月柔光，人物轮廓被月光勾出亮边"
+            },
+            "camera": {
+              "primary_movement": "pan right",
+              "composition": "16:9中景双人跟拍，取景覆盖两人腰腹到脚下瓦面，保留剑路与蹬踏变招的空间，背景露出夜空满月与飞檐剪影",
+              "start_framing": "medium shot",
+              "end_framing": "medium shot",
+              "speed": "随交手节奏快慢调整",
+              "screen_positions": {
+                "ShenYan": "从画面中心偏左随交手移动至画面右侧檐口",
+                "LingXiao": "从画面中心偏右随交手移动至画面中心偏右",
+                "屋脊边缘的雕花石质檐口": "画面右边缘",
+                "夜空里的薄云与满月": "画面上侧边缘"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "ShenYan": {
+                "frame_position": "从画面中心偏左随交手移动至画面右侧檐口",
+                "body_orientation": "three-quarter toward LingXiao",
+                "facing_target": "LingXiao",
+                "eyeline_target": "LingXiao",
+                "travel_direction": "向画面右侧檐口移动",
+                "action_target": "LingXiao"
+              },
+              "LingXiao": {
+                "frame_position": "从画面中心偏右随交手移动至画面中心偏右",
+                "body_orientation": "three-quarter toward ShenYan",
+                "facing_target": "ShenYan",
+                "eyeline_target": "ShenYan",
+                "travel_direction": "向画面右侧跟进",
+                "action_target": "ShenYan"
+              }
+            },
+            "lighting": "冷调满月柔光从斜上方洒落，金色琉璃瓦面泛冷金属高光，剑刃反光锐利，人物轮廓被月光勾出亮边，暗部沉为深黑，高对比度电影质感",
+            "mood": "冷调月夜下的肃杀武侠氛围，高对比度电影质感，动作飘逸凌厉，连续攻防张力拉满",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ],
+            "continuity_props": [
+              "ShenYan",
+              "LingXiao",
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ]
+          },
+          {
+            "shot_id": 3,
+            "duration": 5,
+            "scene_id": "紫禁最高主屋脊月夜对决第三镜",
+            "scene_description": "月夜下紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口区域，铜制鎏金脊兽沿屋脊排列，远处连片飞檐沉为深黛剪影，夜空薄云绕着满月，瓦面散落交手蹭落的碎块。",
+            "prompt_en": "16:9宽幅全景，冷调月光把金色琉璃瓦打出冷硬高光，玄色与月白衣装对比鲜明；背景保留满月、薄云与连片飞檐剪影，脚下瓦面、鎏金脊兽与雕花檐口轮廓清晰，镜头随决胜动作缓慢推近，突出胜负落定的肃杀张力。 借着足尖抵檐口的微倾平衡，蹬瓦面向左前抢进，兽首精钢长剑先以剑脊快速磕开LingXiao前送的持剑腕，不收回剑，顺势沉腕变刺，剑尖精准点在LingXiao肩颈穴位，动作连贯一气。. LingXiao持剑手腕被磕得一麻，前送的软剑脱手；ShenYan的剑尖顺势点中其肩颈穴位，LingXiao全身力道瞬间消散，身体顺着琉璃瓦面的缓坡无力下滑，没有可见外伤或血迹。. 收剑半寸后静立俯视，等待脱力的LingXiao顺着瓦面滑坐定形。. LingXiao无力坐于琉璃瓦面，薄刃软剑落在身侧，胜负姿态在月光下完全清晰，全程无血腥画面。.",
+            "visual_description": "16:9宽幅全景，冷调月光把金色琉璃瓦打出冷硬高光，玄色与月白衣装对比鲜明；背景保留满月、薄云与连片飞檐剪影，脚下瓦面、鎏金脊兽与雕花檐口轮廓清晰，镜头随决胜动作缓慢推近，突出胜负落定的肃杀张力。",
+            "continuity_from_previous": "intentional_cut",
+            "composition_change": "medium",
+            "result_admission": "review-required-v1",
+            "coverage_role": "interaction",
+            "required_visible_entities": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "interaction_geometry": {
+              "actor": "ShenYan",
+              "target": "LingXiao",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "ShenYan手中兽首精钢长剑的剑脊与剑尖先后接触LingXiao持剑腕、肩颈处",
+              "effect_region": "LingXiao身前腕部到肩颈高度的空间",
+              "reaction_scope": "one clearly isolated intended target within the visible effect region",
+              "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "起始在画面右侧檐口边缘，随后向画面中心偏右抢进",
+              "target_screen_position": "起始在画面中心偏右，随后脱力滑坐于瓦面",
+              "occlusion_policy": "none"
+            },
+            "narrative_beat": {
+              "function": "payoff",
+              "state_before": "ShenYan足尖抵在雕花石质檐口边缘，身体微倾，剑势已对准LingXiao的空当；LingXiao上半身前倾，持剑前送未收，新力未生，即将进入最终决胜阶段",
+              "state_change": "ShenYan从檐口边缘蹬地抢进，借前冲余劲先以剑脊磕开LingXiao前送的持剑腕，再顺势变招剑尖点中其肩颈穴位；LingXiao旧力已尽无法回防，腕部发麻、力道消散，软剑脱手，身体顺着琉璃瓦面滑坐，无血腥外伤，胜负立判。",
+              "state_after": "ShenYan获胜，持剑立于LingXiao身前；LingXiao失去战力坐于瓦面，对决结束，高空屋脊只剩夜风拂动衣摆。"
+            },
+            "production_slot": {
+              "shot_id": 3,
+              "duration": 5,
+              "narrative_function": "payoff",
+              "allowed_effect_phases": [
+                "active"
+              ],
+              "outcome_scope": "single",
+              "requires_visible_result": true,
+              "min_interaction_seconds": 0,
+              "min_interaction_events": 1,
+              "result_hold_seconds": 0.5,
+              "required_outcome": "一方被另一方帅气地击杀，结局清楚、非血腥。",
+              "choreography": "flexible",
+              "creative_brief": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+              "coverage_roles": [
+                "interaction"
+              ],
+              "framing_family": "wide",
+              "reference_policy": "state_and_identity"
+            },
+            "primary_action": "借着足尖抵檐口的微倾平衡，蹬瓦面向左前抢进，兽首精钢长剑先以剑脊快速磕开LingXiao前送的持剑腕，不收回剑，顺势沉腕变刺，剑尖精准点在LingXiao肩颈穴位，动作连贯一气。; 收剑半寸后静立俯视，等待脱力的LingXiao顺着瓦面滑坐定形。",
+            "action_beats": [
+              {
+                "phase": "peak",
+                "actor": "ShenYan",
+                "action": "借着足尖抵檐口的微倾平衡，蹬瓦面向左前抢进，兽首精钢长剑先以剑脊快速磕开LingXiao前送的持剑腕，不收回剑，顺势沉腕变刺，剑尖精准点在LingXiao肩颈穴位，动作连贯一气。",
+                "target": "LingXiao",
+                "visible_result": "LingXiao持剑手腕被磕得一麻，前送的软剑脱手；ShenYan的剑尖顺势点中其肩颈穴位，LingXiao全身力道瞬间消散，身体顺着琉璃瓦面的缓坡无力下滑，没有可见外伤或血迹。",
+                "outcomes": [
+                  {
+                    "entity": "LingXiao",
+                    "state": "LingXiao持剑腕被磕麻，肩颈穴位被精准点中，全身力道消散，软剑脱手，无可见外伤出血，失去继续交手能力。"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "ShenYan一击中的后收势稳定，立于LingXiao身前，剑势不再前送。"
+                  },
+                  {
+                    "entity": "LingXiao",
+                    "state": "被点中肩颈穴位，持剑腕发麻，软剑脱手落于瓦面，全身脱力，无血腥外伤"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "完成决胜剑招，立于LingXiao身前，呼吸平稳"
+                  }
+                ],
+                "scene_changes": [
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "ShenYan蹬地抢进时蹭下少量碎块，沿瓦面滑向檐口",
+                    "importance": "incidental"
+                  },
+                  {
+                    "entity": "屋脊边缘的雕花石质檐口",
+                    "state": "ShenYan蹬离时蹭下极少量石屑",
+                    "importance": "incidental"
+                  }
+                ],
+                "start_seconds": 0,
+                "end_seconds": 3.556,
+                "activity": "interaction",
+                "interaction_geometry": {
+                  "actor": "ShenYan",
+                  "target": "LingXiao",
+                  "interaction_mode": "direct_contact",
+                  "effect_phase": "active",
+                  "outcome_scope": "single",
+                  "effect_motion": "static",
+                  "source": "ShenYan手中兽首精钢长剑的剑脊与剑尖先后接触LingXiao持剑腕、肩颈处",
+                  "effect_region": "LingXiao身前腕部到肩颈高度的空间",
+                  "reaction_scope": "LingXiao持剑手腕被磕得一麻，前送的软剑脱手；ShenYan的剑尖顺势点中其肩颈穴位，LingXiao全身力道瞬间消散，身体顺着琉璃瓦面的缓坡无力下滑，没有可见外伤或血迹。",
+                  "unaffected_behavior": "夜空里的薄云与满月、远处连片飞檐、未被蹬踏的铜制鎏金脊兽",
+                  "must_share_frame": true,
+                  "line_of_action_visible": false,
+                  "actor_screen_position": "起始在画面右侧檐口边缘，随后向画面中心偏右抢进",
+                  "target_screen_position": "起始在画面中心偏右，随后脱力滑坐于瓦面",
+                  "occlusion_policy": "none"
+                },
+                "effect_at_seconds": 1.422,
+                "reaction_at_seconds": 2.489,
+                "response_kind": "impact"
+              },
+              {
+                "phase": "aftermath",
+                "actor": "ShenYan",
+                "action": "收剑半寸后静立俯视，等待脱力的LingXiao顺着瓦面滑坐定形。",
+                "target": "LingXiao",
+                "visible_result": "LingXiao无力坐于琉璃瓦面，薄刃软剑落在身侧，胜负姿态在月光下完全清晰，全程无血腥画面。",
+                "start_seconds": 3.556,
+                "end_seconds": 5,
+                "activity": "hold"
+              }
+            ],
+            "start_state": {
+              "location": "紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口处",
+              "subject": "ShenYan捕捉到LingXiao旧力已尽新力未生的空当，进入最终决胜阶段",
+              "action_phase": "决胜一击即将发出",
+              "camera": "宽幅全景缓慢推近，保持左右对打轴线",
+              "screen_direction": "ShenYan在画面右侧檐口，LingXiao在画面中心偏右",
+              "pose_and_gaze": "ShenYan足尖抵檐口、身体微倾，眼神锁定LingXiao空当；LingXiao上半身前倾，持剑前送未收，眼神惊觉",
+              "prop_state": "交手蹭落的琉璃瓦碎块沿瓦面向檐口滑动，铜制鎏金脊兽留有浅靴痕",
+              "open_motion": "承接上一镜ShenYan落定檐口、LingXiao前倾刺空旧力已尽的临界状态，不撤步复位，直接蹬檐抢进。",
+              "lighting": "冷调满月柔光从斜上方洒落，人物轮廓被月光勾出亮边，高对比度"
+            },
+            "end_state": {
+              "location": "紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口处",
+              "subject": "ShenYan完成决胜一击，LingXiao失去战力，胜负分明",
+              "action_phase": "对决结束，胜负姿态稳定",
+              "camera": "宽幅全景停在稍紧的双人景",
+              "screen_direction": "ShenYan立于画面右侧偏中，LingXiao坐于画面中心偏右下方",
+              "pose_and_gaze": "ShenYan收剑半寸、静立俯视；LingXiao脱力坐于瓦面，眼神半敛，肩颈松弛",
+              "prop_state": "LingXiao的薄刃软剑脱手落在身侧瓦面，琉璃碎块停在檐口附近",
+              "open_motion": "衣摆随夜风轻晃，无继续交手的动势",
+              "lighting": "冷调满月柔光持续，剑刃冷光渐收，暗部沉为深黑"
+            },
+            "camera": {
+              "primary_movement": "dolly in",
+              "composition": "16:9宽幅全景双人画面，取景覆盖两人全身与脚下瓦面，保留决胜剑路与滑坐空间，背景露出夜空满月与飞檐剪影。",
+              "start_framing": "wide shot",
+              "end_framing": "wide shot",
+              "speed": "缓慢推近，决胜瞬间略微提速，收尾时稳定。",
+              "screen_positions": {
+                "ShenYan": "从画面右侧檐口移至画面右侧偏中",
+                "LingXiao": "从画面中心偏右滑坐至画面中心偏右下方",
+                "屋脊边缘的雕花石质檐口": "画面右边缘",
+                "夜空里的薄云与满月": "画面上侧边缘"
+              },
+              "axis_change": "hold"
+            },
+            "blocking": {
+              "ShenYan": {
+                "frame_position": "从画面右侧檐口移至画面右侧偏中",
+                "body_orientation": "three-quarter toward LingXiao",
+                "facing_target": "LingXiao",
+                "eyeline_target": "LingXiao",
+                "travel_direction": "向画面左侧抢进",
+                "action_target": "LingXiao"
+              },
+              "LingXiao": {
+                "frame_position": "从画面中心偏右滑坐至画面中心偏右下方",
+                "body_orientation": "three-quarter toward ShenYan",
+                "facing_target": "ShenYan",
+                "eyeline_target": "ShenYan",
+                "travel_direction": "顺着瓦面向檐口方向缓慢滑坐",
+                "action_target": "ShenYan"
+              }
+            },
+            "lighting": "冷调满月柔光从斜上方洒落，金色琉璃瓦面泛冷金属高光，剑刃反光锐利，人物轮廓被月光勾出亮边，暗部沉为深黑，高对比度电影质感。",
+            "mood": "冷调月夜下的肃杀武侠氛围，高对比度电影质感，决胜瞬间凌厉利落，收尾沉静分明。",
+            "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+            "subtitle_text": "",
+            "transition_to_next": "cut",
+            "generate_audio": true,
+            "characters": [
+              "ShenYan",
+              "LingXiao"
+            ],
+            "extract_character_ref": false,
+            "key_props": [
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ],
+            "continuity_props": [
+              "ShenYan",
+              "LingXiao",
+              "紫禁城最高处的金色琉璃瓦主屋脊",
+              "屋脊上排列的铜制鎏金脊兽",
+              "月夜下连片延伸的紫禁城飞檐群",
+              "被交手脚步蹭落的琉璃瓦碎块",
+              "屋脊边缘的雕花石质檐口",
+              "夜空里的薄云与满月"
+            ]
+          }
+        ]
+      }
+    },
+    "planning_semantic_review.json": {
+      "sha256": "64e32fb9c13dbb1bebaa6db0f7666d51418ada05c25492923be8f6aaf884f145",
+      "value": {
+        "fingerprint": "6b1de34b6ecfa55806bd1085a18a85cc2575142faba3258b51851e81d3f09185",
+        "verdict": {
+          "units": {
+            "1:0": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "ShenYan从左侧飞檐施展轻功掠至屋脊中段偏左落定戒备，属于入场移动过渡，无外部交互，因果与参与者一致，transition分类与描述匹配。"
+            },
+            "1:1": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "LingXiao从右侧飞檐踏脊兽借力掠至屋脊中段偏右落定，与ShenYan相距三步对峙，属于入场移动过渡，无外部交互，因果与参与者一致，transition分类与描述匹配。"
+            },
+            "1:2": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是ShenYan刺腕攻击后LingXiao格挡反应的最小功能结果，证明攻击被成功防御、目标未被刺中，与response_kind=deflection一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述ShenYan刺剑被格开后顺势拧腰准备变招，属于导演自选的连续攻防衔接路径，不影响核心攻防结果，可替换为其他顺势变招方式。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "ShenYan刺剑攻击LingXiao腕部，LingXiao抬剑格挡，双方剑刃相击震得手臂微沉，交互因果清晰，deflection反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "ShenYan借落脚惯性挺剑刺LingXiao持剑右腕，LingXiao抬软剑斜格，两剑相击手臂微沉，交互因果清晰，deflection反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "1:3": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是LingXiao滑剑削指攻击后ShenYan撤步躲避的最小功能结果，证明削击未命中、目标未受伤，与response_kind=evasion一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述LingXiao削击落空后保持进攻姿态不收势，属于导演自选的连续攻防衔接路径，不影响核心攻防结果，可替换为其他顺势跟进方式。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "LingXiao顺格剑反震力翻腕滑剑削ShenYan持剑手指，ShenYan撤腕错身躲开，交互因果清晰，evasion反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "LingXiao顺格剑反震力翻腕，软剑沿ShenYan剑脊滑削其持剑手指，ShenYan撤步错身躲开，两剑分开保持三步攻防距离，交互因果清晰，evasion反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "2:0": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是ShenYan斜撩腰侧攻击后LingXiao引剑卸力的最小功能结果，证明攻击被成功引偏、腰侧未受伤，与response_kind=deflection一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述ShenYan斜撩被引偏后顺势前踏半步、剑势不收回，属于导演自选的连续攻防衔接路径，不影响核心攻防结果，可替换为其他顺势跟进方式。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "ShenYan借撤步拧腰余劲斜撩LingXiao腰侧，LingXiao蹬瓦仰身用剑脊压引偏攻势，两剑轻触，交互因果清晰，deflection反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "ShenYan借上一镜撤步拧腰余劲旋身斜撩LingXiao腰侧，LingXiao蹬瓦仰身用软剑剑脊搭住引偏攻势，两剑轻触，交互因果清晰，deflection反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "2:1": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是LingXiao绞削腕部攻击后ShenYan蹬脊兽腾空躲避的最小功能结果，证明绞削未命中、腕部未受伤，与response_kind=evasion一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述LingXiao绞削落空后前送剑势未收、准备跟进，属于导演自选的连续攻防衔接路径，不影响核心攻防结果，可替换为其他顺势跟进方式。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "LingXiao顺压剑引偏力道翻腕缠剑绞削ShenYan持剑腕，ShenYan借侧劲旋身蹬脊兽腾空，软剑擦衣摆削空，交互因果清晰，evasion反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "LingXiao顺压剑引偏力道翻腕，软剑缠上ShenYan剑身绞削其持剑腕，ShenYan借侧劲旋身蹬脊兽腾空，软剑擦衣摆削空，交互因果清晰，evasion反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "2:2": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是ShenYan腾空下劈肩颈攻击后LingXiao硬架格挡的最小功能结果，证明下劈未命中、肩颈未受伤，与response_kind=deflection一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述ShenYan下劈被架住后悬在半空、顺反震力准备翻落，属于导演自选的连续攻防衔接路径，不影响核心攻防结果，可替换为其他顺势变招方式。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "ShenYan借蹬脊兽反弹力腾空下劈LingXiao肩颈，LingXiao抬臂用剑脊硬架，被压得屈膝半蹲，交互因果清晰，deflection反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "ShenYan借蹬脊兽反弹上升力腾空拧腰，自上而下直劈LingXiao肩颈，LingXiao抬臂用软剑剑脊硬架，被下劈力道压得屈膝半蹲，交互因果清晰，deflection反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "2:3": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "response",
+                    "evidence": "该结果是LingXiao送剑刺胸腹攻击后ShenYan侧翻躲避的最小功能结果，证明刺击未命中、胸腹未受伤，与response_kind=evasion一致。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "continuity",
+                    "evidence": "该结果描述LingXiao刺空后上半身前倾、旧力已尽新力未生露出空当，是后续第三镜ShenYan发起决胜一击的必要前提，/shots/3/start_state明确依赖该状态。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "LingXiao顺架剑反震力送剑刺空中ShenYan胸腹，ShenYan借反震力侧翻落于檐口边缘，软剑擦衣摆刺空，交互因果清晰，evasion反应与描述匹配，候选结果均为对应参与者的可见状态，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "LingXiao顺架住下劈剑的反震力向上送剑，软剑沿ShenYan剑脊滑出直刺其胸腹，ShenYan借反震力空中拧腰侧翻，足尖落于檐口边缘保持平衡，软剑擦衣摆刺空，交互因果清晰，evasion反应与interaction分类匹配，候选结果均为对应参与者的可见状态，与前后叙事一致。"
+            },
+            "3:0": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "outcome_contract_valid": true,
+              "result_admission": {
+                "decisions": {
+                  "outcomes/0": {
+                    "basis": "user",
+                    "evidence": "原需求明确要求“最后一方被另一方帅气地击杀，结局清楚、非血腥”，该结果完整覆盖LingXiao被点穴脱力、软剑脱手、无外伤出血、失去战力的核心结局要求。",
+                    "minimal": true
+                  },
+                  "outcomes/1": {
+                    "basis": "direction",
+                    "evidence": "该结果描述ShenYan一击中的后收势稳定立于LingXiao身前，属于导演自选的获胜姿态，不影响核心击杀结局，可替换为其他合理收势方式。",
+                    "minimal": true
+                  },
+                  "outcomes/2": {
+                    "basis": "user",
+                    "evidence": "原需求明确要求非血腥的利落击杀收尾，该结果重复确认LingXiao软剑脱手落于瓦面、全身脱力、无血腥外伤，是核心结局的必要可见状态。",
+                    "minimal": true
+                  },
+                  "outcomes/3": {
+                    "basis": "direction",
+                    "evidence": "该结果描述ShenYan完成决胜剑招后呼吸平稳，属于导演自选的获胜状态细节，不影响核心击杀结局，可替换为其他合理获胜姿态。",
+                    "minimal": true
+                  }
+                },
+                "requirements_preserved": true,
+                "continuous_performance": true,
+                "reason": "ShenYan从檐口蹬地抢进，先以剑脊磕开LingXiao持剑腕，顺势剑尖点中其肩颈穴位，LingXiao力道消散软剑脱手，顺瓦面滑坐无外伤，交互因果清晰，impact反应与描述匹配，候选结果完整覆盖原需求的非血腥击杀结局，与前后叙事一致，未混入其他类别必要性。"
+              },
+              "evidence_fields": [
+                "actor",
+                "target",
+                "action",
+                "visible_result",
+                "activity",
+                "response_kind",
+                "interaction_geometry",
+                "outcomes",
+                "scene_changes"
+              ],
+              "reason": "ShenYan借足尖抵檐口的平衡蹬地抢进，剑脊先磕开LingXiao前送的持剑腕，顺势剑尖点中其肩颈穴位，LingXiao腕麻力道消散、软剑脱手，顺琉璃瓦面无力下滑，无可见外伤血迹，交互因果清晰，impact反应与interaction分类匹配，候选结果完整覆盖原需求的非血腥击杀结局，与前后叙事一致。"
+            },
+            "3:1": {
+              "cause_and_participants_valid": true,
+              "classification_matches_description": true,
+              "evidence_fields": [
+                "actor",
+                "action",
+                "visible_result",
+                "activity"
+              ],
+              "reason": "ShenYan收剑半寸静立俯视，等待LingXiao脱力滑坐定形，属于击杀后的结果展示hold，无新的外部交互，因果与参与者一致，hold分类与描述匹配。"
+            }
+          },
+          "continuity_valid": true,
+          "requested_outcome_valid": true,
+          "reason": "三段分镜从双方轻功入场、连续密集攻防到最终非血腥击杀收尾，人物身份、服装、武器全程一致，空间从屋脊中段向右侧檐口移动衔接自然，动作无机械复位，连续攻防的借势、卸力、变招逻辑连贯，最终LingXiao脱力滑坐、胜负分明的结局完全满足原需求的非血腥利落击杀要求。"
+        },
+        "protocol_version": "planning-semantics-v6-bound-targets"
+      }
+    },
+    "planning_check.json": {
+      "sha256": "9906d41ef91f31365ccb4951ec868a9617c68f4b6e85df5ed46e5d45bdd1f4dc",
+      "value": {
+        "critical": false,
+        "issues": [
+          "⚠ Shot 1 使用结构化动作合同；空格词数不作为多语言描述的执行门槛",
+          "⚠ Shot 2 使用结构化动作合同；空格词数不作为多语言描述的执行门槛",
+          "⚠ Shot 3 使用结构化动作合同；空格词数不作为多语言描述的执行门槛"
+        ]
+      }
+    },
+    "planning_shot_003.json": {
+      "sha256": "a805d459f47eb1e1d9133ca80de15acdea66f867dba47edfe8e8ff178e616147",
+      "value": {
+        "shot": {
+          "scene_id": "紫禁最高主屋脊月夜对决第三镜",
+          "scene_description": "月夜下紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口区域，铜制鎏金脊兽沿屋脊排列，远处连片飞檐沉为深黛剪影，夜空薄云绕着满月，瓦面散落交手蹭落的碎块。",
+          "visual_description": "16:9宽幅全景，冷调月光把金色琉璃瓦打出冷硬高光，玄色与月白衣装对比鲜明；背景保留满月、薄云与连片飞檐剪影，脚下瓦面、鎏金脊兽与雕花檐口轮廓清晰，镜头随决胜动作缓慢推近，突出胜负落定的肃杀张力。",
+          "camera": {
+            "primary_movement": "dolly in",
+            "composition": "16:9宽幅全景双人画面，取景覆盖两人全身与脚下瓦面，保留决胜剑路与滑坐空间，背景露出夜空满月与飞檐剪影。",
+            "start_framing": "ShenYan立于画面右侧檐口边缘，LingXiao在画面中心偏右前倾，两人保持决胜前的临界距离。",
+            "end_framing": "镜头缓慢推近为稍紧的宽幅双人景，ShenYan持剑立于身前，LingXiao脱力坐于瓦面，檐口留在画面右边缘，满月位于画面上侧。",
+            "speed": "缓慢推近，决胜瞬间略微提速，收尾时稳定。",
+            "screen_positions": {
+              "ShenYan": "从画面右侧檐口移至画面右侧偏中",
+              "LingXiao": "从画面中心偏右滑坐至画面中心偏右下方",
+              "雕花石质檐口": "画面右边缘",
+              "满月": "画面上侧边缘"
+            },
+            "axis_change": "hold"
+          },
+          "blocking": {
+            "ShenYan": {
+              "frame_position": "起始在画面右侧檐口边缘，随后向画面中心偏右抢进",
+              "body_orientation": "面朝左侧，随抢进动作微沉肩",
+              "facing_target": "LingXiao",
+              "eyeline_target": "LingXiao的持剑手腕与肩颈空当",
+              "travel_direction": "向画面左侧抢进",
+              "action_target": "LingXiao"
+            },
+            "LingXiao": {
+              "frame_position": "起始在画面中心偏右，随后脱力滑坐于瓦面",
+              "body_orientation": "面朝右侧，脱力后上半身松弛下沉",
+              "facing_target": "ShenYan",
+              "eyeline_target": "ShenYan的剑路",
+              "travel_direction": "顺着瓦面向檐口方向缓慢滑坐",
+              "action_target": ""
+            }
+          },
+          "start_state": {
+            "location": "紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口处",
+            "subject": "ShenYan捕捉到LingXiao旧力已尽新力未生的空当，进入最终决胜阶段",
+            "action_phase": "决胜一击即将发出",
+            "camera": "宽幅全景缓慢推近，保持左右对打轴线",
+            "screen_direction": "ShenYan在画面右侧檐口，LingXiao在画面中心偏右",
+            "pose_and_gaze": "ShenYan足尖抵檐口、身体微倾，眼神锁定LingXiao空当；LingXiao上半身前倾，持剑前送未收，眼神惊觉",
+            "prop_state": "交手蹭落的琉璃瓦碎块沿瓦面向檐口滑动，铜制鎏金脊兽留有浅靴痕",
+            "open_motion": "两人衣摆随高空劲风晃动，剑势处于决胜前的临界状态",
+            "lighting": "冷调满月柔光从斜上方洒落，人物轮廓被月光勾出亮边，高对比度"
+          },
+          "end_state": {
+            "location": "紫禁城最高处金色琉璃瓦主屋脊右侧近雕花石质檐口处",
+            "subject": "ShenYan完成决胜一击，LingXiao失去战力，胜负分明",
+            "action_phase": "对决结束，胜负姿态稳定",
+            "camera": "宽幅全景停在稍紧的双人景",
+            "screen_direction": "ShenYan立于画面右侧偏中，LingXiao坐于画面中心偏右下方",
+            "pose_and_gaze": "ShenYan收剑半寸、静立俯视；LingXiao脱力坐于瓦面，眼神半敛，肩颈松弛",
+            "prop_state": "LingXiao的薄刃软剑脱手落在身侧瓦面，琉璃碎块停在檐口附近",
+            "open_motion": "衣摆随夜风轻晃，无继续交手的动势",
+            "lighting": "冷调满月柔光持续，剑刃冷光渐收，暗部沉为深黑"
+          },
+          "story_change": "ShenYan从檐口边缘蹬地抢进，借前冲余劲先以剑脊磕开LingXiao前送的持剑腕，再顺势变招剑尖点中其肩颈穴位；LingXiao旧力已尽无法回防，腕部发麻、力道消散，软剑脱手，身体顺着琉璃瓦面滑坐，无血腥外伤，胜负立判。",
+          "story_state_after": "ShenYan获胜，持剑立于LingXiao身前；LingXiao失去战力坐于瓦面，对决结束，高空屋脊只剩夜风拂动衣摆。",
+          "action_plan": [
+            {
+              "id": "i7",
+              "actor": "ShenYan",
+              "action": "借着足尖抵檐口的微倾平衡，蹬瓦面向左前抢进，兽首精钢长剑先以剑脊快速磕开LingXiao前送的持剑腕，不收回剑，顺势沉腕变刺，剑尖精准点在LingXiao肩颈穴位，动作连贯一气。",
+              "result": "LingXiao持剑手腕被磕得一麻，前送的软剑脱手；ShenYan的剑尖顺势点中其肩颈穴位，LingXiao全身力道瞬间消散，身体顺着琉璃瓦面的缓坡无力下滑，没有可见外伤或血迹。",
+              "kind": "interaction",
+              "target": "LingXiao",
+              "effect": {
+                "mode": "direct_contact",
+                "motion": "static",
+                "source": "ShenYan手中兽首精钢长剑的剑脊与剑尖先后接触LingXiao持剑腕、肩颈处",
+                "region": "LingXiao身前腕部到肩颈高度的空间",
+                "unaffected": "夜空里的薄云与满月、远处连片飞檐、未被蹬踏的铜制鎏金脊兽",
+                "scope": "single"
+              },
+              "response": "impact",
+              "resolution": {
+                "target_state": "LingXiao持剑腕被磕麻，肩颈穴位被精准点中，全身力道消散，软剑脱手，无可见外伤出血，失去继续交手能力。",
+                "actor_state": "ShenYan一击中的后收势稳定，立于LingXiao身前，剑势不再前送。",
+                "scene_changes": [
+                  {
+                    "entity": "LingXiao",
+                    "state": "被点中肩颈穴位，持剑腕发麻，软剑脱手落于瓦面，全身脱力，无血腥外伤",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "ShenYan",
+                    "state": "完成决胜剑招，立于LingXiao身前，呼吸平稳",
+                    "importance": "required"
+                  },
+                  {
+                    "entity": "被交手脚步蹭落的琉璃瓦碎块",
+                    "state": "ShenYan蹬地抢进时蹭下少量碎块，沿瓦面滑向檐口",
+                    "importance": "incidental"
+                  },
+                  {
+                    "entity": "屋脊边缘的雕花石质檐口",
+                    "state": "ShenYan蹬离时蹭下极少量石屑",
+                    "importance": "incidental"
+                  }
+                ]
+              },
+              "carry": "承接上一镜ShenYan落定檐口、LingXiao前倾刺空旧力已尽的临界状态，不撤步复位，直接蹬檐抢进。",
+              "overlap": false,
+              "weight": 3.2
+            },
+            {
+              "id": "h1",
+              "actor": "ShenYan",
+              "action": "收剑半寸后静立俯视，等待脱力的LingXiao顺着瓦面滑坐定形。",
+              "result": "LingXiao无力坐于琉璃瓦面，薄刃软剑落在身侧，胜负姿态在月光下完全清晰，全程无血腥画面。",
+              "kind": "hold",
+              "target": "LingXiao",
+              "weight": 1.3
+            }
+          ],
+          "key_props": [
+            "紫禁城最高处的金色琉璃瓦主屋脊",
+            "屋脊上排列的铜制鎏金脊兽",
+            "月夜下连片延伸的紫禁城飞檐群",
+            "被交手脚步蹭落的琉璃瓦碎块",
+            "屋脊边缘的雕花石质檐口",
+            "夜空里的薄云与满月"
+          ],
+          "continuity_props": [
+            "ShenYan",
+            "LingXiao",
+            "紫禁城最高处的金色琉璃瓦主屋脊",
+            "屋脊上排列的铜制鎏金脊兽",
+            "月夜下连片延伸的紫禁城飞檐群",
+            "被交手脚步蹭落的琉璃瓦碎块",
+            "屋脊边缘的雕花石质檐口",
+            "夜空里的薄云与满月"
+          ],
+          "lighting": "冷调满月柔光从斜上方洒落，金色琉璃瓦面泛冷金属高光，剑刃反光锐利，人物轮廓被月光勾出亮边，暗部沉为深黑，高对比度电影质感。",
+          "mood": "冷调月夜下的肃杀武侠氛围，高对比度电影质感，决胜瞬间凌厉利落，收尾沉静分明。"
+        }
+      }
+    },
+    "run_manifest.json": {
+      "sha256": "00487113be16e2e8df64ed648136c054bbe4fea99717d5b35836a740b41e9bba",
+      "value": {
+        "schema_version": 1,
+        "run_id": "20261101_114005_425790",
+        "status": "failed",
+        "stage": "storyboard_ready",
+        "created_at": "2026-11-01T03:40:05.425892+00:00",
+        "updated_at": "2026-11-01T03:48:20.692533+00:00",
+        "options": {
+          "request": "生成一部约15秒的紫禁之巅决战武侠短片，时长可以适当增减。必须分成三段独立生成的视频，再由正式流程拼接为一部连贯短片。两大高手在紫禁城屋脊决战，轻功入场要帅，主体是密集而流畅的武打，交手要有借势、卸力、变招与连续攻防，不要机械地一来一回或每招复位。最后一方被另一方帅气地击杀，结局清楚、非血腥。保持鲜明武侠风、电影质感及服务动作的合理运镜。重点验证三段之间人物身份、服装与武器的一致性，前后空间和动作的连续性，以及运镜和剪辑衔接。脚本、分镜、动作节奏和摄影设计全部由项目正式流程自主规划。",
+          "resolution": "480p",
+          "aspect_ratio": "16:9",
+          "style": "cinematic",
+          "platforms": [
+            "youtube",
+            "tiktok"
+          ],
+          "paid_take_budget": 0,
+          "take_policy": "single_pass",
+          "motion_control": "auto"
+        },
+        "paid_take_budget": {
+          "estimated_takes": 3,
+          "reservations": []
+        },
+        "shots": {
+          "1": {
+            "shot_id": 1,
+            "status": "pending",
+            "recovery_actions": [],
+            "prompt_attempts": [],
+            "take_history": [],
+            "quality_score": 0,
+            "technical_quality_score": 0,
+            "observed_end_state": {},
+            "reference_chain_depth": 0,
+            "model_used": "",
+            "resolution_used": "",
+            "attempts": 0,
+            "errors": []
+          },
+          "2": {
+            "shot_id": 2,
+            "status": "pending",
+            "recovery_actions": [],
+            "prompt_attempts": [],
+            "take_history": [],
+            "quality_score": 0,
+            "technical_quality_score": 0,
+            "observed_end_state": {},
+            "reference_chain_depth": 0,
+            "model_used": "",
+            "resolution_used": "",
+            "attempts": 0,
+            "errors": []
+          },
+          "3": {
+            "shot_id": 3,
+            "status": "pending",
+            "recovery_actions": [],
+            "prompt_attempts": [],
+            "take_history": [],
+            "quality_score": 0,
+            "technical_quality_score": 0,
+            "observed_end_state": {},
+            "reference_chain_depth": 0,
+            "model_used": "",
+            "resolution_used": "",
+            "attempts": 0,
+            "errors": []
+          }
+        },
+        "error": "结果衔接依据必须指向后续动作或镜头的实际文字"
+      }
+    }
+  }
+}

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import re
 import json
+from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
 
 from openai import OpenAI
 
 import config
+from pipeline.llm_options import structured_output_options
+from pipeline.structured_response import collect_structured_response, load_unique_json
+from pipeline.director_intent import resolve_director_intent
+from pipeline.motion_plan import MOTION_PREVIS_GUIDANCE, motion_previs_plan_issues
 from pipeline.models import (
     validate_story_spine,
     validate_storyboard,
@@ -68,7 +73,7 @@ _STORY_SPINE_SYSTEM_PROMPT = """你是影视故事规划器。只规划全局故
     "state_before": "镜头前故事状态",
     "state_change": "本镜可见变化",
     "state_after": "镜头后故事状态",
-    "primary_action": "一个主体动作",
+    "primary_action": "本镜动作概要；密集交互槽位可包含多个有序交互",
     "characters": ["stable_character_id"]
   }]
 }
@@ -274,6 +279,9 @@ def generate_storyboard(
     aspect_ratio: str = config.DEFAULT_RATIO,
     resolution: str = config.DEFAULT_RESOLUTION,
     style: str = "cinematic",
+    motion_control: str = "auto",
+    save_diagnostic: Callable[[str, dict], None] | None = None,
+    planning_checkpoint=None,
 ) -> dict:
     """
     调用 LLM 根据用户需求生成结构化分镜脚本
@@ -281,15 +289,42 @@ def generate_storyboard(
     Returns:
         完整的 storyboard dict (含 shots, music_style, mood 等)
     """
+    if not isinstance(motion_control, str) or motion_control not in {"auto", "text_guided", "reference_motion"}:
+        raise ValueError("不支持的动作控制模式")
     client = OpenAI(
         api_key=config.ARK_API_KEY,
         base_url=config.ARK_BASE_URL,
+        max_retries=0,
     )
 
     system_prompt = _load_system_prompt()
 
-    content_focus = _infer_content_focus(user_request)
-    production_plan = build_production_plan(content_focus, target_duration)
+    if planning_checkpoint is None:
+        intent = resolve_director_intent(client, user_request, save_diagnostic=save_diagnostic)
+    else:
+        import hashlib
+        from pipeline.models import DirectorIntentSpec
+        # 意图提示词目前与解释器同文件；修改解释方式不能静默复用旧解释。
+        recipe = hashlib.sha256(Path(__file__).with_name('director_intent.py').read_bytes()).hexdigest()
+        intent = planning_checkpoint.step('intent', {'request': user_request, 'recipe': recipe},
+            lambda: resolve_director_intent(client, user_request, save_diagnostic=save_diagnostic))
+        intent = DirectorIntentSpec.model_validate(intent).model_dump()
+    content_focus = intent['content_focus']
+    target_duration = intent.get('requested_duration_seconds') or target_duration
+    production_plan = build_production_plan(content_focus, target_duration, intent=intent)
+    requires_reference = motion_control == "reference_motion" or intent.get("motion_control") == "reference_motion"
+    control_guidance = "text_guided：以文字动作合同约束生成；未使用数值动作参考。"
+    if requires_reference:
+        issues = motion_previs_plan_issues(production_plan)
+        if issues:
+            raise ValueError("生产计划超出动作参考执行能力：" + "；".join(issues))
+        control_guidance = "reference_motion：" + MOTION_PREVIS_GUIDANCE
+    if any(slot.get('min_interaction_events') for slot in production_plan['slots']):
+        from pipeline.storyboard_authoring import generate_event_storyboard
+        return generate_event_storyboard(client, user_request, production_plan,
+                                         aspect_ratio=aspect_ratio, resolution=resolution,
+                                         style=style, save_diagnostic=save_diagnostic,
+                                         planning_checkpoint=planning_checkpoint)
     user_prompt = f"""用户需求: {user_request}
 
 目标参数:
@@ -298,15 +333,29 @@ def generate_storyboard(
 - 分辨率: {resolution}
 - 整体风格: {style}
 - 叙事重心: {_content_focus_guidance(content_focus)}
+- 动作执行方式: {control_guidance}
+
+动作编排以连续动作句组织，不按“甲打一招、乙回一招、双方复位”机械轮换。
+仅在符合用户风格时运用轻功接步、虚实变化、闪让与反击并行、借势转身；少量清晰动作也可以流畅，不增加招数凑复杂度。
+每一招交代身体重心、步法或兵器运动如何给下一招创造条件，镜头跟随这个变化，不能用快速剪辑掩盖断裂。
+交互事件可选 response_kind=impact/evasion/deflection，分别表示命中、避开、拨挡；省略按原命中语义。
+evasion 必须使用 directed_path 并展示可读威胁和避开的结果，不要求身体接触或受伤。
+承接前一节拍时填写 flow_from_previous（具体承接的步法/姿态/运动方向，不是“流畅”“帅气”等形容词）。
+仅有该衔接说明且共同参与者一致的相邻 interaction 可以时间搭接；开始、结束与作用时刻保持顺序，重叠时间只计一次，hold 不得重叠。
+不能为达到数量指标强制交替出手、每招停顿复位或每招命中；结局仍须由明确作用建立并持续可见。
 
 生产计划（先于创意内容确定，属于不可改写的执行输入）:
 {format_production_plan(production_plan)}
 
 请生成完整的分镜脚本 (JSON 格式)。"""
 
-    storyboard = _generate_storyboard_draft(
-        client, system_prompt, user_prompt, production_plan
-    )
+    def draft():
+        return _generate_storyboard_draft(client, system_prompt, user_prompt, production_plan)
+    storyboard = (planning_checkpoint.step('legacy_draft', {
+        'system': system_prompt, 'user': user_prompt, 'plan': production_plan}, draft)
+        if planning_checkpoint else draft())
+    if save_diagnostic:
+        save_diagnostic("planning_draft_1.json", deepcopy(storyboard))
     storyboard = _compile_storyboard_contract(
         storyboard, aspect_ratio, resolution, style, production_plan=production_plan
     )
@@ -317,6 +366,8 @@ def generate_storyboard(
         user_request=user_request,
         require_narrative_contract=True,
     )
+    if save_diagnostic:
+        save_diagnostic("planning_check_1.json", {"issues": warnings, "critical": is_critical})
     if warnings:
         print("\n   [丰富度校验]")
         for w in warnings:
@@ -324,13 +375,13 @@ def generate_storyboard(
 
     if is_critical:
         print("\n   [自动修正] 检测到严重问题, 重新生成分镜...")
-        storyboard = _correct_storyboard_draft(
-            client,
-            user_prompt,
-            storyboard,
-            warnings,
-            production_plan,
-        )
+        def correct():
+            return _correct_storyboard_draft(client, user_prompt, storyboard, warnings, production_plan)
+        storyboard = (planning_checkpoint.step('legacy_correction', {
+            'user': user_prompt, 'draft': storyboard, 'issues': warnings, 'plan': production_plan}, correct)
+            if planning_checkpoint else correct())
+        if save_diagnostic:
+            save_diagnostic("planning_draft_2.json", deepcopy(storyboard))
         storyboard = _compile_storyboard_contract(
             storyboard,
             aspect_ratio,
@@ -345,6 +396,8 @@ def generate_storyboard(
             user_request=user_request,
             require_narrative_contract=True,
         )
+        if save_diagnostic:
+            save_diagnostic("planning_check_2.json", {"issues": warnings_2, "critical": is_critical_2})
         if warnings_2:
             print("\n   [二次校验]")
             for w in warnings_2:
@@ -425,10 +478,12 @@ def _correct_storyboard_draft(
 ) -> dict:
     """Correct one bounded artifact per call and merge it into the frozen story."""
     slots = production_plan["slots"]
+    # 校正必须理解与初稿相同的完整契约；错误列表不能替代字段语义。
+    correction_system = _load_system_prompt() + "\n\n" + _CORRECTION_SYSTEM_PROMPT
     if len(slots) <= _STORYBOARD_SHOTS_PER_BATCH:
         corrected = _call_llm_for_storyboard(
             client,
-            _CORRECTION_SYSTEM_PROMPT,
+            correction_system,
             _build_correction_prompt(user_prompt, storyboard, warnings),
             temperature=0.2,
         )
@@ -476,7 +531,7 @@ def _correct_storyboard_draft(
         )
         corrected = _call_llm_for_storyboard(
             client,
-            _CORRECTION_SYSTEM_PROMPT,
+            correction_system,
             correction_prompt,
             temperature=0.2,
         )
@@ -612,21 +667,38 @@ def _call_llm_for_storyboard(
     user_prompt: str,
     *,
     temperature: float = 0.7,
+    repair_json: bool = True,
+    response_schema: dict | None = None,
+    reasoning: bool = False,
+    save_response: Callable[[dict], None] | None = None,
 ) -> dict:
     """调用 LLM 获取分镜 JSON"""
     try:
         response = _create_storyboard_completion(
-            client, system_prompt, user_prompt, temperature=temperature
+            client, system_prompt, user_prompt, temperature=temperature, response_schema=response_schema,
+            reasoning=reasoning,
         )
+        if response_schema is not None:
+            response = collect_structured_response(
+                response, on_failure=(
+                    lambda record: save_response({'model': config.LLM_MODEL, **record})
+                ) if save_response else None,
+            )
     except Exception as e:
         print(f"   [ERROR] LLM 调用失败: {e}")
         raise
     raw_content = response.choices[0].message.content
+    if save_response:
+        save_response({'model': config.LLM_MODEL,
+                       'finish_reason': getattr(response.choices[0], 'finish_reason', None),
+                       'content': raw_content})
     _reject_incomplete_completion(response, raw_content)
 
     try:
         storyboard = _parse_json_response(raw_content)
     except json.JSONDecodeError as parse_error:
+        if not repair_json or response_schema is not None:
+            raise ValueError('动作创作稿不是合法 JSON；未重新调用模型') from parse_error
         print("   [格式修复] 分镜 JSON 语法异常，正在修复（最多 1 次）...")
         repair_prompt = _build_json_repair_prompt(raw_content, parse_error)
         try:
@@ -656,6 +728,8 @@ def _create_storyboard_completion(
     user_prompt: str,
     *,
     temperature: float,
+    response_schema: dict | None = None,
+    reasoning: bool = False,
 ):
     """使用足够容纳中长分镜的显式输出预算调用 Ark。"""
     return client.chat.completions.create(
@@ -665,8 +739,12 @@ def _create_storyboard_completion(
             {"role": "user", "content": user_prompt},
         ],
         temperature=temperature,
-        response_format={"type": "json_object"},
+        response_format=({'type': 'json_schema', 'json_schema': {
+            'name': 'storyboard_authoring', 'strict': True, 'schema': response_schema,
+        }} if response_schema is not None else {"type": "json_object"}),
         max_completion_tokens=_STORYBOARD_MAX_COMPLETION_TOKENS,
+        **({'stream': True} if response_schema is not None else {}),
+        **structured_output_options(config.LLM_MODEL, reasoning=reasoning),
     )
 
 
@@ -1160,11 +1238,11 @@ def _build_correction_prompt(
         action_repair = """
 - 本批次只按 ProductionPlan 中的 narrative_function、allowed_effect_phases、coverage_roles 和 requires_visible_result 修正动作职责；不得引用或补写批次外镜头
 - primary_action 必须直接执行该槽位的冲突推进或可见结果，运镜、扫描和准备不得代替槽位职责
-- 每镜仍只保留一个主动作，对手反应写入 visible_result，不得把全片动作配额机械塞进每个批次
+- 每个物理作用只对应一个事件，反应写入该事件 visible_result；事件契约允许有序交换 actor，不得把全片动作配额机械塞进每个批次
 """ if batch_scoped else """
 - 至少 2 个镜头的 primary_action 必须直接攻击、防守、受击、反击或追逐，并在 action_beats 写明 actor、target 和 visible_result
 - 纯建立与纯收尾只能保留一个：若 Shot 1 是纯环境、扫描或准备，最后一镜必须“动作中收束”；若最后一镜保留简短余韵，Shot 1 必须“冲突中建立”
-- 每镜仍只保留一个主动作，不得把动作配额塞进同一镜头
+- 只有具有独立 geometry 和作用/反应时刻的事件契约才允许同镜多个作用，否则保留旧单动作限制
 """
     coverage_repair = ""
     if any(
@@ -1176,7 +1254,7 @@ def _build_correction_prompt(
         )
     ):
         coverage_repair = """
-- 先确定 coverage_role 和唯一主动 actor；对手反应只写入 visible_result
+- 先确定 coverage_role；每个事件确定自己的 actor/target 和 visible_result，旧无事件契约才要求整镜唯一主动 actor
 - 要求命中可见时，将 actor/target 都列入 required_visible_entities，使用中景或全景让双方同框并保持攻击线清晰
 - 武器细节必须使用独立 insert，目标受击使用独立 target_reaction；不得在极近景浅焦镜头同时要求远处目标清晰命中
 """
@@ -1385,20 +1463,20 @@ def _parse_json_response(text: str) -> dict:
 
     # 尝试直接解析
     try:
-        return json.loads(text)
+        return load_unique_json(text)
     except json.JSONDecodeError:
         pass
 
     # 尝试提取 ```json ... ``` 中的内容
     match = re.search(r'```(?:json)?\s*\n?(.*?)\n?```', text, re.DOTALL)
     if match:
-        return json.loads(match.group(1))
+        return load_unique_json(match.group(1))
 
     # 尝试找第一个 { 到最后一个 }
     start = text.find('{')
     end = text.rfind('}')
     if start != -1 and end != -1 and end > start:
-        return json.loads(text[start:end + 1])
+        return load_unique_json(text[start:end + 1])
 
     raise json.JSONDecodeError(f"无法从响应中提取 JSON", text[:200], 0)
 
@@ -1426,11 +1504,11 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 8. 物件连续性: key_props 描述可见元素; continuity_props 只追踪同场景跨镜持续的可移动叙事道具, 新增持久道具必须有引入动作或前镜铺垫
 9. 环境一致性: 同场景连续镜头的天气/光线/背景物不得突变
 11. 镜头数量: 10s=2镜, 15s=3镜, 20s=3-4镜, 30s=4-6镜, 60s=8-10镜
-12. 动作契约: 每镜只有一个 primary_action, 最多包含两个紧密因果动作动词; 多次接触/破坏动作必须拆镜, 并填写 start_state/end_state
+12. 动作契约: primary_action 概述动作；旧合同最多两个紧密因果动作，多次作用须拆镜或使用明确事件契约，填写 start_state/end_state
 13. 题材适配: 动作请求用多个主体攻防节拍推进; 运镜只写入 camera, 不得充当 primary_action
 14. 物理能力: characters 必须声明 mobility; 动作必须符合角色移动形态, 履带/轮式角色不得迈步、跑跳或踢击
 15. 空间轴: 多角色动作镜头必须在 camera.screen_positions 声明角色左右位置并保持轴线; axis_change 只用 establish/hold/reestablish, 没有越轴写 hold
-16. 动作调度: 动作镜头用 action_beats 写 1-3 个 trigger/peak/aftermath 因果阶段; 同一镜头的 beat 只能有一个主动 actor，目标反应写 visible_result; 多角色动作镜头还必须在 blocking 为每个角色声明 frame_position/body_orientation/facing_target/eyeline_target/action_target，武器和身体必须朝向实际目标
+16. 动作调度: 旧单动作使用1-3个节拍；事件契约最多12个有序节拍，每个interaction自带完整interaction_geometry和effect_at_seconds/reaction_at_seconds，允许事件之间换actor。反应写各自visible_result。blocking描述起始状态，人物允许按动作转身、移动，固定摄影机不等于人物姿态固定
 17. 可拍摄性: 每镜填写 composition_change、coverage_role、required_visible_entities 和 interaction_geometry；接触要求双方同框，定向作用要求路径可见，区域/间接作用要求作用范围与反应目标可读
 18. 身份参考预算: 动作片不得为了提取身份单独占用静态镜头; 角色可以在多人冲突镜头首次出现且 extract_character_ref=false，只有自然的单一 identity 角色清晰镜头才可提取，其他镜头由生成阶段从顶层 characters 自动注入完整外观
 19. 结构化主题: 顶层 theme_elements 使用稳定英文ID; 不得用中文标题与英文 prompt 做字符串匹配
@@ -1727,9 +1805,8 @@ def _validate_storyboard_richness(
 ) -> tuple[list[str], bool]:
     """分镜丰富度校验 — 返回 (warnings, is_critical)
 
-    is_critical=True 时触发 LLM 自动修正。
-    严重问题 (触发重试): 情绪扁平、题材意图未覆盖、prompt 词数严重越界
-    轻微问题 (仅警告): 连续相同景别、物件连续性、时序因果
+    调用方决定如何处理严重问题；结构化事件入口失败即停止，不重写。
+    就绪与叙事契约问题是硬门槛；标签/词数等编辑建议在结构化事件路径不阻断。
 
     检测维度:
     1. 场景多样性
@@ -1747,7 +1824,10 @@ def _validate_storyboard_richness(
 
     warnings: list[str] = []
     critical_count = 0  # 严重问题计数
-    content_focus = _infer_content_focus(user_request)
+    plan = storyboard.get("production_plan") or {}
+    structured_events = any(slot.get('min_interaction_events') for slot in plan.get('slots', []))
+    intent = plan.get("director_intent")
+    content_focus = intent["content_focus"] if intent else _infer_content_focus(user_request)
 
     from pipeline.readiness import storyboard_readiness_issues
 
@@ -1784,11 +1864,14 @@ def _validate_storyboard_richness(
     moods = [s.get("mood", "unknown") for s in shots]
     unique_moods = set(moods)
     if len(unique_moods) == 1 and len(shots) >= 2:
-        warnings.append(
-            f"🚨 情绪扁平: 所有镜头情绪都是 '{moods[0]}', "
-            f"缺乏弧线变化, 必须为每个镜头设置不同情绪"
-        )
-        critical_count += 1
+        if structured_events:
+            warnings.append(f"⚠ 全片情绪均为 '{moods[0]}'；情绪标签相同不代表缺少可见剧情推进")
+        else:
+            warnings.append(
+                f"🚨 情绪扁平: 所有镜头情绪都是 '{moods[0]}', "
+                f"缺乏弧线变化, 必须为每个镜头设置不同情绪"
+            )
+            critical_count += 1
     for i in range(1, len(moods)):
         if moods[i] == moods[i - 1] and moods[i] != "unknown":
             warnings.append(
@@ -1831,10 +1914,13 @@ def _validate_storyboard_richness(
         shot_id = s.get("shot_id", "?")
         if word_count < 50:
             warnings.append(
+                f"⚠ Shot {shot_id} 使用结构化动作合同；空格词数不作为多语言描述的执行门槛"
+                if structured_events else
                 f"🚨 Shot {shot_id} prompt_en 过短: {word_count} 词 "
                 f"(要求 80-150 词), 画面细节严重不足"
             )
-            critical_count += 1
+            if not structured_events:
+                critical_count += 1
         elif word_count < 80:
             warnings.append(
                 f"⚠ Shot {shot_id} prompt_en 偏短: {word_count} 词 "
@@ -1878,7 +1964,8 @@ def _validate_storyboard_richness(
             separator in primary_action.lower()
             for separator in _SEQUENCE_SEPARATORS
         )
-        if (
+        from pipeline.action_timing import sequence_required
+        if not sequence_required(shot) and (
             len(contact_beats) > 1
             or (has_explicit_sequence and len(beats) > 2)
             or len(beats) > 3
@@ -1943,7 +2030,7 @@ def _validate_storyboard_richness(
         )
         enough_runtime_for_sequence = total_duration >= 15 and len(shots) >= 3
         action_ratio = action_duration / total_duration if total_duration else 0
-        if (
+        if not intent and (
             not action_shots
             or (
                 enough_runtime_for_sequence
@@ -1964,7 +2051,8 @@ def _validate_storyboard_richness(
             )
             critical_count += 1
 
-        if total_duration >= 24 and len(shots) >= 4:
+        # 有生产计划时，镜头职责和景别由同一计划校验；旧经验配额不能要求违反冻结槽位。
+        if not plan and total_duration >= 24 and len(shots) >= 4:
             coverage_roles = [
                 str(shot.get("coverage_role", "")).strip()
                 for shot in shots

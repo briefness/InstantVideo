@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 import config
+from pipeline.motion_reference import validate_video_reference
+from tools.reference_video_url import verify_reference_video_url
 
 
 def _provider_error_field(error: object, field: str) -> str:
@@ -128,20 +130,20 @@ class SeedanceAPI:
         self._init_clients()
 
     def _init_clients(self):
-        """初始化火山引擎 Ark 客户端 (视频生成使用独立的 base URL)"""
-        if config.ARK_API_KEY:
+        """初始化视频客户端；凭据与网关由配置成对选择。"""
+        if config.ARK_API_KEY_SEEDANCE:
             try:
                 from volcenginesdkarkruntime import Ark
                 self.ark_client = Ark(
                     api_key=config.ARK_API_KEY_SEEDANCE,
                     base_url=config.ARK_BASE_URL_SEEDANCE,
                 )
-                print(f"  ✓ Volcengine Ark 连接就绪 (视频生成: {config.ARK_BASE_URL_SEEDANCE})")
+                print(f"  ✓ Volcengine Ark 客户端已配置 (视频生成: {config.ARK_BASE_URL_SEEDANCE}；尚未验证鉴权)")
             except ImportError:
                 print("  ⚠ volcengine SDK 未安装: pip install 'volcengine-python-sdk[ark]'")
                 raise
         else:
-            raise RuntimeError("未设置 ARK_API_KEY。请在 .env 中配置。")
+            raise RuntimeError("未设置视频接口凭据。请在 .env 中配置 ARK_API_KEY 或 ARK_API_KEY_SEEDANCE。")
 
     @property
     def supports_last_frame(self) -> bool:
@@ -164,6 +166,8 @@ class SeedanceAPI:
         timeout: int = 300,
         task_id: str | None = None,
         on_submitted: Callable[[str], None] | None = None,
+        reference_video: str | None = None,
+        reference_video_sha256: str | None = None,
     ) -> dict:
         """
         生成视频 — 通过火山引擎 Ark
@@ -174,6 +178,8 @@ class SeedanceAPI:
                 - "first_frame": I2V 强衔接 (只能 1 张)
                 - "reference_image": 主体/角色参考 (可多张)
                 - None: 自动推断 (1张=first_frame, 多张=reference_image)
+            reference_video: asset:// 素材或公网 HTTPS 直链；只能搭配 reference_image。
+            reference_video_sha256: HTTPS 输入必填；创建任务前比对远端字节。
 
         Returns:
             {"status": "succeeded", "video_url": "...", "last_frame_url": "...", ...}
@@ -203,6 +209,8 @@ class SeedanceAPI:
             timeout=timeout,
             task_id=task_id,
             on_submitted=on_submitted,
+            reference_video=reference_video,
+            reference_video_sha256=reference_video_sha256,
         )
 
     async def poll_task(self, task_id: str, *, timeout: int) -> dict:
@@ -216,10 +224,17 @@ class SeedanceAPI:
     async def _generate_ark(
         self, prompt, duration, ratio, resolution, model,
         generate_audio, return_last_frame, image_urls, image_role, timeout,
-        task_id=None, on_submitted=None,
+        task_id=None, on_submitted=None, reference_video=None, reference_video_sha256=None,
     ) -> dict:
         """通过火山引擎 Ark 官方 API 生成"""
         if task_id is None:
+            if reference_video is not None:
+                validate_video_reference(reference_video, model, image_role, len(image_urls or []))
+                if reference_video.startswith("https://"):
+                    try:
+                        await asyncio.to_thread(verify_reference_video_url, reference_video, reference_video_sha256)
+                    except ValueError as exc:
+                        return {"status": "failed", "error_type": "reference_validation", "error": str(exc)}
             content = [{"type": "text", "text": prompt}]
             if image_urls:
                 role = image_role or (
@@ -234,6 +249,11 @@ class SeedanceAPI:
                         "image_url": {"url": actual_url},
                         "role": role,
                     })
+            if reference_video is not None:
+                content.append({
+                    "type": "video_url", "video_url": {"url": reference_video},
+                    "role": "reference_video",
+                })
 
             try:
                 print(f"     [API] model={model}, duration={duration}, resolution={resolution}")
@@ -252,7 +272,14 @@ class SeedanceAPI:
                 )
                 task_id = resp.id
             except Exception as exc:
-                return self._failure_from_error(exc)
+                status = getattr(exc, "status_code", None)
+                if type(status) is not int or status >= 500 or status == 408:
+                    return {"status": "failed", "error_type": "submission_unknown",
+                            "error": "创建任务结果未知；请核对供应商任务记录，禁止自动重新提交"}
+                failure = self._failure_from_error(exc)
+                if status in (401, 403):
+                    failure["error_type"] = "authentication" if status == 401 else "permission_denied"
+                return failure
 
             if on_submitted:
                 try:

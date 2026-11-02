@@ -6,6 +6,7 @@ Cherry-picked patterns from OpenMontage video_stitch.py, simplified.
 from __future__ import annotations
 
 import os
+import math
 import shutil
 import subprocess
 from pathlib import Path
@@ -53,12 +54,21 @@ def normalize_video(
     fps: int = 24,
     resolution: str = "1920:1080",
     pixel_format: str = "yuv420p",
+    duration: float | None = None,
 ):
     """统一视频规格 (帧率/分辨率/编码)，确保后续拼接不报错
 
     关键: 始终保证输出带一条音轨。有原生音频则重编码；无音频则补静音轨,
     否则后续 acrossfade 拼接会因某些片段缺音频流而报错。
     """
+    if duration is not None:
+        if isinstance(duration, bool) or not isinstance(duration, (int, float)) or not math.isfinite(duration) or duration <= 0:
+            raise ValueError("镜头剪辑时长必须是有限正数")
+        streams = get_video_info(input_path).get("streams", [])
+        video = next((stream for stream in streams if stream.get("codec_type") == "video"), {})
+        available = float(video.get("duration") or 0)
+        if available + 1 / fps < duration:
+            raise ValueError("原始视频短于计划镜头时长；不能用定格或补帧掩盖缺失动作")
     vf = (
         f"fps={fps},"
         f"scale={resolution}:force_original_aspect_ratio=decrease,"
@@ -92,6 +102,8 @@ def normalize_video(
             "-movflags", "+faststart",
             output_path,
         ]
+    if duration is not None:
+        cmd[-1:-1] = ["-t", str(duration)]
     subprocess.run(cmd, check=True, capture_output=True)
 
 

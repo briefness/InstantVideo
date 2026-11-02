@@ -9,24 +9,74 @@ import config
 
 
 _ALL_EFFECT_PHASES = ["none", "setup", "active", "aftermath"]
+CANONICAL_FRAMING = {'wide': 'wide shot', 'medium': 'medium shot', 'close_detail': 'close-up detail shot'}
 
 
-def build_production_plan(content_focus: str, target_duration: int) -> dict:
+def build_production_plan(content_focus: str, target_duration: int, *, intent: dict | None = None,
+                          contract_version: str = 'production-plan-v8-request-shape') -> dict:
     """Allocate executable slots without deciding story-specific content."""
-    duration = max(config.MIN_SHOT_DURATION, int(target_duration))
-    shot_count = min(10, max(1, ceil(duration / 6)))
-    durations = _allocate_durations(duration, shot_count)
+    if intent is not None:
+        from pipeline.models import DirectorIntentSpec
+        intent = DirectorIntentSpec.model_validate(intent).model_dump(exclude_none=True)
+    if contract_version == 'production-plan-v8-request-shape':
+        from pipeline.production_shape import allocate_requested_shape
+        duration = target_duration
+        durations = allocate_requested_shape(duration, intent)
+        shot_count = len(durations)
+    else:
+        duration = max(config.MIN_SHOT_DURATION, int(target_duration))
+        shot_count = min(10, max(1, ceil(duration / 6)))
+        durations = _allocate_durations(duration, shot_count)
     slots = [
         _build_slot(content_focus, index, shot_count, slot_duration)
         for index, slot_duration in enumerate(durations)
     ]
-    return {
-        "version": "production-plan-v1",
+    if intent is not None:
+        if contract_version not in {'production-plan-v3-intent-timing', 'production-plan-v4-events', 'production-plan-v5-payoff-events', 'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'}:
+            raise ValueError('不支持的意图计划版本')
+        if intent['content_focus'] != content_focus:
+            raise ValueError('意图与生产计划重心不一致')
+        if contract_version in {'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'}:
+            for slot in slots:
+                slot['choreography'] = ('exact' if intent['motion_control'] == 'reference_motion'
+                                        else intent.get('choreography', 'exact'))
+                slot['creative_brief'] = intent['source_request']
+        if intent.get('ending_requirement'):
+            slots[-1]['required_outcome'] = intent['ending_requirement']
+        if intent['pacing'] == 'dense':
+            for index, slot in enumerate(slots):
+                slot.update(allowed_effect_phases=['active'], outcome_scope='single',
+                            requires_visible_result=True, coverage_roles=['interaction'],
+                            min_interaction_seconds=round(slot['duration'] * .7, 2),
+                            result_hold_seconds=.5 if index == len(slots) - 1 else 0)
+                # 密集交互末镜必须看清双方和结果，不能强制微距细节覆盖。
+                slot['framing_family'] = 'wide' if index % 2 == 0 else 'medium'
+                if contract_version in {'production-plan-v4-events', 'production-plan-v5-payoff-events', 'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'}:
+                    slot['min_interaction_events'] = max(2, min(6, slot['duration'] // 2))
+            if contract_version in {'production-plan-v5-payoff-events', 'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'} and intent.get('ending_requirement') and len(slots) > 1:
+                # 决胜作用包含完整受击反应；把其余名额放回交锋段，整片配额不减少。
+                extra = slots[-1]['min_interaction_events'] - 1
+                slots[-1]['min_interaction_events'] = 1
+                recipients = list(range(1, len(slots) - 1)) or [0]
+                for index in range(extra):
+                    slots[recipients[index % len(recipients)]]['min_interaction_events'] += 1
+    plan = {
+        "version": contract_version if intent else "production-plan-v2-short-payoff",
         "content_focus": content_focus,
         "target_duration": duration,
         "planned_duration": sum(durations),
         "slots": slots,
     }
+    if intent:
+        plan['director_intent'] = deepcopy(intent)
+        if (contract_version in {'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'} and intent['pacing'] == 'dense'
+                and all(s.get('choreography') == 'flexible' for s in slots)):
+            # Preserve the film's existing density requirement, but let authored tasks
+            # allocate it across shots. Exact/reference reproduction retains local windows.
+            plan['min_interaction_seconds'] = round(sum(s['min_interaction_seconds'] for s in slots), 2)
+            for slot in slots:
+                slot['min_interaction_seconds'] = 0.
+    return plan
 
 
 def apply_production_plan(storyboard: dict, plan: dict) -> None:
@@ -45,20 +95,19 @@ def apply_production_plan(storyboard: dict, plan: dict) -> None:
 
         camera = shot.get("camera")
         camera = dict(camera) if isinstance(camera, dict) else {}
-        framing = {
-            "wide": "wide shot",
-            "medium": "medium shot",
-            "close_detail": "close-up detail shot",
-        }[slot["framing_family"]]
+        framing = CANONICAL_FRAMING[slot['framing_family']]
         camera["start_framing"] = framing
-        camera["end_framing"] = framing
+        if (classify_framing(camera.get("end_framing")) is None
+                and shot.get('generation_direction') != 'authored-staging-v1'):
+            camera["end_framing"] = framing
         shot["camera"] = camera
 
         narrative = shot.get("narrative_beat")
         narrative = dict(narrative) if isinstance(narrative, dict) else {}
         narrative["function"] = slot["narrative_function"]
         shot["narrative_beat"] = narrative
-        shot["coverage_role"] = slot["coverage_roles"][0]
+        if shot.get("coverage_role") not in slot["coverage_roles"]:
+            shot["coverage_role"] = slot["coverage_roles"][0]
 
         geometry = shot.get("interaction_geometry")
         geometry = dict(geometry) if isinstance(geometry, dict) else {}
@@ -92,12 +141,23 @@ def production_plan_issues(storyboard: dict) -> list[str]:
     plan = storyboard.get("production_plan")
     if not isinstance(plan, dict):
         return []
+    if plan.get('version') in {'production-plan-v3-intent-timing', 'production-plan-v4-events', 'production-plan-v5-payoff-events', 'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'}:
+        try:
+            from pipeline.models import ProductionPlanSpec
+            intent = plan['director_intent']
+            expected = build_production_plan(plan['content_focus'], plan['target_duration'], intent=intent,
+                                             contract_version=plan['version'])
+            if ProductionPlanSpec.model_validate(expected) != ProductionPlanSpec.model_validate(plan):
+                return ['ProductionPlan 时间预算或槽位偏离冻结意图，不能降低动作要求']
+        except (KeyError, TypeError, ValueError):
+            return ['ProductionPlan 缺少有效的冻结意图，不能降级为关键词规划']
     slots = plan.get("slots")
     shots = storyboard.get("shots")
     if not isinstance(slots, list) or not isinstance(shots, list):
         return ["ProductionPlan 缺少可执行的 slots 或 shots"]
 
-    issues: list[str] = []
+    from pipeline.film_rhythm import planned_film_timing_issues
+    issues: list[str] = planned_film_timing_issues(storyboard)
     if len(shots) != len(slots):
         issues.append(
             f"ProductionPlan 镜头数量为 {len(slots)}，分镜实际为 {len(shots)}"
@@ -177,6 +237,30 @@ def format_production_plan(plan: dict) -> str:
             f"visible_result={'required' if slot['requires_visible_result'] else 'when applicable'}; "
             f"reference={slot['reference_policy']}"
         )
+        if slot.get('min_interaction_seconds'):
+            lines.append(
+                f"  action_beats 必须用 start_seconds/end_seconds/activity 连续覆盖0到{slot['duration']}秒；"
+                f"activity=interaction 的真实主体攻防不少于{slot['min_interaction_seconds']}秒。"
+                "transition 表示入场/接近，hold 表示停顿/收势；运镜、摆姿势不算 interaction。"
+                "每个 interaction 节拍都写清 actor、target、动作和可见结果，不能用一个动作标签计入整镜时长。"
+            )
+        if slot.get('min_interaction_events'):
+            lines.append(
+                f"  至少{slot['min_interaction_events']}个独立交互事件，分别占一个 interaction 节拍；"
+                "每个事件自带完整 interaction_geometry（actor/target 与节拍一致，effect_phase=active）"
+                "及 effect_at_seconds/reaction_at_seconds，必须在节拍时间窗内先作用后反应。"
+                "允许相邻事件交换主动执行者；不要把多个招式/物理过程塞成一段自由描述或拉长一次接触。"
+                "整镜 interaction_geometry 描述终结事件，各事件使用自己的作用模式和影响范围。最多12个总节拍。"
+            )
+        if slot.get('result_hold_seconds'):
+            lines.append(f"  末镜必须先有 peak/interaction 建立结果，再用至少{slot['result_hold_seconds']}秒的 aftermath/hold 展示结果持续；不能直接从交战跳到已经倒地。")
+        if slot.get('required_outcome'):
+            lines.append(f"  Shot {slot['shot_id']} 必须因果可见地实现用户结局：{slot['required_outcome']}")
+    intent = plan.get('director_intent') or {}
+    if intent:
+        lines.append('冻结的用户意图：' + str(intent))
+        if intent.get('ending_requirement') and not any(s.get('required_outcome') for s in plan['slots']):
+            lines.append('本批不含全片结局槽位；不得提前完成全片结局。')
     return "\n".join(lines)
 
 
@@ -223,6 +307,9 @@ def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
         allowed_phases = [phase]
         outcome_scope = "none" if phase == "setup" else "single"
         requires_visible_result = phase != "setup"
+        # 三个槽位的短片需要在末镜完成决胜动作，不能整段强制为静态余波。
+        if count == 3 and index == count - 1:
+            allowed_phases = ["active", "aftermath"]
 
     framing_families = _framing_families(count)
     reference_policy = (
@@ -248,7 +335,11 @@ def _build_slot(focus: str, index: int, count: int, duration: int) -> dict:
         "allowed_effect_phases": allowed_phases,
         "outcome_scope": outcome_scope,
         "requires_visible_result": requires_visible_result,
-        "coverage_roles": _coverage_roles(focus, index, count),
+        "coverage_roles": (
+            ["interaction", "aftermath"]
+            if action and count == 3 and index == count - 1
+            else _coverage_roles(focus, index, count)
+        ),
         "framing_family": framing_families[index],
         "reference_policy": reference_policy,
     }

@@ -1,0 +1,305 @@
+{
+  "source": "output/20261028_203755_276414/planning_authoring.json",
+  "sha256": "6c1a62ae70d56832350e42d863b14f6880688a392bf63f3bf35d8c2959bd7dd4",
+  "draft": {
+    "title": "紫禁之巅剑决",
+    "mood": "肃杀凛冽，武侠史诗感",
+    "music_style": "大气紧张的传统武侠管弦配乐，鼓点随交锋节奏推进，收尾处骤然放缓",
+    "theme_elements": [
+      "wuxia_sword_duel",
+      "forbidden_city_rooftop",
+      "qinggong_entry",
+      "fluid_blade_exchange",
+      "clean_decisive_finish"
+    ],
+    "story_arc": {
+      "goal": "两位剑客在紫禁之巅完成生死决战",
+      "stakes": "剑刃相接即分胜负，落败者将坠下屋脊再无起身之力",
+      "turning_point": "双方快攻互搏中，玄衣剑客抓住对方旧力已尽新力未生的破绽",
+      "resolution": "玄衣剑客以一记干净剑势击杀白衣剑客，顺势收剑，胜负明朗"
+    },
+    "characters": [
+      {
+        "name": "xuan_yi",
+        "description": "成年男性剑客，身形挺拔，穿玄色暗纹劲装，束黑色高马尾，腰系黑色革带，佩戴一柄窄身精钢长剑，剑刃泛冷银光泽",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "bai_yi",
+        "description": "成年男性剑客，身形修长，穿月白色绣银线劲装，长发半束，腰系素色丝绦，佩戴一柄宽刃精钢长剑，剑刃带冷冽寒光",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "shots": [
+      {
+        "shot_id": 1,
+        "scene_id": "forbidden_city_roof_tower",
+        "scene_description": "紫禁城内最高的重檐庑殿顶屋脊，深灰色筒瓦铺就的瓦面平整开阔，两侧翘角飞檐悬着铜铃，远处是层叠的金色琉璃瓦屋顶与灰蒙的傍晚天空，檐角风动，云气缓移。",
+        "visual_description": "Wide cinematic 16:9 frame, cold dusk light, deep grey tiled rooftop ridge stretching across the lower frame, layered golden Forbidden City roofs fading into misty grey sky in the background, sharp wuxia film texture, dust motes drifting in the slanted light.",
+        "camera": {
+          "primary_movement": "tracking",
+          "speed": "smooth",
+          "composition": "Wide establishing shot, full roof ridge visible, both fliers framed against the sky background",
+          "start_framing": "Wide shot of empty rooftop, distant skyline visible",
+          "end_framing": "Wide shot locking on the two swordsmen meeting at roof center",
+          "screen_positions": {
+            "xuan_yi": "left",
+            "bai_yi": "right"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "xuan_yi": {
+            "frame_position": "left side of frame",
+            "body_orientation": "facing right, leaning forward in mid-air",
+            "facing_target": "bai_yi",
+            "eyeline_target": "bai_yi",
+            "travel_direction": "moving right toward roof center",
+            "action_target": "bai_yi"
+          },
+          "bai_yi": {
+            "frame_position": "right side of frame",
+            "body_orientation": "facing left, leaning forward in mid-air",
+            "facing_target": "xuan_yi",
+            "eyeline_target": "xuan_yi",
+            "travel_direction": "moving left toward roof center",
+            "action_target": "xuan_yi"
+          }
+        },
+        "start_state": {
+          "location": "Forbidden City main hall rooftop ridge",
+          "subject": "Two swordsmen flying in from opposite sides of the roof",
+          "action_phase": "Qinggong entry, mid-air approach",
+          "camera": "Tracking both moving figures smoothly",
+          "screen_direction": "Xuan Yi moves right, Bai Yi moves left",
+          "pose_and_gaze": "Both leaning forward in flight, eyes fixed on each other",
+          "prop_state": "Both swords held in right hand, blades angled downward",
+          "open_motion": "Robe hems and hair streaming backward from flight speed",
+          "lighting": "Cold dusk side light, soft rim light on flying figures"
+        },
+        "end_state": {
+          "location": "Center of the rooftop ridge",
+          "subject": "Two swordsmen locked in initial blade contact",
+          "action_phase": "First clash after landing",
+          "camera": "Settled into wide shot of roof center",
+          "screen_direction": "Xuan Yi on left, Bai Yi on right",
+          "pose_and_gaze": "Both in low stances, blades crossed, eyes locked on each other",
+          "prop_state": "Sword blades crossed at mid-height, tension in grip",
+          "open_motion": "Robe fabric settling after landing, dust rising from footfalls",
+          "lighting": "Even cold dusk light across the roof surface"
+        },
+        "story_change": "两位剑客从两侧飞掠入场，落步即接剑刃交锋，拉开决战序幕",
+        "story_state_after": "双方在屋脊中央完成首次剑刃相接，保持攻防对峙姿态",
+        "key_props": [
+          "deep grey tiled roof ridge",
+          "wide steel sword of xuan_yi",
+          "wide steel sword of bai_yi",
+          "flying eaves corners with bronze bells"
+        ],
+        "continuity_props": [
+          "roof tiles underfoot",
+          "distant golden Forbidden City rooftops",
+          "grey dusk sky"
+        ],
+        "lighting": "冷调傍晚侧光，人物边缘带柔和轮廓光，瓦面反射淡冷光",
+        "mood": "肃杀凛冽，大战一触即发",
+        "action_plan": [
+          {
+            "id": "entry_flight",
+            "actor": "xuan_yi and bai_yi",
+            "action": "两位剑客分别从屋脊左右两侧的檐角借力，以轻功斜向飞掠，衣摆与长发向后扬起，足尖点过檐角铜铃，径直朝向屋脊中心冲来。",
+            "result": "两人同时足尖落在瓦面，踏出细碎瓦尘，身体前倾压低重心，右手长剑出鞘半举，目光死死锁定对方。",
+            "kind": "transition",
+            "target": "rooftop center",
+            "weight": 2.2
+          },
+          {
+            "id": "first_clash",
+            "actor": "xuan_yi",
+            "action": "玄衣剑客落步瞬间拧腰，右手持剑从下向上斜撩，剑刃直取白衣剑客左肩。",
+            "result": "白衣剑客侧身沉肩让过撩剑，同时举剑格开斜来的剑刃，双剑在半空撞出清脆金鸣，火花微闪。",
+            "kind": "interaction",
+            "target": "bai_yi",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "sweep",
+              "source": "Xuan Yi's upward diagonal sword",
+              "region": "Bai Yi's left shoulder and upper body area",
+              "unaffected": "Bai Yi's legs and lower torso"
+            },
+            "response": "deflection",
+            "carry": "承接飞掠落地的前冲惯性",
+            "weight": 1.5
+          },
+          {
+            "id": "counter_thrust",
+            "actor": "bai_yi",
+            "action": "白衣剑客格开剑刃后手腕翻转，宽刃长剑顺着玄衣剑刃的滑势向前直刺，剑峰指向玄衣剑客胸口。",
+            "result": "玄衣剑客立刻向后撤半步，上半身向后仰，让过直刺的剑峰，同时手腕下压将对方剑刃压向身侧，两人剑刃仍贴在一起。",
+            "kind": "interaction",
+            "target": "xuan_yi",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Bai Yi's forward thrusting sword",
+              "region": "Xuan Yi's chest and upper torso area",
+              "unaffected": "Xuan Yi's lower legs and feet"
+            },
+            "response": "evasion",
+            "carry": "承接格剑时的贴刃滑势",
+            "weight": 1.3
+          }
+        ]
+      },
+      {
+        "shot_id": 2,
+        "scene_id": "forbidden_city_roof_tower",
+        "scene_description": "紫禁城主殿屋脊中段，深灰色筒瓦被脚步带起细碎浮尘，两侧飞檐在画面边缘露出轮廓，远处层叠宫阙在薄暮中显得朦胧。",
+        "visual_description": "Medium 16:9 cinematic frame, tight framing on the two swordsmen's upper bodies and sword movements, dust kicked up by footfalls drifting between them, cold dusk light glinting off polished steel blades, blurred rooftop background keeping focus on the exchange.",
+        "camera": {
+          "primary_movement": "truck right",
+          "speed": "smooth",
+          "composition": "Medium shot, two-shot framing, sword exchange fully visible between the fighters",
+          "start_framing": "Medium shot of the two locked in blade contact",
+          "end_framing": "Medium shot following the fighters as they slide left across the roof",
+          "screen_positions": {
+            "xuan_yi": "center-left",
+            "bai_yi": "center-right"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "xuan_yi": {
+            "frame_position": "center-left",
+            "body_orientation": "facing right, weight shifted to front foot",
+            "facing_target": "bai_yi",
+            "eyeline_target": "bai_yi",
+            "travel_direction": "sliding left across roof tiles",
+            "action_target": "bai_yi"
+          },
+          "bai_yi": {
+            "frame_position": "center-right",
+            "body_orientation": "facing left, weight shifted to back foot",
+            "facing_target": "xuan_yi",
+            "eyeline_target": "xuan_yi",
+            "travel_direction": "sliding left across roof tiles",
+            "action_target": "xuan_yi"
+          }
+        },
+        "start_state": {
+          "location": "Center of the rooftop ridge",
+          "subject": "Two swordsmen with blades pressed together",
+          "action_phase": "Fast continuous exchange after initial clash",
+          "camera": "Trucking right to follow fighters' lateral movement",
+          "screen_direction": "Fighters slide left across the roof",
+          "pose_and_gaze": "Both leaning into the blade pressure, eyes locked on each other",
+          "prop_state": "Blades pressed together, grips tight",
+          "open_motion": "Dust still rising from earlier footfalls",
+          "lighting": "Cold dusk light catching blade edges"
+        },
+        "end_state": {
+          "location": "Left section of the rooftop ridge",
+          "subject": "Xuan Yi has forced Bai Yi into a defensive retreat",
+          "action_phase": "Exchange shifts to Xuan Yi's offensive pressure",
+          "camera": "Settled on medium two-shot of the fighters",
+          "screen_direction": "Xuan Yi pressing from right, Bai Yi retreating left",
+          "pose_and_gaze": "Xuan Yi leaning forward in attack, Bai Yi bent backward evading",
+          "prop_state": "Blades separated after Bai Yi's block",
+          "open_motion": "Robe sleeves swinging from fast sword movements",
+          "lighting": "Consistent cold dusk side light"
+        },
+        "story_change": "双方展开连续快攻互搏，玄衣剑客逐步抢占攻势，抓住白衣剑客的防守破绽",
+        "story_state_after": "玄衣剑客占据主动进攻位置，白衣剑客向后退至屋脊左侧，防线被撕开缺口",
+        "key_props": [
+          "deep grey roof tiles",
+          "two crossed steel swords",
+          "drifting roof dust",
+          "swinging robe hems"
+        ],
+        "continuity_props": [
+          "grey dusk sky",
+          "distant blurred palace rooftops"
+        ],
+        "lighting": "冷调侧光，剑刃反光清晰，人物动作阴影落在瓦面上",
+        "mood": "紧张凌厉，交锋节奏密集",
+        "action_plan": [
+          {
+            "id": "press_slash",
+            "actor": "xuan_yi",
+            "action": "玄衣剑客借着压剑的力向前跨步，手腕旋动，剑刃顺着对方剑脊滑开，斜向横斩向白衣剑客腰侧。",
+            "result": "白衣剑客立刻拧腰旋身，足尖在瓦面一转，让过横斩的剑刃，同时反手挥剑向下劈向玄衣剑客握剑的手腕。",
+            "kind": "interaction",
+            "target": "bai_yi",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Xuan Yi's horizontal waist-level slash",
+              "region": "Bai Yi's waist and side torso area",
+              "unaffected": "Bai Yi's head and upper chest"
+            },
+            "response": "evasion",
+            "carry": "承接上一段双剑相贴的压剑滑势",
+            "weight": 1.5
+          },
+          {
+            "id": "evade_counter",
+            "actor": "bai_yi",
+            "action": "白衣剑客旋身之际反手向下劈剑，剑刃带着风声直落玄衣剑客右腕。",
+            "result": "玄衣剑客立刻沉腕收臂，让过劈落的剑刃，同时左脚向前插步，整个人贴进白衣剑客内圈。",
+            "kind": "interaction",
+            "target": "xuan_yi",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Bai Yi's downward reverse slash",
+              "region": "Xuan Yi's right wrist and lower arm area",
+              "unaffected": "Xuan Yi's torso and head"
+            },
+            "response": "evasion",
+            "carry": "承接旋身让过横斩的转体惯性",
+            "weight": 1.3
+          },
+          {
+            "id": "close_range_press",
+            "actor": "xuan_yi",
+            "action": "玄衣剑客贴进内圈后手肘一抬，用剑格推开对方劈来的剑，随即剑尖向上挑，直取白衣剑客下颌。",
+            "result": "白衣剑客被迫向后仰头，同时右脚后撤一步，举剑向上硬架住挑来的剑刃，被这股挑力推得向后滑出半步，瓦面被鞋底蹭出细痕。",
+            "kind": "interaction",
+            "target": "bai_yi",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Xuan Yi's upward chin-level thrust",
+              "region": "Bai Yi's jaw and upper neck area",
+              "unaffected": "Bai Yi's lower torso and legs"
+            },
+            "response": "deflection",
+            "carry": "承接插步贴进内圈的前冲重心",
+            "weight": 1.4
+          },
+          {
+            "id": "opening_create",
+            "actor": "xuan_yi",
+            "action": "玄衣剑客借着对方硬架的力道，突然手腕下沉，剑势从挑转压，将对方架剑的力道卸向左侧，空出对方胸口正前方的位置。",
+            "result": "白衣剑客被卸力带得身体向左歪，旧力已尽新力未生，胸口完全暴露在玄衣剑客的剑势前方。",
+            "kind": "interaction",
+            "target": "bai_yi",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Xuan Yi's downward deflecting sword motion",
+              "region": "Bai Yi's upper torso and chest area",
+              "unaffected": "Bai Yi's legs and feet",
+              "scope": "single"
+            },
+            "response": "evasion",
+            "carry": "承接挑剑硬架的受力方向",
+            "weight": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

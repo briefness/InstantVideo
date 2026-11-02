@@ -1,0 +1,403 @@
+{
+  "authored_by": "Codex assisted action direction; deliberately supplied script, not autonomous model output",
+  "duration_seconds": 15,
+  "intent": {
+    "source_request": "生成一部总长15秒的电影级武侠短片：两位原创成年剑客决战紫禁之巅。必须拆成3段各5秒的独立视频，由项目正式流程逐段生成、验收并拼接，成片总长15秒。轻功入场要帅，落步就接入交锋。武打要密集而流畅，有身法、虚实、借势和变招；闪让可以同时反击，同一人可以连续变招，招与招之间延续步法、重心和剑势，不要机械地一来一回，不要每招停顿复位，不要持续架剑僵持。最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。重点验证三段间的人物身份与服装兵器一致性、动作与位置连续性以及合理运镜；镜头服务于看清双方交锋、闪避和决胜，避免炫技运镜掩盖动作。保持同一屋脊场景与连贯光线，武侠电影质感，不添加额外片头片尾。请项目自行完成剧本、分镜、动作编排、运镜和后期，不需要人工修改中间结果。",
+    "content_focus": "action",
+    "pacing": "dense",
+    "intent_evidence": "武打要密集而流畅，有身法、虚实、借势和变招；闪让可以同时反击，同一人可以连续变招，招与招之间延续步法、重心和剑势，不要机械地一来一回，不要每招停顿复位，不要持续架剑僵持。",
+    "ending_requirement": "A clear non-graphic fatal sword strike, loser falls and stays down, winner sheathes.",
+    "ending_evidence": "最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+    "motion_control": "text_guided",
+    "motion_control_evidence": ""
+  },
+  "storyboard": {
+    "title": "紫禁·借势归锋",
+    "mood": "cold, poised, decisive",
+    "music_style": "restrained guqin and low percussion, sharp sword sounds; final wind after the strike",
+    "theme_elements": [
+      "Forbidden City rooftop duel",
+      "qinggong entry",
+      "continuous borrowed-force sword changes",
+      "clear non-graphic decisive death"
+    ],
+    "characters": [
+      {
+        "name": "Sword_Xuan",
+        "description": "Adult male swordsman, age thirty, lean oval face, black hair half tied with a black ribbon, fitted black robe with subtle dark bamboo embroidery, black leather waist belt and boots. Right hand holds a straight steel jian with black ebony guard and black tassel; empty black scabbard at left hip.",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "Sword_Bai",
+        "description": "Adult male swordsman, age thirty-five, angular broad face, black high ponytail held by a silver crown, flowing ivory robe with subtle cloud embroidery, dark woven belt and black cloth boots. Right hand holds a straight steel jian with plain silver guard and white tassel; empty white scabbard at left hip.",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "story_arc": {
+      "goal": "Two adult swordsmen settle their duel on the same Forbidden City roof ridge.",
+      "stakes": "One will die; only the survivor leaves the ridge.",
+      "turning_point": "Xuan borrows Bai's momentum, lifts his blade then changes low to unbalance him.",
+      "resolution": "Xuan evades Bai's last descending cut and kills him with one clean returning thrust; Bai falls and remains down while Xuan sheathes."
+    },
+    "shots": [
+      {
+        "shot_id": 1,
+        "scene_id": "zijin_roof_moon",
+        "scene_description": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+        "visual_description": "Live-action wuxia cinema, tactile glazed tiles, restrained silver moonlight, warm distant palace windows, wind moving fabric, crisp sword silhouettes, deep readable two-person staging. Natural anatomy, elegant grounded wire-fu, no text overlays.",
+        "camera": {
+          "primary_movement": "crane up",
+          "speed": "slow",
+          "composition": "clear two-shot with full bodies, hands and complete blades visible",
+          "start_framing": "wide two-shot",
+          "end_framing": "wide two-shot",
+          "screen_positions": {
+            "Sword_Xuan": "left",
+            "Sword_Bai": "right"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "Sword_Xuan": {
+            "frame_position": "left third",
+            "body_orientation": "three-quarter facing right",
+            "facing_target": "Sword_Bai",
+            "eyeline_target": "Sword_Bai",
+            "travel_direction": "rightward along ridge without crossing behind Bai",
+            "action_target": "Sword_Bai"
+          },
+          "Sword_Bai": {
+            "frame_position": "right third",
+            "body_orientation": "three-quarter facing left",
+            "facing_target": "Sword_Xuan",
+            "eyeline_target": "Sword_Xuan",
+            "travel_direction": "small retreating steps rightward along ridge",
+            "action_target": "Sword_Xuan"
+          }
+        },
+        "start_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "arrival",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Bai waits on the right with sword low; Xuan flies in from the left adjoining eave, eyes on Bai",
+          "prop_state": "Both right-hand swords drawn; black scabbard at Xuan's left hip, white scabbard at Bai's left hip.",
+          "open_motion": "Xuan's robe and black tassel trail his rightward flight",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "end_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "redirected blade still moving",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Xuan left with left foot forward and sword angled outward; Bai right, weight on right foot, silver sword displaced toward his outside",
+          "prop_state": "Both right-hand swords drawn; black scabbard at Xuan's left hip, white scabbard at Bai's left hip.",
+          "open_motion": "Bai's displaced blade carries outward into a returning waist-height arc",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "story_change": "The aerial arrival immediately becomes an evasive entry and a borrowed-force blade redirection.",
+        "story_state_after": "Both swordsmen are engaged; Bai's redirected blade is returning at waist height.",
+        "key_props": [],
+        "continuity_props": [],
+        "lighting": "Cold rear-left moonlight with distant warm palace windows",
+        "mood": "tense cinematic wuxia",
+        "action_plan": [
+          {
+            "id": "qinggong_arrival",
+            "kind": "transition",
+            "actor": "Sword_Xuan",
+            "target": "",
+            "action": "Push from the adjoining left eave and skim upward-right across the roofline with one elegant airborne extension, black sleeves streaming. Land lightly with the left foot and keep the forward momentum.",
+            "result": "Xuan arrives screen-left of the waiting Bai, both full bodies visible; the landing flows directly into evasive footwork.",
+            "weight": 1
+          },
+          {
+            "id": "bai_descending_cut",
+            "kind": "interaction",
+            "actor": "Sword_Bai",
+            "target": "Sword_Xuan",
+            "action": "Use Xuan's landing momentum against him: step in with a descending diagonal sword cut toward his right shoulder.",
+            "result": "Xuan pivots his shoulder outside the descending blade while advancing his left foot; the silver blade passes clearly beside his robe and carries low, without contact or injury.",
+            "response": "evasion",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Bai's silver-guard sword",
+              "region": "Visible diagonal path past Xuan's right shoulder",
+              "unaffected": "Xuan's body remains unhurt; both swords remain held"
+            },
+            "weight": 2,
+            "carry": "",
+            "overlap": false
+          },
+          {
+            "id": "xuan_borrowed_redirect",
+            "kind": "interaction",
+            "actor": "Sword_Xuan",
+            "target": "Sword_Bai",
+            "action": "As Bai turns his missed cut into a low rising return, meet its blade obliquely with the black sword's strong base and rotate the waist with its momentum, sliding the contact outward instead of stopping it.",
+            "result": "The two blades touch visibly then slide apart; Bai's silver blade is redirected toward his outside and his right foot takes his weight. Its movement continues into a returning waist-height arc.",
+            "response": "deflection",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Xuan's black sword against Bai's returning silver blade",
+              "region": "Visible sliding blade contact between their waists",
+              "unaffected": "Neither torso is hit; both sword grips remain intact"
+            },
+            "weight": 2,
+            "carry": "Xuan's landing pivot continues into the waist rotation; Bai's missed cut never stops",
+            "overlap": false
+          }
+        ]
+      },
+      {
+        "shot_id": 2,
+        "scene_id": "zijin_roof_moon",
+        "scene_description": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+        "visual_description": "Live-action wuxia cinema, tactile glazed tiles, restrained silver moonlight, warm distant palace windows, wind moving fabric, crisp sword silhouettes, deep readable two-person staging. Natural anatomy, elegant grounded wire-fu, no text overlays.",
+        "camera": {
+          "primary_movement": "truck right",
+          "speed": "slow",
+          "composition": "clear two-shot with full bodies, hands and complete blades visible",
+          "start_framing": "wide two-shot",
+          "end_framing": "wide two-shot",
+          "screen_positions": {
+            "Sword_Xuan": "left",
+            "Sword_Bai": "right"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Sword_Xuan": {
+            "frame_position": "left third",
+            "body_orientation": "three-quarter facing right",
+            "facing_target": "Sword_Bai",
+            "eyeline_target": "Sword_Bai",
+            "travel_direction": "rightward along ridge without crossing behind Bai",
+            "action_target": "Sword_Bai"
+          },
+          "Sword_Bai": {
+            "frame_position": "right third",
+            "body_orientation": "three-quarter facing left",
+            "facing_target": "Sword_Xuan",
+            "eyeline_target": "Sword_Xuan",
+            "travel_direction": "small retreating steps rightward along ridge",
+            "action_target": "Sword_Xuan"
+          }
+        },
+        "start_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "redirected blade still moving",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Xuan left with left foot forward and sword angled outward; Bai right, weight on right foot, silver sword displaced toward his outside",
+          "prop_state": "Both right-hand swords drawn; black scabbard at Xuan's left hip, white scabbard at Bai's left hip.",
+          "open_motion": "Bai's displaced blade carries outward into a returning waist-height arc",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "end_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "Bai's balance broken but still attacking",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Xuan left, right foot advancing; Bai right, left knee lifted away from a low sweep, torso leaning back and sword high",
+          "prop_state": "Both right-hand swords drawn; black scabbard at Xuan's left hip, white scabbard at Bai's left hip.",
+          "open_motion": "Bai begins dropping his lifted left foot and driving his high blade down; Xuan's low blade is already curving back toward the center",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "story_change": "Xuan uses one advancing sequence to slip inside, lift Bai's blade, then change low, forcing Bai onto one foot.",
+        "story_state_after": "Bai is off balance with his sword high; Xuan remains inside with his blade low and returning toward center.",
+        "key_props": [],
+        "continuity_props": [],
+        "lighting": "Cold rear-left moonlight with distant warm palace windows",
+        "mood": "tense cinematic wuxia",
+        "action_plan": [
+          {
+            "id": "bai_returning_arc",
+            "kind": "interaction",
+            "actor": "Sword_Bai",
+            "target": "Sword_Xuan",
+            "action": "Continue the returning waist-height arc, turning the hips to chase Xuan's left flank without resetting the feet.",
+            "result": "Xuan draws his waist just beyond the blade while his front foot slides diagonally inward; Bai's silver tip passes his abdomen without contact, and Xuan gains the inside line.",
+            "response": "evasion",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Bai's silver-guard sword",
+              "region": "Horizontal arc just in front of Xuan's waist",
+              "unaffected": "Neither body is injured; the roof remains intact"
+            },
+            "weight": 1.6,
+            "carry": "Bai's outside blade arc and Xuan's inward pivot continue exactly from the previous shot",
+            "overlap": false
+          },
+          {
+            "id": "xuan_lifting_bind",
+            "kind": "interaction",
+            "actor": "Sword_Xuan",
+            "target": "Sword_Bai",
+            "action": "From the inside line roll the black blade beneath Bai's still-moving blade and spiral it upward with a short wrist turn and forward step.",
+            "result": "The blades make brief visible sliding contact; Bai's blade is carried high and outward, his sword arm rises and his ribs and low stance open. Xuan's sword immediately drops out of the sliding bind.",
+            "response": "deflection",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Xuan's black blade rolling beneath Bai's silver blade",
+              "region": "Short sliding blade contact between their chests",
+              "unaffected": "Neither torso is struck; no prolonged blade lock"
+            },
+            "weight": 1.7,
+            "carry": "Xuan uses the same inward step gained during the missed horizontal cut",
+            "overlap": true
+          },
+          {
+            "id": "xuan_low_change",
+            "kind": "interaction",
+            "actor": "Sword_Xuan",
+            "target": "Sword_Bai",
+            "action": "Without another preparation, let the released blade fall into a shallow sweep toward Bai's forward left shin while advancing the right foot; the high bind turns into the low threat in one continuous ribbon.",
+            "result": "Bai sharply lifts his left knee out of the visible sword path and leans back onto his right foot, avoiding injury but losing his stable stance; his sword stays high as he starts a desperate descending cut.",
+            "response": "evasion",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Xuan's black-guard sword",
+              "region": "Low lateral sweep in front of Bai's forward left shin",
+              "unaffected": "Bai's lifted shin remains uncut; both sword hands retain their weapons"
+            },
+            "weight": 1.7,
+            "carry": "Xuan's blade descends directly from the lifting bind; no neutral guard or stance reset",
+            "overlap": true
+          }
+        ]
+      },
+      {
+        "shot_id": 3,
+        "scene_id": "zijin_roof_moon",
+        "scene_description": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+        "visual_description": "Live-action wuxia cinema, tactile glazed tiles, restrained silver moonlight, warm distant palace windows, wind moving fabric, crisp sword silhouettes, deep readable two-person staging. Natural anatomy, elegant grounded wire-fu, no text overlays.",
+        "camera": {
+          "primary_movement": "dolly out",
+          "speed": "slow",
+          "composition": "clear two-shot with full bodies, hands and complete blades visible",
+          "start_framing": "wide two-shot",
+          "end_framing": "wide two-shot",
+          "screen_positions": {
+            "Sword_Xuan": "left",
+            "Sword_Bai": "right"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Sword_Xuan": {
+            "frame_position": "left third",
+            "body_orientation": "three-quarter facing right",
+            "facing_target": "Sword_Bai",
+            "eyeline_target": "Sword_Bai",
+            "travel_direction": "rightward along ridge without crossing behind Bai",
+            "action_target": "Sword_Bai"
+          },
+          "Sword_Bai": {
+            "frame_position": "right third",
+            "body_orientation": "three-quarter facing left",
+            "facing_target": "Sword_Xuan",
+            "eyeline_target": "Sword_Xuan",
+            "travel_direction": "small retreating steps rightward along ridge",
+            "action_target": "Sword_Xuan"
+          }
+        },
+        "start_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "Bai's balance broken but still attacking",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Xuan left, right foot advancing; Bai right, left knee lifted away from a low sweep, torso leaning back and sword high",
+          "prop_state": "Both right-hand swords drawn; black scabbard at Xuan's left hip, white scabbard at Bai's left hip.",
+          "open_motion": "Bai begins dropping his lifted left foot and driving his high blade down; Xuan's low blade is already curving back toward the center",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "end_state": {
+          "location": "Forbidden City, the same broad blue-grey glazed roof ridge under cold moonlight",
+          "subject": "Sword_Xuan and Sword_Bai",
+          "action_phase": "decisive death established",
+          "camera": "wide two-shot, south side of the ridge, both full bodies and blade tips visible",
+          "screen_direction": "Sword_Xuan stays screen-left facing right; Sword_Bai stays screen-right facing left",
+          "pose_and_gaze": "Bai lies motionless on the tiles on screen-right, eyes closed; Xuan stands screen-left and finishes sheathing",
+          "prop_state": "Bai's silver sword lies beside his right hand on the right tiles; Xuan's black sword is sheathed at his left hip.",
+          "open_motion": "Wind moves robes only; Bai never rises",
+          "lighting": "Consistent cold moonlight from rear-left, warm palace windows far below"
+        },
+        "story_change": "Bai's desperate cut commits his balance; Xuan converts the evasion into a single fatal returning thrust.",
+        "story_state_after": "Bai is dead and stays down; Xuan sheathes his sword, the duel visibly over.",
+        "key_props": [],
+        "continuity_props": [],
+        "lighting": "Cold rear-left moonlight with distant warm palace windows",
+        "mood": "tense cinematic wuxia",
+        "action_plan": [
+          {
+            "id": "last_bai_cut",
+            "kind": "interaction",
+            "actor": "Sword_Bai",
+            "target": "Sword_Xuan",
+            "action": "Drop the lifted left foot and drive the high silver blade down at Xuan's near shoulder, trying to recover balance through a forceful last attack.",
+            "result": "Xuan takes a short diagonal step to the outside of the descending blade, turning his waist; the silver blade misses visibly and pulls Bai forward, exposing the upper chest.",
+            "response": "evasion",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "scope": "single",
+              "source": "Bai's silver sword",
+              "region": "Descending path beside Xuan's near shoulder",
+              "unaffected": "Xuan remains uninjured; Bai is alive and upright until the next thrust"
+            },
+            "weight": 1.5,
+            "carry": "Bai's high blade and lifted-foot imbalance continue from the previous shot",
+            "overlap": false
+          },
+          {
+            "id": "decisive_returning_thrust",
+            "kind": "interaction",
+            "actor": "Sword_Xuan",
+            "target": "Sword_Bai",
+            "action": "Let the same evasive waist turn bring the low black sword back to center, then step through and deliver one clean straight thrust into Bai's upper chest through the robe. Draw the blade out along the same line and turn it down for the scabbard.",
+            "result": "The point visibly reaches Bai's chest before his body reacts. With no blood or exposed wound, Bai's torso jolts, his sword hand opens, the silver sword drops onto the right tiles, and his knees give way. He falls sideways onto the roof on screen-right and becomes motionless with eyes closed; Xuan remains upright on the left.",
+            "response": "impact",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "static",
+              "scope": "single",
+              "source": "Xuan's black sword point",
+              "region": "Single contact at Bai's upper chest, followed by blade withdrawal",
+              "unaffected": "Xuan is unhurt, the rooftop and distant buildings remain intact"
+            },
+            "weight": 2.8,
+            "carry": "The thrust emerges from Xuan's outside step and returning low blade, borrowing Bai's forward fall",
+            "overlap": true
+          },
+          {
+            "id": "clear_final_hold",
+            "kind": "hold",
+            "actor": "Sword_Xuan",
+            "target": "",
+            "action": "Finish the smooth sheathing motion at the left hip and settle upright as the camera completes a small pullback.",
+            "result": "Bai remains motionless on the right tiles beside his dropped silver sword. Xuan stands on the left with the black sword sheathed; both bodies and the fallen sword stay visible, no resurrection or extra attack.",
+            "weight": 0.7
+          }
+        ]
+      }
+    ]
+  }
+}

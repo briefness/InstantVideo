@@ -154,9 +154,13 @@
 - `coverage_role` 只能是 `establish`、`action_subject`、`target_reaction`、`interaction`、`aftermath`、`insert`。
 - `interaction_geometry.occlusion_policy` 只能是 `none`、`partial`、`motivated`。
 - `interaction_geometry.interaction_mode` 只能是 `none`、`direct_contact`、`directed_path`、`area_effect`、`indirect_effect`。
-- `action_beats` 同时包含非空 `target` 和 `visible_result` 时属于可见因果交互，`interaction_mode` 不得使用 `none`。
+- `activity=interaction` 表示新的物理作用，须使用有效作用模式；是否填写 `target` 和 `visible_result` 本身不能决定活动类型。transition/hold 可以描述已知参与者和状态，但不携带新的事件 geometry 或作用/反应时刻。
 - `narrative_beat.function` 只能是 `setup`、`progress`、`turn`、`payoff`。按实际剧情选择，不要求每个视频机械覆盖全部类型。
 - `camera.axis_change` 只能是 `establish`、`hold`、`reestablish`。
+- `camera.primary_movement` 使用可执行词汇：fixed、dolly in/out、pan left/right、tilt up/down、tracking、truck left/right、crane up/down、orbit、zoom in/out、handheld；速度单独写 slow、smooth 或 fast。每镜只选一种主运镜，服务于动作可读性，不用复杂自由文本代替结构字段。
+- 三镜短动作片的最后一镜允许 active：把决胜动作与其持续可见的结果放在同一镜的有序 action_beats 中；仅当结果已在上一镜完成时选 aftermath，不重复攻击或让倒下角色复活。
+- 若生产计划指定 min_interaction_seconds，action_beats 必须带 start_seconds、end_seconds、activity，按顺序无空隙覆盖整个镜头；activity 只能为 interaction（主体实际交互）、transition（入场/接近）、hold（静态结果确认）。入场、摆姿势、运镜和停顿不能计为交互。若指定 min_interaction_events，每个物理作用分别建一个交互节拍，最多12个总节拍；不能用一段描述或一次持续僵持冒充多个事件。
+- 动作发生在 trigger/peak；aftermath 只呈现已经建立的结果，不能在 aftermath 中首次挥剑命中。末镜先在 peak 中产生明确结果，再在 aftermath 中保留可见状态。不要把“趔趄”“失衡”直接跳接为“已倒地死亡”。
 - 最多连续 2 次 `seamless`，随后用有意切镜重新组织画面。
 
 # 连续性
@@ -169,8 +173,8 @@
 
 # 动作与空间
 
-- `primary_action` 是主体可见动作，不是摄影机动作。每镜一个主动作，最多两个紧密因果阶段；多次命中、破坏或转向必须拆镜。
-- 动作镜头用 1-3 个 `action_beats`。每个 beat 只允许：
+- `primary_action` 是主体可见动作或事件序列的摘要，不是摄影机动作。旧单动作合同最多两个紧密因果阶段；多次作用若保留同镜，必须使用事件契约逐一表达，不得塞入一个动作描述。
+- 旧单动作镜头用 1-3 个 `action_beats`；事件契约允许最多12个有序节拍。每个 beat 的基本字段为以下结构；生产计划要求时间预算时，另加 `start_seconds`、`end_seconds` 和 `activity`（见上文）。事件契约的每个 interaction 节拍还必须有完整 `interaction_geometry`、`effect_at_seconds`、`reaction_at_seconds`；其他节拍不携带作用事件：
 
 ```json
 {
@@ -183,7 +187,11 @@
 ```
 
 - `phase` 只能是 `trigger`、`peak`、`aftermath`。不要使用 advance、setup、scan complete 等自由标签。
-- 同一镜头只能有一个主动 actor。对手的受击或躲避写入 `visible_result`；需要切到对手反应时另建 `target_reaction` 镜头。
+- 对未使用事件契约的旧单动作镜头，只能有一个主动 actor。使用事件契约时，各 interaction 节拍独立声明 interaction_geometry、effect_at_seconds、reaction_at_seconds，允许事件之间交换 actor/target；每个事件仍须先作用、后反应，不能让全片末状态替代中间结果。
+- 一个 interaction 的时间窗包含施加作用和由它引起的目标反应：actor 是作用来源，target 是接受作用者，两者与本事件 geometry 一致；目标开始反应时不能交换这两个身份。受击后失衡、倒下或物件受力后移动属于原事件的 visible_result，须在该事件结束前拍清；不是新的反向交互，不能再占一个事件配额。后续只保持已建立结果、收势或收剑用 aftermath/hold。需要更多交互时，应在决胜作用之前安排真实且承接的变化，不能把结果改名为 peak/interaction 凑数。
+- 事件是连续动作句中的可辨认变化，不是回合。无需强制交替 actor、每次停顿复位或把每次出招都写成命中。武侠风可用轻功落步接出剑、虚招诱导、侧身让锋时反手出招、借势转身接最后一击；以用户要求决定取舍，不堆砌招数和招式名称。
+- interaction 可选 `response_kind`：`impact` 为原命中语义；`evasion` 为可读威胁引起的闪避，必须使用 directed_path 且本事件不命中目标；`deflection` 为身体防守或兵器拨开来势，接触不自动等于受伤。effect_at_seconds 在闪避事件中标记威胁已可见的时刻，reaction_at_seconds 标记闪避动作，不能把预判误写成受击。
+- interaction 可选 `flow_from_previous`：描述如何承接前一节拍的重心、步法、兵器方向或空间优势，首节拍不可填写。只有参与者相连的相邻交互且声明这种承接时才允许时间重叠；开始/结束/作用时刻仍有序，不能倒序、嵌套或重叠 hold。重叠时间只计一次。字幕式招式名、“行云流水”等形容词不能代替具体动作衔接。
 - `direct_contact` 必须让接触双方同框；`directed_path` 必须让来源、路径和可见反应目标可读。`area_effect` 与 `indirect_effect` 不强制画外来源同框，但作用区域和可见反应目标必须清楚。
 - `effect_phase` 必须是 `none/setup/active/aftermath`：瞄准、准备、充能属于 setup，禁止产生有效攻击路径和目标反应；真正接触、发射或作用发生属于 active；只展示已建立结果属于 aftermath。
 - `outcome_scope` 必须是 `none/single/subset/all`，`effect_motion` 必须是 `none/static/sweep/expand/propagate`。setup/none 的后二者必须为 none；active 必须明确实际影响范围和运动方式。

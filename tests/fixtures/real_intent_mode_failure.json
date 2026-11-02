@@ -1,0 +1,12 @@
+{
+  "source": "output/20261029_143958_729328/planning_intent_response.json",
+  "sha256": "65c43f1b9299464583bbb57dd7a88667ae2cb1a1db1ade41e589b95f805b3543",
+  "model": "doubao-seed-2.1-pro",
+  "content_focus": "action",
+  "pacing": "dense",
+  "intent_evidence": "生成一部总长15秒的电影级武侠短片：两位原创成年剑客决战紫禁之巅。",
+  "ending_requirement": "最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+  "ending_evidence": "最后其中一方被另一方以干净利落、帅气明确的一剑击杀，非血腥呈现，落败者倒下不再起身，胜者顺势收剑，结局清楚可见。",
+  "motion_control": "text_guided",
+  "motion_control_evidence": "轻功入场要帅，落步就接入交锋。武打要密集而流畅，有身法、虚实、借势和变招；闪让可以同时反击，同一人可以连续变招，招与招之间延续步法、重心和剑势，不要机械地一来一回，不要每招停顿复位，不要持续架剑僵持。"
+}

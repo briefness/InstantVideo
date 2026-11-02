@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Mapping
 
 import config
+from pipeline.camera_contract import camera_contract_issues
 from pipeline.causality import (
     blocking_geometry_issues,
     causal_storyboard_issues,
@@ -50,6 +51,7 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
     shots = storyboard.get("shots", [])
     for shot in shots:
         shot_id = shot.get("shot_id", "?")
+        issues.extend(camera_contract_issues(shot))
         prompt = str(shot.get("prompt_en", "")).strip()
         duration = shot.get("duration")
         if not prompt:
@@ -178,6 +180,8 @@ def provider_submission_issues(
     """Validate the final paid request after compilation and before reservation."""
     shot_id = shot.get("shot_id", "?")
     issues: list[str] = []
+    if shot.get('result_admission') == 'review-required-v1':
+        issues.append(f'Shot {shot_id}: 结果候选尚未完成必要性审查，不能提交视频任务')
     issues.extend(
         f"Provider capability contract 不完整: {issue}"
         for issue in capability_contract_issues()
@@ -313,7 +317,15 @@ def coverage_readiness_issues(
         if isinstance(beat, dict) and str(beat.get("actor", "")).strip()
     ]
     active_actors = list(dict.fromkeys(str(beat["actor"]).strip() for beat in beats))
-    if len(active_actors) > 1:
+    from pipeline.action_timing import sequence_events, sequence_required, event_shot
+    events = sequence_events(shot)
+    if events:
+        # 复用同框、路径、景别等规则；每个事件自行声明作用者与反应目标。
+        return [issue for event in events for issue in coverage_readiness_issues(
+            {**shot, **event_shot(event), "production_slot": None,
+             "shot_id": f"{shot_id}/event{event['event_id']}"},
+            require_causality_contract=require_causality_contract)]
+    if len(active_actors) > 1 and not sequence_required(shot):
         issues.append(
             f"Shot {shot_id}: 多个主动动作执行者 ({', '.join(active_actors)})；"
             "每镜只保留一个主动作，目标反应写入 visible_result"

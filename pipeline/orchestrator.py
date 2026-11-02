@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 from pathlib import Path
 
 from rich.console import Console
@@ -15,12 +16,21 @@ from pipeline.storyboard import generate_storyboard
 from pipeline.generator import RemoteTaskPendingError, VideoGenerator, ShotResult
 from pipeline.models import RunOptions, RunStatus
 from pipeline.readiness import ensure_storyboard_ready
+from pipeline.planning_review import ensure_planning_semantics
+from pipeline.scene_binding import resolve_scene_bindings
 from pipeline.run_state import RunWorkspace
+from pipeline.planning_checkpoint import PlanningCheckpoint, FILENAME as PLANNING_CHECKPOINT_FILENAME
+from pipeline.motion_reference import validate_workspace_motion
+from pipeline.motion_preparation import prepare_motion_previsualization
 from pipeline.semantic_review import SemanticReviewUnavailableError
 from tools import ffmpeg_ops, beat_analyzer
 from tools.tts import synthesize_voiceover, TTSSegment
 
 console = Console()
+
+
+class MotionPreparationRequiredError(RuntimeError):
+    """A required input is unavailable; no fallback or paid video submission."""
 
 
 class VideoPipeline:
@@ -35,6 +45,10 @@ class VideoPipeline:
         platforms: list[str] | None = None,
         paid_take_budget: int | None = None,
         run_workspace: RunWorkspace | None = None,
+        motion_control: str = "auto",
+        plan_only: bool = False,
+        take_policy: str = 'completion_first',
+        delivery_mode: str = 'reviewed',
     ):
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
@@ -42,6 +56,10 @@ class VideoPipeline:
         self.music_path = music_path
         self.platforms = platforms or ["youtube", "tiktok"]
         self.paid_take_budget = paid_take_budget
+        self.take_policy = take_policy
+        self.delivery_mode = delivery_mode
+        self.motion_control = motion_control
+        self.plan_only = plan_only
         self.run_workspace = run_workspace
         self.workspace = run_workspace.path if run_workspace else None
         self._resuming = run_workspace is not None
@@ -58,6 +76,9 @@ class VideoPipeline:
             platforms=options.platforms,
             paid_take_budget=options.paid_take_budget,
             run_workspace=run_workspace,
+            motion_control=options.motion_control,
+            take_policy=options.take_policy,
+            delivery_mode=options.delivery_mode,
         )
 
     async def run(self, user_request: str | None = None) -> str:
@@ -78,19 +99,39 @@ class VideoPipeline:
                 music_path=self.music_path,
                 platforms=self.platforms,
                 paid_take_budget=self.paid_take_budget,
+                take_policy=self.take_policy,
+                delivery_mode=self.delivery_mode,
+                motion_control=self.motion_control,
             )
             self.run_workspace = RunWorkspace.create(config.OUTPUT_DIR, options)
             self.workspace = self.run_workspace.path
             user_request = options.request
 
+        with self.run_workspace.execution():
+            return await self._run_owned(user_request)
+
+    async def _run_owned(self, user_request: str) -> str:
+        """仅持有工作区执行权时读取恢复输入、运行与写入结束状态。"""
+        if self._resuming and not (self.workspace / 'storyboard.json').exists():
+            # 仅新协议的纯规划进度可恢复；已建立镜头/付费记录却丢稿不能重新规划。
+            if (self.run_workspace.manifest.shots
+                    or self.run_workspace.manifest.paid_take_budget.reservations
+                    or not (self.workspace / PLANNING_CHECKPOINT_FILENAME).exists()):
+                self.run_workspace.load_storyboard()
+        elif self._resuming:
+            validate_workspace_motion(
+                self.run_workspace.load_storyboard(), self.run_workspace.path, config.SEEDANCE_MODEL,
+                accepted_artifacts=self.run_workspace.accepted_shot_artifacts(),
+            )
         completed = self.run_workspace.completed_output()
         if completed:
             console.print(f"[green]✓ 运行已完成，复用现有成片: {completed}[/green]")
             return completed
 
         try:
+            self.run_workspace.ensure_recoverable_submissions()
             return await self._run(user_request)
-        except RemoteTaskPendingError as exc:
+        except (RemoteTaskPendingError, MotionPreparationRequiredError) as exc:
             self.run_workspace.mark_interrupted(str(exc))
             raise
         except SemanticReviewUnavailableError as exc:
@@ -102,6 +143,38 @@ class VideoPipeline:
         except Exception as exc:
             self.run_workspace.mark_failed(str(exc))
             raise
+
+    def _prepare_execution_inputs(self, storyboard: dict) -> None:
+        """Resolve required control before constructing any paid-task generator."""
+        options = self.run_workspace.options
+        intent = (storyboard.get("production_plan") or {}).get("director_intent") or {}
+        required = (options.motion_control == "reference_motion"
+                    or intent.get("motion_control") == "reference_motion")
+        # 显式文字模式不能覆盖已冻结的用户动作参考要求。
+        report = {"version": "execution-control-v1", "requested": options.motion_control,
+                  "reference_required": required, "shots": []}
+        if required:
+            console.print("\n[bold cyan]🦴 准备动作参考...[/bold cyan]")
+            preparation = prepare_motion_previsualization(storyboard, self.workspace)
+            report.update(status=preparation["status"], preparation="motion_preparation.json")
+            report["shots"] = [{"shot_id": entry["shot_id"], "mode": "reference_motion",
+                                "status": entry["status"]} for entry in preparation.get("shots", [])]
+            self._save_json("execution_control.json", report)
+            if preparation["status"] != "ready":
+                reasons = [entry.get("reason", "") for entry in preparation.get("shots", [])]
+                reason = preparation.get("reason") or "；".join(dict.fromkeys(filter(None, reasons)))
+                raise MotionPreparationRequiredError(
+                    f"动作参考尚不能用于生成（{preparation['status']}）：{reason}。"
+                    f"详情：{self.workspace / 'motion_preparation.json'}；未退回文字生成。")
+        else:
+            # 描述实际输入能力，不把文本动作事件宣称为骨架或轨迹控制。
+            validate_workspace_motion(storyboard, self.workspace, config.SEEDANCE_MODEL,
+                                      accepted_artifacts=self.run_workspace.accepted_shot_artifacts())
+            report.update(status="ready", shots=[{
+                "shot_id": shot["shot_id"],
+                "mode": "reference_motion" if shot.get("motion_reference") else "text_guided",
+            } for shot in storyboard["shots"]])
+            self._save_json("execution_control.json", report)
 
     async def _run(self, user_request: str) -> str:
         """Run pipeline stages after workspace identity has been established."""
@@ -115,17 +188,25 @@ class VideoPipeline:
 
         # ─── Stage 1: 分镜生成 ───
         target_dur = self._parse_duration(user_request)
-        if self._resuming:
+        if self._resuming and (self.workspace / 'storyboard.json').exists():
             console.print("\n[bold cyan]📋 Stage 1: 恢复已确认分镜...[/bold cyan]")
-            storyboard = self.run_workspace.load_storyboard()
+            # Admission and scene binding read the same authored input as the
+            # first run. The generator restores accepted observations in order
+            # from accepted_shot_artifacts, before planning each continuation.
+            storyboard = self.run_workspace.load_storyboard(include_observations=False)
         else:
-            console.print("\n[bold cyan]📋 Stage 1: 生成分镜脚本...[/bold cyan]")
+            console.print("\n[bold cyan]📋 Stage 1: 恢复规划进度...[/bold cyan]" if self._resuming
+                          else "\n[bold cyan]📋 Stage 1: 生成分镜脚本...[/bold cyan]")
+            planning_checkpoint = PlanningCheckpoint(self.run_workspace, resume=self._resuming)
             storyboard = generate_storyboard(
                 user_request=user_request,
                 target_duration=target_dur,
+                motion_control=self.run_workspace.options.motion_control,
+                save_diagnostic=self._save_json,
                 aspect_ratio=self.aspect_ratio,
                 resolution=self.resolution,
                 style=self.style,
+                planning_checkpoint=planning_checkpoint,
             )
             self._save_json("storyboard_draft.json", storyboard)
 
@@ -134,11 +215,13 @@ class VideoPipeline:
                 console.print("\n[bold cyan]🎵 Stage 1.5: 音乐节拍分析...[/bold cyan]")
                 music_analysis = beat_analyzer.analyze_beats(self.music_path)
                 console.print(f"   ✓ BPM: {music_analysis['bpm']:.0f}, 节拍数: {len(music_analysis['beat_times'])}")
-                aligned = beat_analyzer.align_durations_to_beats(
-                    music_analysis, len(storyboard["shots"])
-                )
-                for i, shot in enumerate(storyboard["shots"]):
-                    shot["duration"] = aligned[i]
+                # 冻结计划同时拥有动作时间轴和镜头边界；配乐不能在此重写它。
+                if not storyboard.get("production_plan"):
+                    aligned = beat_analyzer.align_durations_to_beats(
+                        music_analysis, len(storyboard["shots"])
+                    )
+                    for i, shot in enumerate(storyboard["shots"]):
+                        shot["duration"] = aligned[i]
                 self._save_json("storyboard_aligned.json", storyboard)
 
             storyboard = self.run_workspace.save_storyboard(storyboard)
@@ -147,6 +230,24 @@ class VideoPipeline:
 
         # ─── Stage 2: 视频生成 ───
         ensure_storyboard_ready(storyboard)
+        storyboard = await asyncio.to_thread(ensure_planning_semantics, storyboard, self.workspace, self._save_json)
+        locked_shots = {state.shot_id for state in self.run_workspace.manifest.shots.values()
+                        if state.provider_task_id or state.take_history}
+        storyboard = await asyncio.to_thread(resolve_scene_bindings, storyboard, self.workspace,
+                                             self._save_json, locked_shot_ids=locked_shots)
+        ensure_storyboard_ready(storyboard)
+        if self.plan_only:
+            if any(s.get('generation_direction') for s in storyboard['shots']):
+                from pipeline.provider_prompt import compile_generation_preview
+                preview = compile_generation_preview(storyboard, model=config.SEEDANCE_MODEL)
+                self._save_json('generation_preview.json', preview)
+                issues = [issue for row in preview['shots'] for profile in row['profiles'].values()
+                          for issue in profile['preflight_issues']]
+                if issues:
+                    raise ValueError('规划请求投影未通过现有提交预检：' + '；'.join(issues))
+            self.run_workspace.checkpoint('planning_ready', RunStatus.interrupted)
+            return str(self.workspace / 'storyboard.json')
+        await asyncio.to_thread(self._prepare_execution_inputs, storyboard)
         unresolved_legacy_tasks = self.run_workspace.unresolved_legacy_provider_tasks()
         if unresolved_legacy_tasks:
             shot_ids = ", ".join(str(shot_id) for shot_id in sorted(unresolved_legacy_tasks))
@@ -197,10 +298,12 @@ class VideoPipeline:
                 errors=result.errors,
             )
 
+        preview_delivery = self.run_workspace.options.delivery_mode == 'preview'
         generator = VideoGenerator(
             str(self.workspace),
             on_progress=record_progress,
             reserve_paid_take=self.run_workspace.reserve_paid_take,
+            check_paid_take=self.run_workspace.check_paid_take,
             confirm_paid_take_submission=(
                 self.run_workspace.confirm_paid_take_submission
             ),
@@ -208,6 +311,7 @@ class VideoPipeline:
             release_unsubmitted_paid_take=self.run_workspace.release_unsubmitted_paid_take,
             resume_tasks=self.run_workspace.resumable_pending_tasks(),
             accepted_shot_artifacts=self.run_workspace.accepted_shot_artifacts(),
+            review_content=False if preview_delivery else None,
         )
         results = await generator.generate_all(storyboard)
         self._save_json("generation_results.json", [r.__dict__ for r in results])
@@ -222,6 +326,9 @@ class VideoPipeline:
                 f"镜头 {', '.join(failed_ids)} 生成失败；运行状态已保存，可使用 --resume 继续"
             )
 
+        if not preview_delivery:
+            from pipeline.film_rhythm import ensure_observed_film_rhythm
+            ensure_observed_film_rhythm(storyboard, success_results, self.workspace)
         self.run_workspace.checkpoint("postprocessing", RunStatus.running)
 
         # ─── Stage 2.5: 规格统一 ───
@@ -237,7 +344,8 @@ class VideoPipeline:
 
         for r in success_results:
             norm_path = str(norm_dir / Path(r.local_path).name)
-            ffmpeg_ops.normalize_video(r.local_path, norm_path, resolution=target_res)
+            planned = next(shot["duration"] for shot in storyboard["shots"] if shot["shot_id"] == r.shot_id)
+            ffmpeg_ops.normalize_video(r.local_path, norm_path, resolution=target_res, duration=planned)
             video_files.append(norm_path)
             media_durations[r.shot_id] = ffmpeg_ops.get_video_duration(norm_path)
         self._shot_media_durations = media_durations
@@ -247,6 +355,9 @@ class VideoPipeline:
         console.print("\n[bold cyan]🔗 Stage 3: 拼接 & 转场...[/bold cyan]")
         # 根据相邻镜头运动方向智能推导转场类型 + 时长
         transitions = ffmpeg_ops.infer_transitions(storyboard["shots"])
+        # 连续动作不能用叠化吃掉招式，也不能为补足时长复制画面。
+        if storyboard.get("content_focus") == "action":
+            transitions = [("cut", 0.0)] * max(0, len(video_files) - 1)
         self._transitions = transitions  # 保存供后续口播时间计算使用
         t_info = ", ".join(f"{t[0]}({t[1]:.1f}s)" for t in transitions)
         console.print(f"   转场: {t_info}")
@@ -340,30 +451,20 @@ class VideoPipeline:
         # ─── Stage 7: 片头片尾 + 多平台导出 ───
         console.print("\n[bold cyan]📦 Stage 7: 包装 & 导出...[/bold cyan]")
 
-        # 片头
-        title_path = str(self.workspace / "title.mp4")
-        ffmpeg_ops.generate_title_card(
-            title=storyboard.get("title", ""),
-            output_path=title_path,
-            resolution=target_res,
-        )
-
-        # 最终合成
-        final_path = str(self.workspace / "final.mp4")
-        ffmpeg_ops.concat_simple([title_path, visual_path], final_path)
-        expected_final_duration = (
-            ffmpeg_ops.get_video_duration(title_path)
-            + ffmpeg_ops.get_video_duration(visual_path)
-        )
+        # 标题若有叙事用途应进入已分配的分镜，不额外延长用户要求的成片。
+        final_path = str(self.workspace / ("preview.mp4" if preview_delivery else "final.mp4"))
+        shutil.copyfile(visual_path, final_path)
+        expected_final_duration = sum(shot["duration"] for shot in storyboard["shots"]) - sum(t[1] for t in transitions)
         validation_reports = {
             "final": ffmpeg_ops.validate_publish_ready(
                 final_path,
                 expected_duration=expected_final_duration,
+                duration_tolerance=0.15,
             ),
             "exports": {},
         }
         final_duration = validation_reports["final"]["duration"]
-        console.print("   ✓ final.mp4 发布校验通过")
+        console.print(f"   ✓ {Path(final_path).name} 技术校验通过")
 
         # 多平台导出
         exports_dir = self.workspace / "exports"
@@ -380,11 +481,24 @@ class VideoPipeline:
             console.print("      ✓ 发布校验通过")
 
         self._save_json("publish_validation.json", validation_reports)
+        self._save_json("delivery_report.json", {
+            "version": "delivery-v1",
+            "mode": self.run_workspace.options.delivery_mode,
+            "output": Path(final_path).name,
+            "technical_validation": "passed",
+            "content_acceptance": (
+                "passed" if not preview_delivery and success_results
+                and all(r.semantic_accepted is True for r in success_results)
+                else "not_reviewed"
+            ),
+            "shots": [{"shot_id": r.shot_id, "acceptance_policy": r.acceptance_policy,
+                       "semantic_accepted": r.semantic_accepted} for r in success_results],
+        })
 
         # ─── 完成 ───
         duration = final_duration
         console.print(Panel(
-            f"[bold green]✅ 成片输出[/bold green]\n\n"
+            f"[bold green]✅ {'预览成片（内容待验收）' if preview_delivery else '成片输出'}[/bold green]\n\n"
             f"  路径: {final_path}\n"
             f"  时长: {duration:.1f}s\n"
             f"  分辨率: {self.resolution}\n"
@@ -519,11 +633,11 @@ class VideoPipeline:
         # 秒: "15秒", "15s", "15 秒"
         m = re.search(r'(\d+)\s*(?:秒|s(?:ec(?:ond)?s?)?)', user_request, re.IGNORECASE)
         if m:
-            return max(5, min(int(m.group(1)), 120))
+            return int(m.group(1))
 
         # 分钟: "1分钟", "2min"
         m = re.search(r'(\d+)\s*(?:分钟|min(?:ute)?s?)', user_request, re.IGNORECASE)
         if m:
-            return max(5, min(int(m.group(1)) * 60, 120))
+            return int(m.group(1)) * 60
 
         return 30  # 默认

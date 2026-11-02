@@ -14,10 +14,16 @@ LUTS_DIR = PROJECT_ROOT / "luts"
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
 # ─── 火山引擎 Ark (统一平台) ───
-ARK_API_KEY = os.getenv("ARK_API_KEY")                    # 唯一 Key, 同时调用 LLM 和视频生成
-ARK_API_KEY_SEEDANCE = os.getenv("ARK_API_KEY_SEEDANCE", ARK_API_KEY)  # 视频生成专用 Key (优先级高)
+ARK_API_KEY = os.getenv("ARK_API_KEY")                    # 共享 Key，同时调用 LLM 和视频生成
+ARK_API_KEY_SEEDANCE = os.getenv("ARK_API_KEY_SEEDANCE", ARK_API_KEY)  # 可选的独立凭据
 ARK_BASE_URL = os.getenv("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/plan/v3")  # LLM
-ARK_BASE_URL_SEEDANCE = os.getenv("ARK_BASE_URL_SEEDANCE", "https://ark.cn-beijing.volces.com/api/v3")  # 视频生成
+# 共享 Key 必须复用对应的网关，不能把 Agent Plan Key 隐式发送到按量计费接口。
+# 已显式配置独立视频 Key 的部署保留原有数据面默认值；显式 URL 始终优先。
+ARK_BASE_URL_SEEDANCE = os.getenv(
+    "ARK_BASE_URL_SEEDANCE",
+    "https://ark.cn-beijing.volces.com/api/v3"
+    if os.getenv("ARK_API_KEY_SEEDANCE") else ARK_BASE_URL,
+)
 
 # 视频生成模型
 SEEDANCE_MODEL = os.getenv(

@@ -1,0 +1,525 @@
+{
+  "source": "output/20261031_232051_081716/planning_authoring.json",
+  "sha256": "392382791d6c15d12f879a24f29c3c1c21f82754c2e90d039386290c301561f3",
+  "value": {
+    "title": "紫禁巅决",
+    "mood": "冷调月夜下的肃杀武侠氛围，运镜流畅有电影质感，动作凌厉无僵持拖沓，整体呈现写意洒脱的传统武侠气质，无暴力血腥的直白表现",
+    "music_style": "国风武侠管弦乐，搭配急促的太鼓节奏与清越剑鸣音效，节奏随动作从沉郁铺垫逐步推向凌厉高潮，最终随终结动作收束",
+    "theme_elements": [
+      "月夜紫禁飞檐决战场景",
+      "飘逸帅气的轻功入场",
+      "连续借势变招的流畅武打",
+      "无血腥的写意武侠终结",
+      "跨镜头统一的人物视觉与动作连续性"
+    ],
+    "story_arc": {
+      "goal": "两位顶尖剑客在紫禁之巅的月夜飞檐上完成宿命对决，决出当世武林第一",
+      "stakes": "对决过程无多余拖沓，每一次攻防都关乎顶尖高手的颜面与武林正统归属，一旦落败便再无翻盘余地",
+      "turning_point": "中段连续快节奏攻防中，胜方借重剑格挡的反作用力旋身变招，抓住败方收招不及的微小空隙，打出终结一击",
+      "resolution": "胜方以无血腥的写意剑招完成击杀，收剑伫立在飞檐平台上，败方姿态清晰定格，无任何血腥表现，对决结果一目了然"
+    },
+    "characters": [
+      {
+        "name": "Sword_Winner",
+        "description": "身着月白暗云纹广袖剑客长袍，银线束高马尾配镂空银质发冠，足蹬白布快靴，手持一柄刃身泛冷青光泽的细长软剑，面容俊朗冷冽，轻功身法轻盈飘逸",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "Sword_Loser",
+        "description": "身着玄色绣暗金缠枝纹劲装，黑布束短发配素铁发带，足蹬黑牛皮快靴，手持一柄刃身厚重的宽刃重剑，面容冷峻沉毅，身法刚猛迅捷",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "shots": [
+      {
+        "shot_id": 1,
+        "scene_id": "forbidden_city_roof_night_01",
+        "scene_description": "月夜紫禁城最高处的琉璃瓦屋顶平台，四周环绕暗金色飞檐，头顶悬着苍白满月，薄云缓缓飘过，夜风掀动两人衣袂。",
+        "visual_description": "16:9宽幅远景，冷青月光铺满灰瓦平台，背景满月悬于画面上沿中央，远处层叠宫殿飞檐隐在夜色里，薄云在月面浮动，地面散落数块松动翘起的屋瓦，明暗对比强烈，人物衣袂与剑刃反光清晰。",
+        "camera": {
+          "primary_movement": "crane down",
+          "composition": "wide two-shot",
+          "start_framing": "满月居中，屋顶平台占画面下三分之二，四周飞檐入画",
+          "end_framing": "两人对峙于平台中央，满月仍在背景上沿",
+          "speed": "slow",
+          "screen_positions": {
+            "Sword_Winner": "左侧三分之一",
+            "Sword_Loser": "右侧三分之一"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "Sword_Winner": {
+            "frame_position": "画面左侧三分之一处",
+            "body_orientation": "侧朝右",
+            "facing_target": "Sword_Loser",
+            "eyeline_target": "Sword_Loser",
+            "travel_direction": "从左侧飞檐跃入平台中央",
+            "action_target": "格挡并反击来剑"
+          },
+          "Sword_Loser": {
+            "frame_position": "画面右侧三分之一处",
+            "body_orientation": "侧朝左",
+            "facing_target": "Sword_Winner",
+            "eyeline_target": "Sword_Winner",
+            "travel_direction": "原地蹬地前压",
+            "action_target": "重剑下劈"
+          }
+        },
+        "start_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "两位剑客即将展开宿命对决",
+          "action_phase": "轻功入场与首次试探攻防",
+          "camera": "远景俯拍",
+          "screen_direction": "Sword_Winner自左向右入场，Sword_Loser在右",
+          "pose_and_gaze": "Sword_Loser按重剑伫立面向左侧，Sword_Winner尚未入画",
+          "prop_state": "Sword_Loser重剑已握在身侧，Sword_Winner软剑藏于袖中",
+          "open_motion": "薄云缓慢飘过月面，夜风拂动飞檐下的铜铃",
+          "lighting": "冷白月光从斜上方洒落"
+        },
+        "end_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "两位剑客完成首次交剑，对峙蓄势",
+          "action_phase": "首轮攻防结束，双方拉开距离",
+          "camera": "wide two-shot",
+          "screen_direction": "两人分处平台左右，相距三步",
+          "pose_and_gaze": "Sword_Winner侧身持软剑指向斜前方，Sword_Loser收重剑回防守架势，目光紧盯对方",
+          "prop_state": "两剑均出鞘，剑刃泛着冷青月光",
+          "open_motion": "衣袂被夜风扬起，脚下松动瓦砾微颤",
+          "lighting": "冷白月光保持顶侧照明"
+        },
+        "story_change": "Sword_Winner以轻盈轻功飞掠落上紫禁屋顶平台，Sword_Loser立刻发动刚猛下劈，Winner以软剑斜格卸力并顺势反击，双方完成首次试探性交锋，未分胜负。",
+        "story_state_after": "两人在屋顶平台相距三步对峙，剑势均已拉开，对决进入连续攻防阶段。",
+        "action_plan": [
+          {
+            "id": "entrance_qinggong",
+            "actor": "Sword_Winner",
+            "action": "足尖点住左侧飞檐翘角，旋身展臂，月白长袍被风鼓成弧，纵身向屋顶平台中央落去。",
+            "result": "轻盈落在松动屋瓦旁，屈膝卸力，软剑顺袖滑入掌中，衣摆缓缓落定。",
+            "kind": "transition",
+            "target": "night_forbidden_city_roof_platform",
+            "weight": 1.2
+          },
+          {
+            "id": "loser_first_swing",
+            "actor": "Sword_Loser",
+            "action": "蹬地前冲，重剑自上而下斜劈，刚猛剑风扫向Winner肩侧。",
+            "result": "剑刃劈在Winner横架的软剑上，金铁交鸣，震得脚下数块松动屋瓦翘起。",
+            "kind": "interaction",
+            "target": "Sword_Winner",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "sweep",
+              "source": "Sword_Loser的重剑",
+              "region": "平台中央两剑交击位置",
+              "unaffected": "满月与远处飞檐不受波及"
+            },
+            "response": "impact",
+            "resolution": {
+              "target_state": "Sword_Winner被震得屈膝沉腰，软剑被压至肩侧",
+              "actor_state": "Sword_Loser前腿蹬直，重剑下压，重心前倾",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被剑风震得翘起移位",
+                  "importance": "incidental"
+                },
+                {
+                  "entity": "night_forbidden_city_roof_platform",
+                  "state": "中央交剑处瓦面留下细碎摩擦痕迹",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.8,
+            "carry": "承接Winner刚落步的站姿"
+          },
+          {
+            "id": "winner_counter_evade",
+            "actor": "Sword_Winner",
+            "action": "顺着重剑下压的力道旋身卸力，软剑贴着对方剑刃滑开，同时拧腰反手向Loser腕侧斜撩。",
+            "result": "软剑刃身擦过重剑外沿，将重剑引向身侧空处，剑风扫过Loser腕前，迫使Loser撤步收剑回防。",
+            "kind": "interaction",
+            "target": "Sword_Loser",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Sword_Winner的软剑",
+              "region": "Loser腕侧前方的空处",
+              "unaffected": "Loser躯体未被剑锋触及"
+            },
+            "response": "evasion",
+            "resolution": {
+              "target_state": "Sword_Loser重剑被引偏，撤步收剑回到防守架势",
+              "actor_state": "Sword_Winner旋身落步，软剑指向斜下方，重心稳定",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "Winner旋身带起的风卷起两片碎瓦轻滚",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.5,
+            "carry": "承接两剑交击的下压反作用力"
+          },
+          {
+            "id": "standoff_hold",
+            "actor": "Sword_Winner",
+            "action": "两人收剑对峙，夜风掀动衣袂，目光锁住对方破绽。",
+            "result": "双方相距三步，剑刃泛着冷月光，脚下碎瓦微定，为下一轮攻防蓄势。",
+            "kind": "hold",
+            "target": "Sword_Loser",
+            "weight": 0.5
+          }
+        ],
+        "key_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "continuity_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "lighting": "冷白满月柔光从斜上方洒落，人物轮廓镶淡银边，瓦面反射冷青光泽，阴影边缘清晰，无多余人工光源。",
+        "mood": "冷调月夜肃杀，写意武侠，凌厉开场。"
+      },
+      {
+        "shot_id": 2,
+        "scene_id": "forbidden_city_roof_night_01",
+        "scene_description": "月夜紫禁城最高处的琉璃瓦屋顶平台，四周环绕暗金色飞檐，头顶悬着苍白满月，薄云缓缓飘过，夜风掀动两人衣袂。",
+        "visual_description": "16:9中景跟拍，冷青月光铺满灰瓦平台，两人上半身与交击的剑刃占据画面中央，背景满月与层叠飞檐适度虚化，松动屋瓦在脚下被剑风带起，衣袂翻飞，剑刃反光清晰，明暗对比强烈。",
+        "camera": {
+          "primary_movement": "tracking",
+          "composition": "medium two-shot",
+          "start_framing": "两人分处画面左右三分之一，腰部以上入画，背景满月与飞檐隐约可见",
+          "end_framing": "Winner绕至Loser右侧，软剑指向Loser胸侧，两人上半身占满画面中央",
+          "speed": "fast",
+          "screen_positions": {
+            "Sword_Winner": "起始左侧三分之一，结束时位于Loser右侧",
+            "Sword_Loser": "起始右侧三分之一，结束时重心前倾"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Sword_Winner": {
+            "frame_position": "画面左侧三分之一处起势",
+            "body_orientation": "侧朝右",
+            "facing_target": "Sword_Loser",
+            "eyeline_target": "Sword_Loser",
+            "travel_direction": "仰身后滑，随即绕步至Sword_Loser右侧",
+            "action_target": "避剑、刺腕、格挡、旋身递剑"
+          },
+          "Sword_Loser": {
+            "frame_position": "画面右侧三分之一处起势",
+            "body_orientation": "侧朝左",
+            "facing_target": "Sword_Winner",
+            "eyeline_target": "Sword_Winner",
+            "travel_direction": "前压横扫，格挡后下劈，最终劈空前倾",
+            "action_target": "横扫、磕剑、重剑下劈"
+          }
+        },
+        "start_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "两位剑客拉开距离后进入连续快攻",
+          "action_phase": "连续攻防变招，胜负天平倾斜",
+          "camera": "中景跟拍",
+          "screen_direction": "Sword_Winner在画面左侧，Sword_Loser在画面右侧",
+          "pose_and_gaze": "Sword_Winner侧身持软剑指向斜前方，Sword_Loser收重剑回防守架势，目光紧盯对方",
+          "prop_state": "两剑均出鞘，剑刃泛着冷青月光",
+          "open_motion": "衣袂被夜风扬起，脚下松动瓦砾微颤",
+          "lighting": "冷白月光从斜上方洒落"
+        },
+        "end_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "Winner占据侧身攻击位置，Loser重心前倾露出破绽",
+          "action_phase": "终结一击前的最后空隙已经出现",
+          "camera": "中景跟拍收束",
+          "screen_direction": "Sword_Winner绕至Sword_Loser右侧，软剑指向其胸侧",
+          "pose_and_gaze": "Sword_Winner旋身落步持软剑前指，Sword_Loser重剑劈空前倾，目光惊觉看向胸前剑锋",
+          "prop_state": "两剑仍出鞘，软剑停在Loser胸前半寸，重剑落向瓦面",
+          "open_motion": "衣摆与碎瓦被剑风带起，薄云缓慢飘过月面",
+          "lighting": "冷白月光保持顶侧照明"
+        },
+        "story_change": "Sword_Loser抢先发动横扫，Sword_Winner仰身避过后刺向其腕，Sword_Loser抬剑格挡并顺势下劈；Sword_Winner借两剑交击的反作用力旋身绕步，软剑递到Sword_Loser胸侧，Sword_Loser收招不及重心前倾，对决胜负天平已向Winner倾斜。",
+        "story_state_after": "Sword_Winner占据侧身攻击位置，软剑停在Sword_Loser胸侧，Sword_Loser重剑劈空、重心前倾，终结一击的空隙已经出现，等待下一镜完成击杀。",
+        "action_plan": [
+          {
+            "id": "loser_sweep_attack",
+            "actor": "Sword_Loser",
+            "action": "蹬地拧腰，重剑由右向左横扫Sword_Winner腰侧，剑风扫过脚下瓦面。",
+            "result": "Sword_Winner足尖点地向后仰身滑出半步，避过横扫剑锋，月白衣摆被剑风扫得向后扬起。",
+            "kind": "interaction",
+            "target": "Sword_Winner",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Sword_Loser手中的重剑",
+              "region": "Sword_Winner腰侧前方的空处",
+              "unaffected": "Sword_Winner躯体未被剑锋触及，满月与远处飞檐不受波及"
+            },
+            "response": "evasion",
+            "resolution": {
+              "target_state": "Sword_Winner避过重剑横扫，重心后移落步，软剑仍握在手中",
+              "actor_state": "Sword_Loser横扫落空，重心随剑势转向右侧，重剑收至身侧",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被横扫剑风刮得贴着瓦面轻滚",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.1,
+            "carry": "承接上一镜两人相距三步对峙的起势"
+          },
+          {
+            "id": "winner_wrist_thrust",
+            "actor": "Sword_Winner",
+            "action": "借后仰落步的弹力拧腰前送，软剑直刺Sword_Loser右腕，剑刃泛着冷青月光。",
+            "result": "Sword_Loser抬起重剑剑格磕在软剑刃身中段，金铁轻鸣，软剑被磕得向下方偏斜。",
+            "kind": "interaction",
+            "target": "Sword_Loser",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "static",
+              "source": "Sword_Winner的软剑",
+              "region": "重剑剑格与软剑刃身交击处",
+              "unaffected": "Sword_Loser腕部未被剑锋刺中，周围瓦面不受波及"
+            },
+            "response": "deflection",
+            "resolution": {
+              "target_state": "Sword_Loser重剑抬至胸前格挡，右腕安全，防守位置被抬高",
+              "actor_state": "Sword_Winner前刺的软剑被磕偏，手臂前伸，重心仍稳",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被交剑震得微微颤动",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.2,
+            "carry": "承接Sword_Winner仰身滑步的后坐弹力"
+          },
+          {
+            "id": "loser_heavy_downslash",
+            "actor": "Sword_Loser",
+            "action": "顺着磕剑的反震力沉肩转腰，重剑自上而下劈向Sword_Winner头顶，剑风压向瓦面。",
+            "result": "Sword_Winner举软剑横架在头顶格住重剑，两剑交击震得脚下碎瓦弹起，Sword_Winner屈膝沉腰卸力。",
+            "kind": "interaction",
+            "target": "Sword_Winner",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "sweep",
+              "source": "Sword_Loser的重剑",
+              "region": "Sword_Winner头顶上方两剑交击位置",
+              "unaffected": "Sword_Winner头部未被剑锋直接劈中，背景飞檐不受波及"
+            },
+            "response": "impact",
+            "resolution": {
+              "target_state": "Sword_Winner被重剑压得屈膝沉腰，软剑横架头顶，处于卸力状态",
+              "actor_state": "Sword_Loser前腿蹬直，重剑下压，重心前倾",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被交剑震得弹起移位",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.4,
+            "carry": "承接重剑剑格磕剑的反震力道"
+          },
+          {
+            "id": "winner_spin_counter",
+            "actor": "Sword_Winner",
+            "action": "顺着重剑下压的反作用力旋身，软剑沿重剑刃身滑开卸力，同时足尖点地绕步到Sword_Loser右侧，反手将软剑横递到Sword_Loser胸侧。",
+            "result": "Sword_Loser收招不及，重剑劈空落向瓦面，重心前倾，软剑刃停在Sword_Loser胸前半寸处，未触及躯体。",
+            "kind": "interaction",
+            "target": "Sword_Loser",
+            "effect": {
+              "mode": "directed_path",
+              "motion": "sweep",
+              "source": "Sword_Winner的软剑",
+              "region": "Sword_Loser胸侧前方的空处",
+              "unaffected": "Sword_Loser躯体未被剑锋触及，无任何血腥表现"
+            },
+            "response": "evasion",
+            "resolution": {
+              "target_state": "Sword_Loser重剑劈空，重心前倾，胸前被软剑指向，防守空隙完全暴露",
+              "actor_state": "Sword_Winner旋身落步，软剑横递指向Sword_Loser胸侧，重心稳定",
+              "scene_changes": [
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被重剑劈空的剑风刮得翘起",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 1.8,
+            "carry": "承接两剑交击的下压反作用力"
+          }
+        ],
+        "key_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "continuity_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "lighting": "冷白满月柔光从斜上方洒落，人物轮廓镶淡银边，瓦面反射冷青光泽，阴影边缘清晰，无多余人工光源。",
+        "mood": "冷调月夜肃杀，连续攻防凌厉紧凑，胜负将分。"
+      },
+      {
+        "shot_id": 3,
+        "scene_id": "forbidden_city_roof_night_01",
+        "scene_description": "月夜紫禁城最高处的琉璃瓦屋顶平台，四周环绕暗金色飞檐，头顶悬着苍白满月，薄云缓缓飘过，夜风掀动两人衣袂。",
+        "visual_description": "16:9全景，冷青月光铺满灰瓦屋顶平台，Sword_Winner立于画面中央偏左收剑伫立，Sword_Loser仰坐于右侧瓦面，重剑斜落脚边；背景苍白满月与层叠暗金飞檐环绕，薄云缓移，松动瓦砾散落在两人周围，衣袂被夜风扬起，剑刃冷光渐收，明暗对比强烈，无血腥痕迹。",
+        "camera": {
+          "primary_movement": "dolly out",
+          "composition": "wide full shot",
+          "start_framing": "两人贴近的中近景，Sword_Winner在Sword_Loser右侧，软剑停在其胸侧",
+          "end_framing": "拉远至全景，两人全身、屋顶平台、满月与飞檐同框",
+          "speed": "先快后稳",
+          "screen_positions": {
+            "Sword_Winner": "起始位于Sword_Loser右侧，结束立于画面中央偏左",
+            "Sword_Loser": "起始前倾于画面右侧，结束仰坐于右侧瓦面"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Sword_Winner": {
+            "frame_position": "起始在Sword_Loser右侧，结束立于画面中央偏左",
+            "body_orientation": "侧朝右面向Sword_Loser",
+            "facing_target": "Sword_Loser",
+            "eyeline_target": "Sword_Loser",
+            "travel_direction": "原地旋身收剑，小步后撤半步",
+            "action_target": "递剑、收剑、伫立"
+          },
+          "Sword_Loser": {
+            "frame_position": "起始画面右侧，结束仰坐于右侧瓦面",
+            "body_orientation": "前倾朝左",
+            "facing_target": "Sword_Winner",
+            "eyeline_target": "Sword_Winner",
+            "travel_direction": "向后仰倒坐于瓦面",
+            "action_target": "被击中后僵住、重剑脱手"
+          }
+        },
+        "start_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "终结一击的空隙已经出现",
+          "action_phase": "终结一击发起",
+          "camera": "中近景起幅，随即拉远",
+          "screen_direction": "Sword_Winner在Sword_Loser右侧，软剑指向其胸侧",
+          "pose_and_gaze": "Sword_Winner旋身落步持软剑前指，Sword_Loser重剑劈空前倾，目光惊觉看向胸前剑锋",
+          "prop_state": "两剑仍出鞘，软剑停在Loser胸前半寸，重剑落向瓦面",
+          "open_motion": "衣摆与碎瓦被剑风带起，薄云缓慢飘过月面",
+          "lighting": "冷白月光从斜上方洒落"
+        },
+        "end_state": {
+          "location": "紫禁城最高处屋顶平台",
+          "subject": "对决结束，胜负已分",
+          "action_phase": "终结结果定格",
+          "camera": "全景收束",
+          "screen_direction": "Sword_Winner立于画面中央偏左，Sword_Loser仰坐于右侧瓦面",
+          "pose_and_gaze": "Sword_Winner收剑伫立，目光平静看向Loser；Sword_Loser双目微阖坐倒不动",
+          "prop_state": "软剑垂于Winner身侧，重剑斜落在Loser脚边瓦面",
+          "open_motion": "夜风掀动衣摆，薄云缓慢飘过满月",
+          "lighting": "冷白月光从斜上方洒落"
+        },
+        "story_change": "Sword_Winner抓住Sword_Loser重心前倾的空隙，以软剑剑脊写意送力后旋身收剑；Sword_Loser躯体僵住、重剑脱手，仰坐于瓦面失去行动能力，全程无破损无血迹，紫禁之巅的对决就此分出胜负。",
+        "story_state_after": "紫禁之巅决战结束，Sword_Winner持剑伫立屋顶平台，Sword_Loser落败仰坐，当世武林第一已定。",
+        "action_plan": [
+          {
+            "id": "winner_final_strike",
+            "actor": "Sword_Winner",
+            "action": "承接旋身落步的余势沉腕递剑，以软剑剑脊在Sword_Loser胸侧衣襟处轻搭送力，随即拧腰旋身收剑，月白广袖随动作划出流畅半弧。",
+            "result": "Sword_Loser躯体骤然一僵，握着重剑的手脱力，重剑斜坠向瓦面；他向后仰倒坐于灰瓦上，双目微阖不再动弹，胸侧衣襟仅被剑风带起微动，无破损、无血迹。",
+            "kind": "interaction",
+            "target": "Sword_Loser",
+            "effect": {
+              "mode": "direct_contact",
+              "motion": "static",
+              "source": "Sword_Winner的软剑剑脊",
+              "region": "Sword_Loser胸侧衣襟处",
+              "unaffected": "Sword_Loser皮肤未被划破，周围飞檐、满月与其他瓦面不受波及"
+            },
+            "response": "impact",
+            "resolution": {
+              "target_state": "Sword_Loser失去行动能力，坐倒在瓦面，重剑脱手，落败状态清楚可见",
+              "actor_state": "Sword_Winner收剑后重心稳定，立于Loser身前，软剑仍握在手中",
+              "scene_changes": [
+                {
+                  "entity": "Sword_Loser",
+                  "state": "仰坐于屋顶瓦面，双目微阖，重剑脱手斜落，不再动弹",
+                  "importance": "required"
+                },
+                {
+                  "entity": "loose_roof_tiles",
+                  "state": "被坠地的重剑震得微微弹起移位",
+                  "importance": "incidental"
+                }
+              ]
+            },
+            "weight": 2.6,
+            "carry": "承接上一镜旋身绕步后软剑停在Loser胸侧的攻击位置",
+            "overlap": false
+          },
+          {
+            "id": "final_hold",
+            "actor": "Sword_Winner",
+            "action": "收剑垂臂伫立，夜风掀动广袖与衣摆，目光平静落向身侧落败的Sword_Loser。",
+            "result": "全景中两人与屋顶平台、满月、层叠飞檐同框，Sword_Winner的胜者姿态与Sword_Loser的落败定格清晰可辨，对决结果一目了然。",
+            "kind": "hold",
+            "target": "",
+            "weight": 1.4
+          }
+        ],
+        "key_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "continuity_props": [
+          "Sword_Winner",
+          "Sword_Loser",
+          "night_forbidden_city_roof_platform",
+          "pale_full_moon",
+          "surrounding_ancient_palace_eaves",
+          "loose_roof_tiles",
+          "floating_moonlit_thin_clouds"
+        ],
+        "lighting": "冷白满月柔光从斜上方洒落，人物轮廓镶淡银边，瓦面反射冷青光泽，阴影边缘清晰，无多余人工光源。",
+        "mood": "冷调月夜肃杀收束，写意洒脱，胜负已分的沉静武侠气质。"
+      }
+    ]
+  }
+}

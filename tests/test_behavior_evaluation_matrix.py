@@ -33,7 +33,7 @@ EVALUATION_MATRIX_VERSION = "behavior-evaluation-v1"
 def test_plan_matrix_is_executable_across_themes(focus, duration):
     plan = build_production_plan(focus, duration)
 
-    assert plan["version"] == "production-plan-v1"
+    assert plan["version"] == "production-plan-v2-short-payoff"
     assert plan["planned_duration"] == sum(
         slot["duration"] for slot in plan["slots"]
     )

@@ -1,0 +1,923 @@
+{
+  "source_workspace": "output/20261029_171222_838382/",
+  "source_kind": "unaltered real failed run; no new acceptance annotation",
+  "storyboard": {
+    "title": "紫禁之巅：檐顶决",
+    "total_duration": 15,
+    "style": "cinematic",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "mood": "冷冽肃杀的新武侠电影质感，深夜紫禁城金瓦重檐的高对比光影，飞动衣袂带风的凌厉氛围感",
+    "music_style": "急促的京剧武场板鼓搭配紧绷弦乐急奏，击杀瞬间收束为一声沉厚铜锣响",
+    "content_focus": "action",
+    "theme_elements": [
+      "深夜紫禁城重檐金瓦",
+      "踏瓦飞掠的帅气轻功入场",
+      "借檐角脊兽借力变招",
+      "无机械对拆的流畅连续武打",
+      "飞旋的衣袂与发带",
+      "冷刃交击的反光",
+      "檐边风动铜铃",
+      "利落帅气的最终击杀",
+      "瓦当碎屑随刃风飞散"
+    ],
+    "story_arc": {
+      "goal": "两位顶尖江湖剑客在紫禁城最高檐顶完成终极对决，以流畅的轻功入场、连续借势变招的武打动作分出胜负",
+      "stakes": "这场对决是两大顶尖高手的毕生名誉之争，胜负直接决定未来武林的话语权，檐顶决战的每一步都容不得半分失误",
+      "turning_point": "中段势均力敌的连续交手中，攻方抓住守方踏瓦时的微小失衡破绽，放弃常规对拆路数，蹬踏檐角脊兽翻跃至守方高位发起变招",
+      "resolution": "攻方在宽幅全景下以旋身横斩的帅气动作将守方击杀，衣袂与瓦当碎屑在夜风中飞散，最终定格在胜方持刃立在金瓦檐顶的姿态"
+    },
+    "production_plan": {
+      "version": "production-plan-v6-performance",
+      "director_intent": {
+        "source_request": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+        "content_focus": "action",
+        "pacing": "dense",
+        "intent_evidence": "轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。",
+        "ending_requirement": "最后一方被帅气击杀",
+        "ending_evidence": "轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。",
+        "motion_control": "text_guided",
+        "motion_control_evidence": "",
+        "choreography": "flexible"
+      },
+      "content_focus": "action",
+      "target_duration": 15,
+      "planned_duration": 15,
+      "slots": [
+        {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "最后一方被帅气击杀",
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        }
+      ]
+    },
+    "characters": [
+      {
+        "name": "SwordMaster_Ling",
+        "description": "身着玄色绣暗银云纹的窄袖劲装，束高马尾配玄色发带，足蹬软底黑靴，手持一柄刃身泛冷光的狭长唐横刀，衣摆随轻功动作大幅翻飞",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "SwordMaster_Ye",
+        "description": "身着月白绣暗竹纹的宽袖侠客服，束半披发配玉色发带，足蹬白绫软靴，手持一柄带银质剑格的长剑，交手中衣袂被刃风扫得猎猎作响",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "shots": [
+      {
+        "shot_id": 1,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_setup_01",
+        "scene_description": "深夜紫禁城最高等级的重檐庑殿顶平台，四周是连片沉在夜色里的皇家宫阙，檐角立着琉璃脊兽，飞檐下挂着风动铜铃，无旁人打扰，是两位顶尖剑客约定的终极对决场地",
+        "prompt_en": "16:9宽幅720p cinematic质感，冷调高对比，深夜紫禁城最高重檐的金瓦平台在冷月光下泛着幽冷的金属光泽，画面上缘露出飞檐翘角上的琉璃脊兽与悬挂的铜铃，远景是层叠沉在深靛蓝色夜色里的宫阙剪影，瓦面覆着薄夜露的反光，玄色与月白的衣袂在暗背景里形成清晰的视觉对比，刃身的冷光在瓦面投下细长的移动影子 足尖连续点过左侧檐角的琉璃脊兽，玄色衣摆与高马尾上的玄色发带被夜风扯得向后笔直翻飞，身形如掠风般从画面左侧外的夜空斜向飞掠，足尖轻踏瓦面时卸去全部冲力，直落到檐顶平台左段. SwordMaster_Ling稳稳落在檐顶左段，右手按在腰侧唐横刀的刀柄上，身形压低成预备起势，衣摆仍因飞掠惯性向后飘飞. 白绫软靴点过右侧飞檐的翘角，月白宽袖与半披发上的玉色发带被风扫得猎猎作响，身形从画面右侧外的夜空斜向飞掠，足尖擦过瓦面时带起极细的瓦面尘屑，直落到檐顶平台右段. SwordMaster_Ye稳稳落在檐顶右段，右手握住长剑剑柄，身形侧立面向Ling，衣袂被风掀得向外展开. 借落地未散的旋身惯性，右手唰地抽出腰侧的唐横刀，刃身泛着冷光斜向下劈向Ye的肩颈位置，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散. 唐横刀的劈砍路径直逼Ye的肩颈，刃身冷光在金瓦表面投下快速扫过的细长冷影. 抬手中银格长剑向上精准架住Ling劈下的横刀，兵刃交击迸出一点冷白火花，顺势借格挡的反弹力旋身，长剑直刺向Ling的握刀手腕，衣袂被旋身的力道甩得向外展开. 两刃交击的火花在夜空中一闪而逝，Ye的长剑刺向Ling的手腕，Ling侧身向后小步撤开，避开刺击的刃尖.",
+        "continuity_from_previous": "none",
+        "composition_change": "large",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "interaction_geometry": {
+          "actor": "SwordMaster_Ye",
+          "target": "SwordMaster_Ling",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Ye手中长剑的剑尖",
+          "effect_region": "从Ye身前斜向延伸至Ling握刀手腕的直刺路径",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "檐顶平台右段，画面右三分之一处",
+          "target_screen_position": "檐顶平台左段，画面左三分之一处",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "setup",
+          "state_before": "两位顶尖江湖剑客在紫禁城最高檐顶完成终极对决，以流畅的轻功入场、连续借势变招的武打动作分出胜负",
+          "state_change": "两位剑客以踏脊飞掠的帅气轻功从左右两侧登上紫禁之巅的最高檐顶，落地后未作寒暄直接拔刀交击，首轮劈砍与格挡刺击的交手未分高下，正式拉开决战序幕",
+          "state_after": "两位剑客在檐顶相隔三步对峙，兵刃均已出鞘，首轮交击后双方都在观察对方的步法破绽，瓦面散落少量被刃风带起的瓦当碎屑，夜风仍在掀动两人的衣袂与发带"
+        },
+        "production_slot": {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        "primary_action": "足尖连续点过左侧檐角的琉璃脊兽，玄色衣摆与高马尾上的玄色发带被夜风扯得向后笔直翻飞，身形如掠风般从画面左侧外的夜空斜向飞掠，足尖轻踏瓦面时卸去全部冲力，直落到檐顶平台左段; 白绫软靴点过右侧飞檐的翘角，月白宽袖与半披发上的玉色发带被风扫得猎猎作响，身形从画面右侧外的夜空斜向飞掠，足尖擦过瓦面时带起极细的瓦面尘屑，直落到檐顶平台右段; 借落地未散的旋身惯性，右手唰地抽出腰侧的唐横刀，刃身泛着冷光斜向下劈向Ye的肩颈位置，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散; 抬手中银格长剑向上精准架住Ling劈下的横刀，兵刃交击迸出一点冷白火花，顺势借格挡的反弹力旋身，长剑直刺向Ling的握刀手腕，衣袂被旋身的力道甩得向外展开",
+        "action_beats": [
+          {
+            "phase": "trigger",
+            "actor": "SwordMaster_Ling",
+            "action": "足尖连续点过左侧檐角的琉璃脊兽，玄色衣摆与高马尾上的玄色发带被夜风扯得向后笔直翻飞，身形如掠风般从画面左侧外的夜空斜向飞掠，足尖轻踏瓦面时卸去全部冲力，直落到檐顶平台左段",
+            "target": "SwordMaster_Ye",
+            "visible_result": "SwordMaster_Ling稳稳落在檐顶左段，右手按在腰侧唐横刀的刀柄上，身形压低成预备起势，衣摆仍因飞掠惯性向后飘飞",
+            "start_seconds": 0,
+            "end_seconds": 0.8,
+            "activity": "transition"
+          },
+          {
+            "phase": "trigger",
+            "actor": "SwordMaster_Ye",
+            "action": "白绫软靴点过右侧飞檐的翘角，月白宽袖与半披发上的玉色发带被风扫得猎猎作响，身形从画面右侧外的夜空斜向飞掠，足尖擦过瓦面时带起极细的瓦面尘屑，直落到檐顶平台右段",
+            "target": "SwordMaster_Ling",
+            "visible_result": "SwordMaster_Ye稳稳落在檐顶右段，右手握住长剑剑柄，身形侧立面向Ling，衣袂被风掀得向外展开",
+            "start_seconds": 0.8,
+            "end_seconds": 1.5,
+            "activity": "transition"
+          },
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ling",
+            "action": "借落地未散的旋身惯性，右手唰地抽出腰侧的唐横刀，刃身泛着冷光斜向下劈向Ye的肩颈位置，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散",
+            "target": "SwordMaster_Ye",
+            "visible_result": "唐横刀的劈砍路径直逼Ye的肩颈，刃身冷光在金瓦表面投下快速扫过的细长冷影",
+            "start_seconds": 1.5,
+            "end_seconds": 3,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ling",
+              "target": "SwordMaster_Ye",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ling手中唐横刀的刃尖",
+              "effect_region": "从Ling身前斜向延伸至Ye肩颈位置的弧形劈砍路径",
+              "reaction_scope": "唐横刀的劈砍路径直逼Ye的肩颈，刃身冷光在金瓦表面投下快速扫过的细长冷影",
+              "unaffected_behavior": "檐角的琉璃脊兽与悬挂的铜铃不受刃风波及",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "檐顶平台左段，画面左三分之一处",
+              "target_screen_position": "檐顶平台右段，画面右三分之一处",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.1,
+            "reaction_at_seconds": 2.55,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接act1中Ling落地压低身形的预备起势"
+          },
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ye",
+            "action": "抬手中银格长剑向上精准架住Ling劈下的横刀，兵刃交击迸出一点冷白火花，顺势借格挡的反弹力旋身，长剑直刺向Ling的握刀手腕，衣袂被旋身的力道甩得向外展开",
+            "target": "SwordMaster_Ling",
+            "visible_result": "两刃交击的火花在夜空中一闪而逝，Ye的长剑刺向Ling的手腕，Ling侧身向后小步撤开，避开刺击的刃尖",
+            "start_seconds": 3,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ye",
+              "target": "SwordMaster_Ling",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ye手中长剑的剑尖",
+              "effect_region": "从Ye身前斜向延伸至Ling握刀手腕的直刺路径",
+              "reaction_scope": "两刃交击的火花在夜空中一闪而逝，Ye的长剑刺向Ling的手腕，Ling侧身向后小步撤开，避开刺击的刃尖",
+              "unaffected_behavior": "檐顶瓦面除了被刃风带起碎屑的区域外，其余部分保持完整",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "檐顶平台右段，画面右三分之一处",
+              "target_screen_position": "檐顶平台左段，画面左三分之一处",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 3.8,
+            "reaction_at_seconds": 4.4,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接act2中Ye落地侧立握剑的预备姿势"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "两位顶尖剑客即将入场开启终极对决",
+          "action_phase": "轻功入场阶段",
+          "camera": "固定宽幅全景，低角度仰拍",
+          "screen_direction": "Ling从左向右飞掠，Ye从右向左飞掠，双向入画",
+          "pose_and_gaze": "檐顶空无一人，夜风拂动檐边铜铃",
+          "prop_state": "两柄兵器均未出鞘，瓦面完整无碎屑，铜铃静止",
+          "open_motion": "夜风卷着细碎尘屑在瓦面掠过",
+          "lighting": "冷银色月光侧照，高对比冷调，金瓦泛着冷金色反光"
+        },
+        "end_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "两位剑客完成入场，完成首轮兵刃交击",
+          "action_phase": "首轮试探交手结束，进入对峙观察阶段",
+          "camera": "固定宽幅全景，两人分立画面左右三分之一处",
+          "screen_direction": "Ling在左面向右，Ye在右面向左，正面对峙",
+          "pose_and_gaze": "两人持刃侧身，目光紧锁对方的握刃手，身形保持随时变招的弹性姿态",
+          "prop_state": "两柄兵器均已出鞘，瓦面散落少量细碎瓦当碎屑，檐角铜铃被刃风带得轻轻晃动",
+          "open_motion": "两人的衣袂与发带仍因飞掠和旋身的惯性向后翻飞，兵刃交击的冷光余韵未散",
+          "lighting": "冷银色月光侧照，刃身反光在金瓦表面投下细长的冷影，交击的火花余温在暗里淡去"
+        },
+        "camera": {
+          "primary_movement": "fixed",
+          "composition": "16:9宽幅全景，低角度仰拍紫禁城最高重檐的金瓦平台，画面上缘纳入飞檐翘角与脊兽轮廓，左右边缘留出足够的轻功入画空间，无多余裁切",
+          "start_framing": "wide shot",
+          "end_framing": "wide shot",
+          "speed": "fixed",
+          "screen_positions": {
+            "SwordMaster_Ling": "画面左三分之一位置",
+            "SwordMaster_Ye": "画面右三分之一位置"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "SwordMaster_Ling": {
+            "frame_position": "画面左三分之一位置",
+            "body_orientation": "three-quarter toward SwordMaster_Ye",
+            "facing_target": "SwordMaster_Ye",
+            "eyeline_target": "SwordMaster_Ye",
+            "travel_direction": "从画面左侧外沿向右飞掠至檐顶左段",
+            "action_target": "SwordMaster_Ye"
+          },
+          "SwordMaster_Ye": {
+            "frame_position": "画面右三分之一位置",
+            "body_orientation": "three-quarter toward SwordMaster_Ling",
+            "facing_target": "SwordMaster_Ling",
+            "eyeline_target": "SwordMaster_Ling",
+            "travel_direction": "从画面右侧外沿向左飞掠至檐顶右段",
+            "action_target": "SwordMaster_Ling"
+          }
+        },
+        "lighting": "冷银色月光从侧上方斜照，在金瓦表面投下冷金色反光，人物轮廓被月光勾出亮边，暗部沉在深靛蓝色的夜色里，高对比低饱和，兵刃交击时反射出冷白的瞬时光点",
+        "mood": "冷冽肃杀的新武侠电影质感，飞掠衣袂带风的凌厉氛围感",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "狭长唐横刀（Ling）",
+          "银格长剑（Ye）",
+          "琉璃檐角脊兽",
+          "檐边风动铜铃",
+          "金瓦瓦当"
+        ],
+        "continuity_props": [
+          "完整无破损的金瓦檐顶",
+          "未出鞘的狭长唐横刀",
+          "未出鞘的银格长剑",
+          "静止悬挂的檐边铜铃",
+          "琉璃檐角脊兽"
+        ]
+      },
+      {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_turn_02",
+        "scene_description": "深夜紫禁城最高等级的重檐庑殿顶平台，四周是连片沉在夜色里的皇家宫阙，檐角立着琉璃脊兽，飞檐下挂着风动铜铃，无旁人打扰，是两位顶尖剑客约定的终极对决场地",
+        "prompt_en": "16:9宽幅720p cinematic质感，冷调高对比，中景取景聚焦两位剑客交手的上半身至膝部范围，冷银色月光在金瓦表面投下人物移动的细长冷影，刃身交击的冷白反光在暗背景里格外醒目，飞散的瓦当碎屑在月光下划出细碎的亮线，玄色与月白的衣袂在交手旋身时大幅翻飞，画面边缘露出晃动的檐角铜铃轮廓，背景是沉在深靛蓝色夜色里的模糊宫阙剪影 承接上一镜侧身撤开避开刺击的收势，足尖蹬地向前滑步，唐横刀从腰侧位置斜向上撩向Ye的持剑手腕，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散，玄色衣摆随滑步动作大幅展开. Ye抬手中银格长剑向上架住撩来的横刀，两刃交击迸出一点冷白火花，Ye的脚步被撩砍的力道带得向后小退半步. 借格挡横刀的反弹力旋身，长剑顺着横刀的刀身向下滑削，直逼Ling的握刀指节，月白宽袖随旋身动作甩成半圆弧，白绫软靴在瓦面碾出细碎的瓦当碎末. Ling手腕向后一缩避开滑削的剑尖，足尖点地向后小跳半步，玄色发带随跳步动作向后扬起. 趁Ling后撤的空当，白绫软靴连续点瓦向前突进，长剑直刺向Ling的胸口位置，踏瓦时脚下瓦面因冲力出现微小松动，落地时重心偏向右脚露出半分失衡破绽. Ling侧身让过擦着玄色衣料刺来的剑锋，足尖蹬踏身侧檐角的琉璃脊兽基座，借反作用力翻跃到Ye的斜上方高位，唐横刀顺势举到头顶对准Ye的空当；Ye因刺空前冲力踉跄半步，重心完全压在前脚，握剑的手来不及回防.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "interaction_geometry": {
+          "actor": "SwordMaster_Ye",
+          "target": "SwordMaster_Ling",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Ye手中长剑的剑尖",
+          "effect_region": "Ye直刺的剑锋从Ling身侧半寸处擦过的直线路径",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "从画面右三分之一处随交手移动到画面中心偏右位置",
+          "target_screen_position": "从画面左三分之一处随交手移动到右侧檐角脊兽旁，最终悬于Ye斜上方的高位",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "turn",
+          "state_before": "两位剑客在檐顶相隔三步对峙，兵刃均已出鞘，首轮交击后双方都在观察对方的步法破绽，瓦面散落少量被刃风带起的瓦当碎屑，夜风仍在掀动两人的衣袂与发带",
+          "state_change": "两位剑客从对峙状态展开环环相扣的连续交手，无机械一来一回的固定对拆，Ye在踏瓦突进时因冲力出现重心失衡的破绽，Ling抓住机会避开直刺，蹬踏檐角脊兽翻跃到Ye的斜上方高位，从势均力敌的对峙状态转为占据绝对攻击优势的转折点",
+          "state_after": "Ling悬在Ye斜上方的高位，唐横刀举在头顶对准Ye的空当，Ye因刺空踉跄前倾，握剑的手来不及回防，瓦面散落更多被连续踏动带起的瓦当碎屑，檐角铜铃在连续的刃风里晃动，夜风掀动两人的衣袂猎猎作响，致命一击即将发起"
+        },
+        "production_slot": {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "承接上一镜侧身撤开避开刺击的收势，足尖蹬地向前滑步，唐横刀从腰侧位置斜向上撩向Ye的持剑手腕，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散，玄色衣摆随滑步动作大幅展开; 借格挡横刀的反弹力旋身，长剑顺着横刀的刀身向下滑削，直逼Ling的握刀指节，月白宽袖随旋身动作甩成半圆弧，白绫软靴在瓦面碾出细碎的瓦当碎末; 趁Ling后撤的空当，白绫软靴连续点瓦向前突进，长剑直刺向Ling的胸口位置，踏瓦时脚下瓦面因冲力出现微小松动，落地时重心偏向右脚露出半分失衡破绽",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ling",
+            "action": "承接上一镜侧身撤开避开刺击的收势，足尖蹬地向前滑步，唐横刀从腰侧位置斜向上撩向Ye的持剑手腕，刀锋扫过的气流带起瓦面的细碎瓦当碎屑向前飞散，玄色衣摆随滑步动作大幅展开",
+            "target": "SwordMaster_Ye",
+            "visible_result": "Ye抬手中银格长剑向上架住撩来的横刀，两刃交击迸出一点冷白火花，Ye的脚步被撩砍的力道带得向后小退半步",
+            "start_seconds": 0,
+            "end_seconds": 1.2,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ling",
+              "target": "SwordMaster_Ye",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ling手中唐横刀的刃尖",
+              "effect_region": "从Ling腰侧斜向上延伸至Ye持剑手腕的弧形撩砍路径",
+              "reaction_scope": "Ye抬手中银格长剑向上架住撩来的横刀，两刃交击迸出一点冷白火花，Ye的脚步被撩砍的力道带得向后小退半步",
+              "unaffected_behavior": "檐角琉璃脊兽与悬挂铜铃不在刃风直接扫及范围，瓦面除刃风带起碎屑的区域外保持完整",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面左三分之一处随交手移动到右侧檐角脊兽旁，最终悬于Ye斜上方的高位",
+              "target_screen_position": "从画面右三分之一处随交手移动到画面中心偏右位置",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.48,
+            "reaction_at_seconds": 0.84,
+            "response_kind": "deflection"
+          },
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ye",
+            "action": "借格挡横刀的反弹力旋身，长剑顺着横刀的刀身向下滑削，直逼Ling的握刀指节，月白宽袖随旋身动作甩成半圆弧，白绫软靴在瓦面碾出细碎的瓦当碎末",
+            "target": "SwordMaster_Ling",
+            "visible_result": "Ling手腕向后一缩避开滑削的剑尖，足尖点地向后小跳半步，玄色发带随跳步动作向后扬起",
+            "start_seconds": 1.2,
+            "end_seconds": 2.7,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ye",
+              "target": "SwordMaster_Ling",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ye手中长剑的剑尖",
+              "effect_region": "顺着横刀刀身向下滑削至Ling握刀指节的路径",
+              "reaction_scope": "Ling手腕向后一缩避开滑削的剑尖，足尖点地向后小跳半步，玄色发带随跳步动作向后扬起",
+              "unaffected_behavior": "两人身侧半米外的瓦面不受滑削刃风影响，脊兽与铜铃保持原有位置",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面右三分之一处随交手移动到画面中心偏右位置",
+              "target_screen_position": "从画面左三分之一处随交手移动到右侧檐角脊兽旁，最终悬于Ye斜上方的高位",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 1.8,
+            "reaction_at_seconds": 2.25,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接act5中Ye抬剑架住横刀的格挡反弹力"
+          },
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ye",
+            "action": "趁Ling后撤的空当，白绫软靴连续点瓦向前突进，长剑直刺向Ling的胸口位置，踏瓦时脚下瓦面因冲力出现微小松动，落地时重心偏向右脚露出半分失衡破绽",
+            "target": "SwordMaster_Ling",
+            "visible_result": "Ling侧身让过擦着玄色衣料刺来的剑锋，足尖蹬踏身侧檐角的琉璃脊兽基座，借反作用力翻跃到Ye的斜上方高位，唐横刀顺势举到头顶对准Ye的空当；Ye因刺空前冲力踉跄半步，重心完全压在前脚，握剑的手来不及回防",
+            "start_seconds": 2.7,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ye",
+              "target": "SwordMaster_Ling",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ye手中长剑的剑尖",
+              "effect_region": "Ye直刺的剑锋从Ling身侧半寸处擦过的直线路径",
+              "reaction_scope": "Ling侧身让过擦着玄色衣料刺来的剑锋，足尖蹬踏身侧檐角的琉璃脊兽基座，借反作用力翻跃到Ye的斜上方高位，唐横刀顺势举到头顶对准Ye的空当；Ye因刺空前冲力踉跄半步，重心完全压在前脚，握剑的手来不及回防",
+              "unaffected_behavior": "Ling蹬踏的脊兽基座仅留靴底接触痕迹，其余结构完整，檐边铜铃不受蹬踏震动影响",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面右三分之一处随交手移动到画面中心偏右位置",
+              "target_screen_position": "从画面左三分之一处随交手移动到右侧檐角脊兽旁，最终悬于Ye斜上方的高位",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 3.62,
+            "reaction_at_seconds": 4.31,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接act6中Ling缩手避开滑削剑尖的后撤姿态"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "两位剑客完成首轮交击，进入连续交手阶段",
+          "action_phase": "连续借势变招的中段交手，势均力敌",
+          "camera": "中景跟拍，横向跟随两人交手轨迹移动",
+          "screen_direction": "Ling从画面左段向右突进，Ye从画面右段向左迎击",
+          "pose_and_gaze": "两人持刃侧身，目光紧锁对方的握刃手，身形保持随时变招的弹性姿态",
+          "prop_state": "两柄兵刃均已出鞘，瓦面散落少量细碎瓦当碎屑，檐角铜铃被刃风带得轻轻晃动",
+          "open_motion": "承接上一镜Ling侧身撤开避开Ye刺击的收势",
+          "lighting": "冷银色月光侧照，刃身反光在金瓦表面投下细长冷影"
+        },
+        "end_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "攻方抓住守方的失衡破绽，完成高位变招占据攻击优势",
+          "action_phase": "转折点阶段，守方空当暴露，致命一击即将发起",
+          "camera": "中景定格在Ling悬于Ye斜上方高位的构图",
+          "screen_direction": "Ling在画面上半部分高位面向下方的Ye，Ye在画面下半部分前倾踉跄",
+          "pose_and_gaze": "Ling悬在半空，目光锁定Ye的空当位置，唐横刀举在头顶；Ye重心前倾，握剑的手来不及回防，目光错愕看向高位的Ling",
+          "prop_state": "两柄兵刃仍保持出鞘状态，瓦面被连续踏动带起更多瓦当碎屑，檐角铜铃在连续刃风里晃得幅度更大",
+          "open_motion": "Ling的玄色衣摆与发带随翻跃动作在夜空中展开，Ye的月白衣袂因踉跄动作向外扬起",
+          "lighting": "冷银色月光侧照，刃身的冷光在金瓦表面投下随人物移动的长影"
+        },
+        "camera": {
+          "primary_movement": "tracking",
+          "composition": "16:9宽幅中景，取景范围覆盖人物上半身至膝部，完整纳入兵刃交手轨迹与衣袂翻飞动态",
+          "start_framing": "medium shot",
+          "end_framing": "Ling悬于Ye斜上方高位，Ye重心前倾踉跄的中景",
+          "speed": "smooth",
+          "screen_positions": {
+            "SwordMaster_Ling": "起始在画面左三分之一，结束在画面上半部分中心偏右",
+            "SwordMaster_Ye": "起始在画面右三分之一，结束在画面下半部分中心偏右"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "SwordMaster_Ling": {
+            "frame_position": "起始在画面左三分之一，结束在画面上半部分中心偏右",
+            "body_orientation": "three-quarter toward SwordMaster_Ye",
+            "facing_target": "SwordMaster_Ye",
+            "eyeline_target": "SwordMaster_Ye",
+            "travel_direction": "从左向右突进，蹬脊兽向上翻跃",
+            "action_target": "SwordMaster_Ye"
+          },
+          "SwordMaster_Ye": {
+            "frame_position": "起始在画面右三分之一，结束在画面下半部分中心偏右",
+            "body_orientation": "three-quarter toward SwordMaster_Ling",
+            "facing_target": "SwordMaster_Ling",
+            "eyeline_target": "SwordMaster_Ling",
+            "travel_direction": "从右向左迎击突进",
+            "action_target": "SwordMaster_Ling"
+          }
+        },
+        "lighting": "冷银色月光从侧上方斜照，高对比低饱和，金瓦泛着冷金色反光，人物轮廓被月光勾出亮边，暗部沉在深靛蓝色夜色里，兵刃交击时反射出冷白的瞬时光点",
+        "mood": "冷冽肃杀的新武侠电影质感，连续交手的凌厉紧绷氛围感",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "狭长唐横刀（Ling）",
+          "银格长剑（Ye）",
+          "琉璃檐角脊兽",
+          "檐边风动铜铃",
+          "金瓦瓦当碎屑"
+        ],
+        "continuity_props": [
+          "狭长唐横刀（Ling）",
+          "银格长剑（Ye）",
+          "檐边风动铜铃",
+          "琉璃檐角脊兽",
+          "散落少量细碎瓦当碎屑的金瓦檐顶"
+        ]
+      },
+      {
+        "shot_id": 3,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_final_03",
+        "scene_description": "深夜紫禁城最高等级的重檐庑殿顶平台，四周是连片沉在夜色里的皇家宫阙，檐角立着琉璃脊兽，飞檐下挂着风动铜铃，无旁人打扰，是两位顶尖剑客约定的终极对决场地",
+        "prompt_en": "16:9宽幅720p cinematic质感，冷调高对比，全景取景覆盖整个金瓦檐顶平台的人物全身动作范围，冷银色月光在金瓦表面投下人物修长的冷影，旋身横斩时刃身反射的冷白亮线在暗背景里格外醒目，飞散的瓦当碎屑在月光下划出细碎的亮弧，玄色与月白的衣袂在旋身与仰倒时大幅翻飞，画面边缘露出晃动的檐角铜铃轮廓，背景是沉在深靛蓝色夜色里的连片宫阙剪影 承接上一镜悬在Ye斜上方高位举刀的姿态，腰腹发力带动全身旋身，唐横刀从头顶位置顺着旋身力道横向扫出，刀锋带起的气流卷起飞散的瓦当碎屑，玄色衣摆随旋身动作甩出完整圆弧，旋身落回时足尖稳稳点在金瓦檐面. Ye完全来不及回防，被横斩的刃风扫中胸颈位置，身形向后仰倒，握剑的手脱力松开，银格长剑脱手落在身侧瓦面，飞散的瓦当碎屑在两人身侧的月光下划出细碎亮线. 落回瓦面后保持持刃站立的挺拔姿态，玄色衣摆与发带在夜风中缓缓垂落，目光平静看向倒在檐边的Ye. 画面定格在Ling持刃立在金瓦檐顶的全景姿态，飞散的瓦当碎屑缓缓飘落，檐角铜铃的余晃在画面边缘清晰可见.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "interaction_geometry": {
+          "actor": "SwordMaster_Ling",
+          "target": "SwordMaster_Ye",
+          "interaction_mode": "direct_contact",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Ling手中唐横刀的刃身",
+          "effect_region": "从Ling头顶位置横向扫过Ye胸颈空当的弧形斩击路径",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": true,
+          "line_of_action_visible": false,
+          "actor_screen_position": "从画面上半部分高位旋身落至画面中心偏左的金瓦檐面",
+          "target_screen_position": "从画面下半部分中心偏右的踉跄位置向后仰倒至画面右下方檐边",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "payoff",
+          "state_before": "Ling悬在Ye斜上方的高位，唐横刀举在头顶对准Ye的空当，Ye因刺空踉跄前倾，握剑的手来不及回防，瓦面散落更多被连续踏动带起的瓦当碎屑，檐角铜铃在连续的刃风里晃动，夜风掀动两人的衣袂猎猎作响，致命一击即将发起",
+          "state_change": "Ling承接高位悬停的攻击姿态，腰腹发力带动全身旋身，以流畅的旋身横斩动作直取Ye因重心失衡暴露的胸颈空当，Ye完全来不及回防，被斩击的力道带得向后仰倒，握剑的手脱力松开，长剑脱手落在瓦面，Ling稳稳旋身落回金瓦檐面，完成整场对决的最终击杀",
+          "state_after": "Ling持刃立在紫禁城最高的金瓦檐顶，玄色衣袂在夜风里微动，Ye仰面倒在右侧檐边，银格长剑脱手落在身侧瓦面，飞散的瓦当碎屑在冷银色月光下缓缓飘落，檐角铜铃余晃未停，深靛蓝色夜色笼罩着连片的宫阙剪影，这场顶尖剑客的终极对决以Ling的胜利落下帷幕"
+        },
+        "production_slot": {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "最后一方被帅气击杀",
+          "choreography": "flexible",
+          "creative_brief": "用新版项目的正式流程生成一个15秒（可以适当增减）的紫禁之巅决战视频，分三段生成再拼接，验证人物一致性、动作连续性和运镜。轻功入场要帅，武打动作要多，要有借势和变招，不要机械地一来一回，最后一方被帅气击杀。脚本、分镜、编舞和运镜由项目自动规划，不靠人工补流程。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "承接上一镜悬在Ye斜上方高位举刀的姿态，腰腹发力带动全身旋身，唐横刀从头顶位置顺着旋身力道横向扫出，刀锋带起的气流卷起飞散的瓦当碎屑，玄色衣摆随旋身动作甩出完整圆弧，旋身落回时足尖稳稳点在金瓦檐面; 落回瓦面后保持持刃站立的挺拔姿态，玄色衣摆与发带在夜风中缓缓垂落，目光平静看向倒在檐边的Ye",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "SwordMaster_Ling",
+            "action": "承接上一镜悬在Ye斜上方高位举刀的姿态，腰腹发力带动全身旋身，唐横刀从头顶位置顺着旋身力道横向扫出，刀锋带起的气流卷起飞散的瓦当碎屑，玄色衣摆随旋身动作甩出完整圆弧，旋身落回时足尖稳稳点在金瓦檐面",
+            "target": "SwordMaster_Ye",
+            "visible_result": "Ye完全来不及回防，被横斩的刃风扫中胸颈位置，身形向后仰倒，握剑的手脱力松开，银格长剑脱手落在身侧瓦面，飞散的瓦当碎屑在两人身侧的月光下划出细碎亮线",
+            "start_seconds": 0,
+            "end_seconds": 3.5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "SwordMaster_Ling",
+              "target": "SwordMaster_Ye",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Ling手中唐横刀的刃身",
+              "effect_region": "从Ling头顶位置横向扫过Ye胸颈空当的弧形斩击路径",
+              "reaction_scope": "Ye完全来不及回防，被横斩的刃风扫中胸颈位置，身形向后仰倒，握剑的手脱力松开，银格长剑脱手落在身侧瓦面，飞散的瓦当碎屑在两人身侧的月光下划出细碎亮线",
+              "unaffected_behavior": "檐角琉璃脊兽与悬挂铜铃不在斩击路径直接范围内，瓦面除刃风带起碎屑的区域外保持完整",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "从画面上半部分高位旋身落至画面中心偏左的金瓦檐面",
+              "target_screen_position": "从画面下半部分中心偏右的踉跄位置向后仰倒至画面右下方檐边",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 1.4,
+            "reaction_at_seconds": 2.45,
+            "response_kind": "impact"
+          },
+          {
+            "phase": "aftermath",
+            "actor": "SwordMaster_Ling",
+            "action": "落回瓦面后保持持刃站立的挺拔姿态，玄色衣摆与发带在夜风中缓缓垂落，目光平静看向倒在檐边的Ye",
+            "target": "SwordMaster_Ye",
+            "visible_result": "画面定格在Ling持刃立在金瓦檐顶的全景姿态，飞散的瓦当碎屑缓缓飘落，檐角铜铃的余晃在画面边缘清晰可见",
+            "start_seconds": 3.5,
+            "end_seconds": 5,
+            "activity": "hold"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "攻方Ling占据高位攻击优势，守方Ye重心失衡暴露空当，致命一击即将发起",
+          "action_phase": "最终击杀阶段，攻方从高位发起致命旋身斩",
+          "camera": "宽幅全景固定机位取景，完整覆盖檐顶平台的动作范围",
+          "screen_direction": "Ling在画面上半部分高位面向下方的Ye，Ye在画面下半部分前倾踉跄面向上方的Ling",
+          "pose_and_gaze": "Ling悬在半空，唐横刀举在头顶，目光紧锁Ye的胸颈空当；Ye重心前倾，握剑的手来不及回防，目光错愕看向高位的Ling",
+          "prop_state": "两柄兵刃均已出鞘，瓦面散落之前连续交手带起的细碎瓦当碎屑，檐角铜铃被连续刃风带得晃动幅度较大",
+          "open_motion": "承接上一镜Ling蹬踏脊兽翻跃到Ye斜上方高位、举刀对准空当的悬停姿态",
+          "lighting": "冷银色月光侧照，刃身冷光在金瓦表面投下随人物移动的长影"
+        },
+        "end_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "Ling完成最终击杀，Ye被斩倒在檐边，对决胜负已分",
+          "action_phase": "对决结束，胜方持刃定格在檐顶姿态",
+          "camera": "宽幅全景固定机位定格在胜方持刃站立的构图",
+          "screen_direction": "Ling站在画面中心偏左持刃面向右侧，Ye仰面倒在画面右下方檐边",
+          "pose_and_gaze": "Ling收刀垂在身侧，身姿挺拔，目光平静看向倒在檐边的Ye；Ye仰面倒在瓦面，长剑脱手落在身侧，目光涣散",
+          "prop_state": "唐横刀仍保持出鞘状态，Ye的银格长剑脱手落在身侧瓦面，瓦面散落大量被刃风带起的瓦当碎屑，檐角铜铃余晃未停",
+          "open_motion": "Ling的玄色衣摆与发带在夜风中缓缓垂落，Ye的月白衣袂铺散在瓦面，飞散的瓦当碎屑在月光下缓缓飘落",
+          "lighting": "冷银色月光侧照，金瓦泛着冷金色反光，人物轮廓被月光勾出亮边，暗部沉在深靛蓝色夜色里"
+        },
+        "camera": {
+          "primary_movement": "fixed",
+          "composition": "16:9宽幅全景，取景范围覆盖檐顶平台上人物的全身动作、飞旋的衣袂轨迹与瓦当碎屑飞散的完整动态",
+          "start_framing": "wide shot",
+          "end_framing": "Ling持刃稳立在金瓦檐面中心偏左位置，Ye向后仰倒在画面右下方檐边的全景",
+          "speed": "fixed",
+          "screen_positions": {
+            "SwordMaster_Ling": "从画面上半部分中心偏右的高位位置，旋身落至画面中心偏左的站立位置",
+            "SwordMaster_Ye": "从画面下半部分中心偏右的踉跄位置，向后仰倒至画面右下方的檐边位置"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "SwordMaster_Ling": {
+            "frame_position": "从画面上半部分中心偏右的高位位置，旋身落至画面中心偏左的站立位置",
+            "body_orientation": "three-quarter toward SwordMaster_Ye",
+            "facing_target": "SwordMaster_Ye",
+            "eyeline_target": "SwordMaster_Ye",
+            "travel_direction": "从高位向下旋身落至瓦面",
+            "action_target": "SwordMaster_Ye"
+          },
+          "SwordMaster_Ye": {
+            "frame_position": "从画面下半部分中心偏右的踉跄位置，向后仰倒至画面右下方的檐边位置",
+            "body_orientation": "three-quarter toward SwordMaster_Ling",
+            "facing_target": "SwordMaster_Ling",
+            "eyeline_target": "SwordMaster_Ling",
+            "travel_direction": "向后仰倒",
+            "action_target": "SwordMaster_Ling"
+          }
+        },
+        "lighting": "冷银色月光从侧上方斜照，高对比低饱和，金瓦泛着冷金色反光，人物轮廓被月光勾出明亮的轮廓边，暗部沉在深靛蓝色夜色里，横斩瞬间刃身反射出冷白的瞬时光点，击杀完成后光线稳定柔和",
+        "mood": "冷冽肃杀的新武侠电影质感，击杀瞬间凌厉收束，夜风卷着衣袂与碎屑的空旷肃杀氛围感",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "SwordMaster_Ling",
+          "SwordMaster_Ye"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "狭长唐横刀（Ling）",
+          "银格长剑（Ye）",
+          "琉璃檐角脊兽",
+          "檐边风动铜铃",
+          "金瓦瓦当碎屑"
+        ],
+        "continuity_props": [
+          "狭长唐横刀（Ling）",
+          "银格长剑（Ye）",
+          "檐边风动铜铃",
+          "琉璃檐角脊兽",
+          "散落大量被刃风带起的瓦当碎屑的金瓦檐顶"
+        ]
+      }
+    ]
+  },
+  "reports": [
+    {
+      "video_sha256": "3689abd9c9d62e2ded6f6a94271796d2e5efc6a5fe33f591cd6bde5938445aba",
+      "evidence": [
+        {
+          "event_id": 3,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 1.5,
+          "observed_effect_seconds": 3.18,
+          "observed_reaction_seconds": 3.8,
+          "observed_end_seconds": 3.8
+        },
+        {
+          "event_id": 4,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": false,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 3,
+          "observed_effect_seconds": 3.8,
+          "observed_reaction_seconds": 4.4,
+          "observed_end_seconds": 4.988
+        }
+      ],
+      "review": {
+        "accepted": false,
+        "required_entities_visible": {
+          "SwordMaster_Ling": true,
+          "SwordMaster_Ye": true
+        },
+        "action_geometry_valid": false,
+        "primary_action_completed": false,
+        "observed_end_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "两位顶尖剑客在檐顶对峙交手",
+          "action_phase": "兵刃交击迸出火花后，Ye的长剑刺向Ling的躯干，Ling向后撤步，未出现Ye长剑刺向Ling握刀手腕、Ling侧身避开刃尖的 contracted 结果",
+          "camera": "固定宽幅全景，低角度仰拍",
+          "screen_direction": "Ling从画面左侧外沿向右飞掠至檐顶左段，Ye从画面右侧外沿向左飞掠至檐顶右段，双向入画",
+          "pose_and_gaze": "Ling压低身形握刀面向Ye，Ye持剑面向Ling，双方视线锁定对方",
+          "prop_state": "金瓦檐顶完整，两柄兵器均已出鞘，琉璃檐角脊兽完好",
+          "open_motion": "夜风持续吹动两人衣摆与发带向后翻飞",
+          "lighting": "冷银色月光侧照，高对比冷调，金瓦泛着冷金色反光，兵刃交击处反射出冷白瞬时光点"
+        },
+        "effect_path_valid": false,
+        "reaction_causality_valid": false,
+        "narrative_state_change_valid": false,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": false,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": false,
+        "creative_brief_valid": true,
+        "identity_crop_boxes": {
+          "SwordMaster_Ling": [
+            0.26,
+            0.21,
+            0.49,
+            0.86
+          ],
+          "SwordMaster_Ye": [
+            0.57,
+            0.21,
+            0.85,
+            0.87
+          ]
+        },
+        "failure_reason": "事件4未满足 result_visible；实际可见交互时长不足；不能用计划时间或重叠重复计数补足"
+      }
+    },
+    {
+      "video_sha256": "5cb01563757596d687b07df6b49efcfe7f1bbbb205f0ab5f39dee5d052f6bdd8",
+      "evidence": [
+        {
+          "event_id": 3,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 1.5,
+          "observed_effect_seconds": 3.1,
+          "observed_reaction_seconds": 3.8,
+          "observed_end_seconds": 3.8
+        },
+        {
+          "event_id": 4,
+          "effect_visible": true,
+          "target_reaction_visible": false,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": false,
+          "time_window_valid": true,
+          "flow_continuity_valid": true,
+          "observed_start_seconds": 3,
+          "observed_effect_seconds": 3.8,
+          "observed_reaction_seconds": 4.4,
+          "observed_end_seconds": 4.99
+        }
+      ],
+      "review": {
+        "accepted": false,
+        "required_entities_visible": {
+          "SwordMaster_Ling": true,
+          "SwordMaster_Ye": true
+        },
+        "action_geometry_valid": false,
+        "primary_action_completed": false,
+        "observed_end_state": {
+          "location": "紫禁城最高重檐的金瓦檐顶平台",
+          "subject": "SwordMaster_Ling与SwordMaster_Ye在檐顶对峙",
+          "action_phase": "Ye旋身完成格挡后持剑前刺，Ling向前递刀保持攻击姿态，未出现Ling侧身向后撤步避开Ye刺向手腕的刃尖的动作",
+          "camera": "固定宽幅全景，低角度仰拍",
+          "screen_direction": "Ling从左向右飞掠，Ye从右向左飞掠，双向入画",
+          "pose_and_gaze": "Ling弓步前伸持横刀指向Ye，Ye旋身之后持剑前刺指向Ling，二人视线锁定对方",
+          "prop_state": "金瓦檐顶完整，唐横刀与银格长剑均已出鞘，琉璃脊兽无破损",
+          "open_motion": "夜风持续吹动二人衣摆与发带向后翻飞",
+          "lighting": "冷银色月光侧照，金瓦泛冷金色反光，暗部为深靛蓝色夜色，兵刃交击处残留冷白瞬时光点"
+        },
+        "effect_path_valid": true,
+        "reaction_causality_valid": false,
+        "narrative_state_change_valid": false,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": false,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": false,
+        "creative_brief_valid": true,
+        "identity_crop_boxes": {
+          "SwordMaster_Ling": [
+            0.19,
+            0.25,
+            0.55,
+            0.77
+          ],
+          "SwordMaster_Ye": [
+            0.56,
+            0.2,
+            0.8,
+            0.77
+          ]
+        },
+        "failure_reason": "事件4未满足 target_reaction_visible；事件4未满足 result_visible；实际可见交互时长不足；不能用计划时间或重叠重复计数补足"
+      }
+    }
+  ]
+}

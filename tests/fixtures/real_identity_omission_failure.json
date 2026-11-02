@@ -1,0 +1,21 @@
+{
+  "workspace": "output/20261102_001748_406234",
+  "sources": {
+    "planning_identity_response.json": {
+      "text": "{\n  \"model\": \"doubao-seed-2.1-lite\",\n  \"finish_reason\": \"stop\",\n  \"content\": \"{\\n  \\\"title\\\": \\\"紫禁寒锋决\\\",\\n  \\\"theme_elements\\\": [\\n    \\\"月夜紫禁城金顶屋脊终极对决\\\",\\n    \\\"飘逸凌厉的轻功飞掠入场\\\",\\n    \\\"连续流动无停顿的武侠攻防\\\",\\n    \\\"克制非血腥的帅气击杀\\\",\\n    \\\"电影级冷调武侠视觉质感\\\"\\n  ],\\n  \\\"story_arc\\\": {\\n    \\\"resolution\\\": \\\"最后一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。\\\"\\n  },\\n  \\\"characters\\\": [\\n    {\\n      \\\"name\\\": \\\"WHITE_SWORD_MASTER\\\",\\n      \\\"description\\\": \\\"身着月白色暗绣云纹窄袖武侠劲装，高束长发嵌素银发冠，面覆半透白纱，手持一柄剑身泛冷光的素白长剑，靴面绣浅银云纹，轻功身法飘逸灵动\\\",\\n      \\\"mobility\\\": \\\"bipedal\\\",\\n      \\\"reference_mode\\\": \\\"identity\\\"\\n    },\\n    {\\n      \\\"name\\\": \\\"BLACK_BLADE_MASTER\\\",\\n      \\\"description\\\": \\\"身着玄色暗绣缠枝纹窄袖劲装，高束马尾配黑铁发箍，面覆黑布面罩，手持一柄宽刃黑铁唐刀，刀身泛冷冽寒芒，靴面绣暗金缠枝纹，身法刚猛迅捷\\\",\\n      \\\"mobility\\\": \\\"bipedal\\\",\\n      \\\"reference_mode\\\": \\\"identity\\\"\\n    }\\n  ],\\n  \\\"scene_entities\\\": [\\n    \\\"imperial_yellow_glazed_tile_roof\\\",\\n    \\\"night_full_moon\\\",\\n    \\\"gilded_roof_ridge_beast\\\",\\n    \\\"thin_night_mist\\\"\\n  ],\\n  \\\"locations\\\": [\\n    {\\n      \\\"id\\\": \\\"FORBIDDEN_CITY_MAIN_HALL_ROOF\\\",\\n      \\\"description\\\": \\\"紫禁城核心主殿的最高处明黄色琉璃瓦屋脊，屋脊两端立有鎏金瑞兽饰件，下方是层层叠叠铺展的紫禁城宫殿群，上方是悬着满月的深靛蓝色夜空，屋脊表面光滑的琉璃瓦面可供轻功借力腾跃\\\"\\n    }\\n  ]\\n}\"\n}",
+      "sha256": "9e58848e394046da1aac1f5f1e1946e1e8f705799330ccb94f599c97b744dfec"
+    },
+    "planning_identity.json": {
+      "text": "{\n  \"title\": \"紫禁寒锋决\",\n  \"theme_elements\": [\n    \"月夜紫禁城金顶屋脊终极对决\",\n    \"飘逸凌厉的轻功飞掠入场\",\n    \"连续流动无停顿的武侠攻防\",\n    \"克制非血腥的帅气击杀\",\n    \"电影级冷调武侠视觉质感\"\n  ],\n  \"story_arc\": {\n    \"resolution\": \"最后一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。\"\n  },\n  \"characters\": [\n    {\n      \"name\": \"WHITE_SWORD_MASTER\",\n      \"description\": \"身着月白色暗绣云纹窄袖武侠劲装，高束长发嵌素银发冠，面覆半透白纱，手持一柄剑身泛冷光的素白长剑，靴面绣浅银云纹，轻功身法飘逸灵动\",\n      \"mobility\": \"bipedal\",\n      \"reference_mode\": \"identity\"\n    },\n    {\n      \"name\": \"BLACK_BLADE_MASTER\",\n      \"description\": \"身着玄色暗绣缠枝纹窄袖劲装，高束马尾配黑铁发箍，面覆黑布面罩，手持一柄宽刃黑铁唐刀，刀身泛冷冽寒芒，靴面绣暗金缠枝纹，身法刚猛迅捷\",\n      \"mobility\": \"bipedal\",\n      \"reference_mode\": \"identity\"\n    }\n  ],\n  \"scene_entities\": [\n    \"imperial_yellow_glazed_tile_roof\",\n    \"night_full_moon\",\n    \"gilded_roof_ridge_beast\",\n    \"thin_night_mist\"\n  ],\n  \"locations\": [\n    {\n      \"id\": \"FORBIDDEN_CITY_MAIN_HALL_ROOF\",\n      \"description\": \"紫禁城核心主殿的最高处明黄色琉璃瓦屋脊，屋脊两端立有鎏金瑞兽饰件，下方是层层叠叠铺展的紫禁城宫殿群，上方是悬着满月的深靛蓝色夜空，屋脊表面光滑的琉璃瓦面可供轻功借力腾跃\"\n    }\n  ]\n}",
+      "sha256": "9b6cad2f2bd66bdc82d71dc9f2f945ff1d7085cce94665053f28531da7d2bfd9"
+    },
+    "planning_intent_response.json": {
+      "text": "{\n  \"model\": \"doubao-seed-2.1-lite\",\n  \"finish_reason\": \"stop\",\n  \"content\": \"{\\\"content_focus\\\": \\\"action\\\", \\\"pacing\\\": \\\"dense\\\", \\\"intent_evidence\\\": \\\"轻功入场要帅；武打动作要多、节奏快，有借势、变招和连续的攻防流动，不要机械地一来一回或每招停顿复位。\\\", \\\"ending_requirement\\\": \\\"一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。\\\", \\\"ending_evidence\\\": \\\"最后一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。\\\", \\\"motion_control\\\": \\\"text_guided\\\", \\\"motion_control_evidence\\\": \\\"\\\", \\\"choreography\\\": \\\"flexible\\\", \\\"requested_duration_seconds\\\": 15, \\\"duration_evidence\\\": \\\"制作约15秒的紫禁之巅决战，分三段独立视频再拼接。\\\", \\\"requested_shot_count\\\": 3, \\\"shot_count_evidence\\\": \\\"制作约15秒的紫禁之巅决战，分三段独立视频再拼接。\\\"}\"\n}",
+      "sha256": "cf89d8a1e55f17abff49d41e06875612c0c3646f61ee44924821c361d84f1b17"
+    },
+    "planning_check.json": {
+      "text": "{\n  \"critical\": true,\n  \"issues\": [\n    \"角色 ID 必须唯一，故事状态不可为空\"\n  ]\n}",
+      "sha256": "189256b25c5ee7f81979f9cb899a947360a11621567353533a48d6778ea99323"
+    }
+  }
+}

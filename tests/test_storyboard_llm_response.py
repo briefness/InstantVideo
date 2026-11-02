@@ -20,6 +20,16 @@ from pipeline.causality import blocking_geometry_issues
 from pipeline.models import validate_storyboard, validate_storyboard_draft
 
 
+@pytest.fixture(autouse=True)
+def isolate_intent_stage_for_legacy_storyboard_boundary_tests(monkeypatch):
+    # 此文件测试既有分镜 JSON 边界；语义意图请求由 test_action_pacing 单独覆盖。
+    from pipeline.storyboard import _infer_content_focus
+    monkeypatch.setattr('pipeline.storyboard.resolve_director_intent', lambda _client, request, **_kwargs: {
+        'source_request': request, 'content_focus': _infer_content_focus(request),
+        'pacing': 'balanced', 'intent_evidence': request,
+        'ending_requirement': '', 'ending_evidence': ''})
+
+
 def _response(
     content: str,
     *,
@@ -492,7 +502,7 @@ def test_short_action_generation_receives_immutable_production_slots(monkeypatch
     assert [
         shot["interaction_geometry"]["effect_phase"]
         for shot in result["shots"]
-    ] == ["active", "active", "aftermath"]
+    ] == ["active", "active", "active"]
     assert "生产计划" in calls[0][0]
     assert "effect_phase=active" in calls[0][0]
     assert len(calls) == 1

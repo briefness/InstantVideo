@@ -1,0 +1,905 @@
+{
+  "source": "output/20261029_153224_287374/",
+  "storyboard_sha256": "badb83c2007f2b36b5c699d576a97755f10c8f668f145be89ccab9b4d4eec17c",
+  "storyboard": {
+    "title": "紫禁巅锋决",
+    "total_duration": 15,
+    "style": "cinematic",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "mood": "cinematic wuxia, crisp moonlit night, high contrast chiaroscuro, taut elegant tension",
+    "music_style": "traditional Chinese wuxia orchestral, sharp guqin staccato notes paired with resonant low taiko hits, rising string tension leading to a single crisp cymbal crash at the decisive strike, soft lingering guqin note as the winner sheathes his sword",
+    "content_focus": "action",
+    "theme_elements": [
+      "moonlit glazed tile rooftop ridge of the Forbidden City",
+      "two original adult wuxia sword masters",
+      "graceful high-speed qinggong entrance",
+      "seamless transition from landing to immediate combat",
+      "momentum-driven acrobatic exchanges",
+      "continuous non-reset combat sequences",
+      "evasive footwork and adaptive move changes",
+      "clean non-bloody decisive sword strike",
+      "winner sheathes sword post-victory",
+      "consistent cold silver moonlight across all segments",
+      "uninterrupted spatial and action continuity",
+      "no mechanical back-and-forth combat pacing"
+    ],
+    "story_arc": {
+      "goal": "Two top-tier wuxia sword masters complete their pre-arranged final duel on the highest glazed tile rooftop ridge of the Forbidden City, to decide the realm's undisputed number one martial artist",
+      "stakes": "This is the mutually agreed final contest between the two lifelong rivals; the winner earns unchallenged martial prestige across the jianghu, while the loser must fully accept the duel's outcome with no further retaliation",
+      "turning_point": "After a fast sequence of momentum-shifting exchanges where both fighters leverage roof tile traction and each other's force to reposition, Master Lin catches a split-second opening when Master Shen shifts slightly off-balance during a backward evasive dodge, dropping defensive parries to launch an unbroken, direct offensive",
+      "resolution": "Master Lin lands a clean, precise, non-bloody sword strike that decisively defeats Master Shen, who collapses onto the glazed tiles and does not rise again. Master Lin calmly sheathes his jian, standing motionless on the moonlit rooftop as the final duel outcome is clearly visible"
+    },
+    "production_plan": {
+      "version": "production-plan-v5-payoff-events",
+      "director_intent": {
+        "source_request": "生成约15秒的电影级武侠短片：两位原创成年高手决战紫禁之巅，分三段独立生成再拼接。总时长不必卡得很死，动作完整和剪辑节奏优先。轻功入场要帅，落步即接交锋；武打动作要多，包含借势、闪让、连续变招，避免机械地一来一回和每招复位。最后一方被另一方干净利落、帅气明确的一剑击杀，非血腥呈现，败者倒下不再起身，胜者收剑，结局可见。三段保持人物身份、衣服兵器、同一屋脊场景与光线一致；前后动作、位置和剑势连续，运镜服务于看清交锋和决胜。由项目正式流程自行完成剧本分镜、动作编排、逐段生成、验收和拼接，不使用人工提供或修改的中间分镜。",
+        "content_focus": "action",
+        "pacing": "dense",
+        "intent_evidence": "轻功入场要帅，落步即接交锋；武打动作要多，包含借势、闪让、连续变招，避免机械地一来一回和每招复位。",
+        "ending_requirement": "一方被另一方干净利落、帅气明确的一剑击杀，非血腥呈现，败者倒下不再起身，胜者收剑，结局可见。",
+        "ending_evidence": "最后一方被另一方干净利落、帅气明确的一剑击杀，非血腥呈现，败者倒下不再起身，胜者收剑，结局可见。",
+        "motion_control": "text_guided",
+        "motion_control_evidence": ""
+      },
+      "content_focus": "action",
+      "target_duration": 15,
+      "planned_duration": 15,
+      "slots": [
+        {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "一方被另一方干净利落、帅气明确的一剑击杀，非血腥呈现，败者倒下不再起身，胜者收剑，结局可见。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        }
+      ]
+    },
+    "characters": [
+      {
+        "name": "Master_Lin",
+        "description": "30-something adult male, tall lean athletic build, jet black hair tied in a high topknot secured with a plain unadorned silver hairpin, wearing a matte black cross-collar wuxia robe stitched with faint dark silver cloud patterns along cuffs and hem, wide dark cloth waist belt, soft-soled black cloth boots, armed with a slender straight steel jian with a simple dark wood hilt, no extra armor or decorative accessories",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "Master_Shen",
+        "description": "30-something adult male, sharp angular facial features, long dark hair half-tied back with a thin dark red silk ribbon, wearing a deep indigo cross-collar wuxia robe trimmed with faint crimson edging, stitched dark leather bracers on both forearms, soft-soled dark gray cloth boots, armed with a slightly curved single-edged steel dao with a dark leather-wrapped hilt",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "shots": [
+      {
+        "shot_id": 1,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_01",
+        "scene_description": "紫禁城中轴最高处的琉璃瓦屋脊，月夜开阔，瓦面斜向延伸，可容两名高手借势辗转交锋。",
+        "prompt_en": "冷银色满月悬于深蓝天幕，金琉璃瓦反射出清冷高光，远处宫殿重檐只剩黑色剪影；高对比明暗将两人轮廓镶上银边，屋脊在画面中从左下斜伸至右侧。 足尖轻点远处檐角借力，身形如黑鹰掠入画面，沿屋脊方向俯冲落步，右手已按在剑柄上。. 稳稳蹲落于屋脊中线，黑摆与暗银云纹在月光下扬起，与右侧Master_Shen相距约三步，落步声未落便进入交锋。. 不待对方起身，沉腰拧身，右手拔刀斜劈向Master_Lin肩颈，刀身带出一道冷亮弧线。. 刀锋擦着Master_Lin肩侧掠过，削断几缕散发，Master_Lin侧头沉腰让过要害，衣摆被刀风带起。. 借侧身旋腰的力道，右手拔剑直刺，剑尖直奔Master_Shen握刀的右腕。. Master_Shen抬刀用刀背格住剑脊，金铁交击声中火星一闪，两人手臂同时被震得微沉。. 不收回剑，借刀剑相交的反弹力旋步进步，剑走下盘平扫向Master_Shen膝弯。. Master_Shen立刻提膝后跃，靴底擦过瓦面，剑尖贴着靴底划过，两人均未复位，仍保持相向的动势。.",
+        "continuity_from_previous": "none",
+        "composition_change": "large",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Master_Lin",
+          "Master_Shen"
+        ],
+        "interaction_geometry": {
+          "actor": "Master_Lin",
+          "target": "Master_Shen",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Master_Lin jian blade",
+          "effect_region": "knee-height horizontal arc across Master_Shen lower legs",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "屋脊中线偏左",
+          "target_screen_position": "画面右侧屋脊",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "setup",
+          "state_before": "Two top-tier wuxia sword masters complete their pre-arranged final duel on the highest glazed tile rooftop ridge of the Forbidden City, to decide the realm's undisputed number one martial artist",
+          "state_change": "Master_Lin轻功落步后未作停顿，Master_Shen立刻横刀斜劈；Master_Lin侧身避过并旋身反刺，随即借刀剑相交的反弹力低扫对方膝弯，首轮交锋无中立复位。",
+          "state_after": "决斗已在屋脊上全面展开，双兵出鞘，Master_Lin借势前压，Master_Shen提膝闪避，为后续借瓦面移位与连续变招留出空间。"
+        },
+        "production_slot": {
+          "shot_id": 1,
+          "duration": 5,
+          "narrative_function": "setup",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 2,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "independent"
+        },
+        "primary_action": "足尖轻点远处檐角借力，身形如黑鹰掠入画面，沿屋脊方向俯冲落步，右手已按在剑柄上。; 不待对方起身，沉腰拧身，右手拔刀斜劈向Master_Lin肩颈，刀身带出一道冷亮弧线。; 借侧身旋腰的力道，右手拔剑直刺，剑尖直奔Master_Shen握刀的右腕。; 不收回剑，借刀剑相交的反弹力旋步进步，剑走下盘平扫向Master_Shen膝弯。",
+        "action_beats": [
+          {
+            "phase": "trigger",
+            "actor": "Master_Lin",
+            "action": "足尖轻点远处檐角借力，身形如黑鹰掠入画面，沿屋脊方向俯冲落步，右手已按在剑柄上。",
+            "target": "Master_Shen",
+            "visible_result": "稳稳蹲落于屋脊中线，黑摆与暗银云纹在月光下扬起，与右侧Master_Shen相距约三步，落步声未落便进入交锋。",
+            "start_seconds": 0,
+            "end_seconds": 1.3,
+            "activity": "transition"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Shen",
+            "action": "不待对方起身，沉腰拧身，右手拔刀斜劈向Master_Lin肩颈，刀身带出一道冷亮弧线。",
+            "target": "Master_Lin",
+            "visible_result": "刀锋擦着Master_Lin肩侧掠过，削断几缕散发，Master_Lin侧头沉腰让过要害，衣摆被刀风带起。",
+            "start_seconds": 1.3,
+            "end_seconds": 2.4,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Shen",
+              "target": "Master_Lin",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Master_Shen curved dao blade",
+              "effect_region": "shoulder-height horizontal arc across Master_Lin upper torso",
+              "reaction_scope": "刀锋擦着Master_Lin肩侧掠过，削断几缕散发，Master_Lin侧头沉腰让过要害，衣摆被刀风带起。",
+              "unaffected_behavior": "rooftop tiles and Master_Lin lower legs",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "画面右侧屋脊",
+              "target_screen_position": "屋脊中线偏左",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 1.74,
+            "reaction_at_seconds": 2.07,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接落步未稳的低蹲姿态，顺势侧转"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "借侧身旋腰的力道，右手拔剑直刺，剑尖直奔Master_Shen握刀的右腕。",
+            "target": "Master_Shen",
+            "visible_result": "Master_Shen抬刀用刀背格住剑脊，金铁交击声中火星一闪，两人手臂同时被震得微沉。",
+            "start_seconds": 2.4,
+            "end_seconds": 3.6,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Master_Lin jian tip",
+              "effect_region": "Master_Shen right wrist and dao hilt area",
+              "reaction_scope": "Master_Shen抬刀用刀背格住剑脊，金铁交击声中火星一闪，两人手臂同时被震得微沉。",
+              "unaffected_behavior": "rest of rooftop and other limbs",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "屋脊中线偏左",
+              "target_screen_position": "画面右侧屋脊",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.88,
+            "reaction_at_seconds": 3.24,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接侧腰闪避的转势，拔剑与旋身合一"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "不收回剑，借刀剑相交的反弹力旋步进步，剑走下盘平扫向Master_Shen膝弯。",
+            "target": "Master_Shen",
+            "visible_result": "Master_Shen立刻提膝后跃，靴底擦过瓦面，剑尖贴着靴底划过，两人均未复位，仍保持相向的动势。",
+            "start_seconds": 3.6,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Master_Lin jian blade",
+              "effect_region": "knee-height horizontal arc across Master_Shen lower legs",
+              "reaction_scope": "Master_Shen立刻提膝后跃，靴底擦过瓦面，剑尖贴着靴底划过，两人均未复位，仍保持相向的动势。",
+              "unaffected_behavior": "Master_Shen upper body and rooftop tiles beyond arc",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "屋脊中线偏左",
+              "target_screen_position": "画面右侧屋脊",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 4.16,
+            "reaction_at_seconds": 4.58,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接格击反弹力，旋身进步不回中"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高琉璃瓦屋脊",
+          "subject": "Master_Shen已在屋脊右侧待命，Master_Lin由轻功掠空入场",
+          "action_phase": " setup阶段，落步即接交锋",
+          "camera": "宽幅crane down",
+          "screen_direction": "Master_Lin从左上向中央落步，Master_Shen在右侧相向",
+          "pose_and_gaze": "Master_Shen直立面向左，刀半出鞘；Master_Lin正俯冲下落，目光锁定对方",
+          "prop_state": "Master_Shen的刀半出鞘，Master_Lin右手按剑",
+          "open_motion": "Master_Lin轻功俯冲落步",
+          "lighting": "冷银色满月侧光，高对比明暗"
+        },
+        "end_state": {
+          "location": "紫禁城最高琉璃瓦屋脊",
+          "subject": "两名高手处于首轮连续交锋中",
+          "action_phase": " momentum驱动的早期交手，双方均未复位",
+          "camera": "宽幅落幅，稳定拍摄屋脊交锋",
+          "screen_direction": "Master_Lin在中央偏左低姿前压，Master_Shen在右侧提膝后避",
+          "pose_and_gaze": "Master_Lin倾身前刺、目光紧盯Master_Shen；Master_Shen提膝后跃、刀势预备格挡",
+          "prop_state": "双兵皆已出鞘，长剑低扫向Master_Shen膝弯，弯刀斜守其右路",
+          "open_motion": "Master_Lin低扫剑势继续前送，Master_Shen提膝后跃的动势未收",
+          "lighting": "冷银色满月侧光，高对比明暗"
+        },
+        "camera": {
+          "primary_movement": "crane down",
+          "composition": "16:9宽幅全景，斜向屋脊引导视线，满月置于上方留白",
+          "start_framing": "wide shot",
+          "end_framing": "落幅为屋脊全景，两人分别位于中央偏左与右侧三分线",
+          "speed": "smooth",
+          "screen_positions": {
+            "Master_Lin": "中央偏左",
+            "Master_Shen": "右侧三分线"
+          },
+          "axis_change": "establish"
+        },
+        "blocking": {
+          "Master_Lin": {
+            "frame_position": "中央偏左",
+            "body_orientation": "three-quarter toward Master_Shen",
+            "facing_target": "Master_Shen",
+            "eyeline_target": "Master_Shen",
+            "travel_direction": "从画面左上掠入至屋脊中央",
+            "action_target": "Master_Shen"
+          },
+          "Master_Shen": {
+            "frame_position": "右侧三分线",
+            "body_orientation": "three-quarter toward Master_Lin",
+            "facing_target": "Master_Lin",
+            "eyeline_target": "Master_Lin",
+            "travel_direction": "原地小步后跃",
+            "action_target": "Master_Lin"
+          }
+        },
+        "lighting": "冷银色满月侧光，高对比chiaroscuro，瓦面反射冷光，人物轮廓镶银边。",
+        "mood": "cinematic wuxia, crisp moonlit night, taut elegant tension",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Master_Lin",
+          "Master_Shen"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "Master_Lin's slender straight steel jian",
+          "Master_Shen's slightly curved single-edged dao",
+          "moonlit glazed tile rooftop ridge of the Forbidden City"
+        ],
+        "continuity_props": [
+          "冷银色满月",
+          "紫禁城琉璃瓦屋脊",
+          "Master_Lin黑色暗银纹长袍",
+          "Master_Shen靛蓝 crimson滚边长袍"
+        ]
+      },
+      {
+        "shot_id": 2,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_02",
+        "scene_description": "紫禁城中轴最高处的琉璃瓦屋脊，月夜开阔，瓦面覆薄霜，斜向延伸，可容两名高手借势辗转交锋。",
+        "prompt_en": "冷银色满月悬于深蓝天幕，金琉璃瓦覆着一层薄霜，反射出清冷的银白高光，远处宫殿重檐只剩黑色剪影；中景构图将两人的交锋范围框在画面中央，斜向屋脊从左下延伸至右侧，人物轮廓被月光镶上银边，刀剑交击的火星在暗背景下呈细碎暖白高光，衣摆与霜粒随动作扬起。 提膝落步时靴底蹭过瓦面薄霜，借滑势横移半步拉开距离，同时沉腕挥刀自上而下斜劈向Master_Lin持剑的右腕，刀风扫过瓦面带起细碎霜粒。. 刀锋直逼Lin右腕，未给对方回气空隙，刀身带出冷亮弧线。. 承接前压的低姿，不向后撤步，旋腕抬剑用剑脊向上硬架住Shen的斜劈刀，同时左脚蹬住瓦面薄霜向前滑进半步，剑脊顺着刀身向Shen的握刀指节滑削。. 刀剑交击的火星在月光下一闪，Lin的剑脊顺着刀身滑到Shen的指节旁，逼得Shen必须向后缩手。. 瞥见Shen缩手时左脚踩霜打滑、上半身稍向右歪露出胸口空门，立刻旋腰进步，剑走中门直刺向Shen的胸口，剑尖带着冷光直逼空门。. 剑尖距Shen胸口仅半尺，Shen仓促抬刀用刀身横挡，因重心不稳，格挡力道被Lin的前冲压得向后滑了半步。. 不收回直刺的剑势，顺着前冲的力道旋腕变招，剑由直刺转横劈，腰高扫向Shen的腰侧，同时再蹬瓦面进一步，把Shen的退路压向屋脊边缘。. 剑刃擦着Shen的靛蓝衣摆扫过，带起衣料边角，Shen被迫向后仰身避过，脚跟已经踩到了屋脊边缘的瓦当位置。.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Master_Shen",
+          "Master_Lin"
+        ],
+        "interaction_geometry": {
+          "actor": "Master_Lin",
+          "target": "Master_Shen",
+          "interaction_mode": "directed_path",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Master_Lin jian blade edge",
+          "effect_region": "waist-height horizontal arc across Master_Shen torso",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": false,
+          "line_of_action_visible": true,
+          "actor_screen_position": "从中央偏左持续向右侧推进",
+          "target_screen_position": "从右侧三分线持续向屋脊边缘后退",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "turn",
+          "state_before": "决斗已在屋脊上全面展开，双兵出鞘，Master_Lin借势前压，Master_Shen提膝闪避，为后续借瓦面移位与连续变招留出空间。",
+          "state_change": "承接前序低扫交锋，Master_Shen借瓦面薄霜滑步反击斜劈Lin持剑手腕；Lin不撤步旋腕架刀，顺刀身滑削逼Shen缩手；Shen因踩霜打滑露出胸口空门，Lin抓住破绽连续变招，直刺转横劈全程不回剑，将Shen逼至屋脊边缘，双方无中立复位。",
+          "state_after": "决斗进入决胜前的转折点，Master_Lin完全掌握主动，将重心不稳的Master_Shen逼至屋脊边缘，为最终干净击杀创造了明确空门条件，双方仍保持连续交锋的动势，无停顿复位。"
+        },
+        "production_slot": {
+          "shot_id": 2,
+          "duration": 5,
+          "narrative_function": "turn",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 3,
+          "result_hold_seconds": 0,
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "medium",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "提膝落步时靴底蹭过瓦面薄霜，借滑势横移半步拉开距离，同时沉腕挥刀自上而下斜劈向Master_Lin持剑的右腕，刀风扫过瓦面带起细碎霜粒。; 承接前压的低姿，不向后撤步，旋腕抬剑用剑脊向上硬架住Shen的斜劈刀，同时左脚蹬住瓦面薄霜向前滑进半步，剑脊顺着刀身向Shen的握刀指节滑削。; 瞥见Shen缩手时左脚踩霜打滑、上半身稍向右歪露出胸口空门，立刻旋腰进步，剑走中门直刺向Shen的胸口，剑尖带着冷光直逼空门。; 不收回直刺的剑势，顺着前冲的力道旋腕变招，剑由直刺转横劈，腰高扫向Shen的腰侧，同时再蹬瓦面进一步，把Shen的退路压向屋脊边缘。",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "Master_Shen",
+            "action": "提膝落步时靴底蹭过瓦面薄霜，借滑势横移半步拉开距离，同时沉腕挥刀自上而下斜劈向Master_Lin持剑的右腕，刀风扫过瓦面带起细碎霜粒。",
+            "target": "Master_Lin",
+            "visible_result": "刀锋直逼Lin右腕，未给对方回气空隙，刀身带出冷亮弧线。",
+            "start_seconds": 0,
+            "end_seconds": 1.154,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Shen",
+              "target": "Master_Lin",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Master_Shen curved dao blade",
+              "effect_region": "diagonal downward arc targeting Master_Lin right wrist",
+              "reaction_scope": "刀锋直逼Lin右腕，未给对方回气空隙，刀身带出冷亮弧线。",
+              "unaffected_behavior": "rooftop tiles beyond the blade path and Master_Lin lower legs",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从右侧三分线持续向屋脊边缘后退",
+              "target_screen_position": "从中央偏左持续向右侧推进",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.461,
+            "reaction_at_seconds": 0.807,
+            "response_kind": "deflection"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "承接前压的低姿，不向后撤步，旋腕抬剑用剑脊向上硬架住Shen的斜劈刀，同时左脚蹬住瓦面薄霜向前滑进半步，剑脊顺着刀身向Shen的握刀指节滑削。",
+            "target": "Master_Shen",
+            "visible_result": "刀剑交击的火星在月光下一闪，Lin的剑脊顺着刀身滑到Shen的指节旁，逼得Shen必须向后缩手。",
+            "start_seconds": 1.154,
+            "end_seconds": 2.404,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Master_Lin jian blade spine",
+              "effect_region": "along Master_Shen dao blade toward his right hand knuckles",
+              "reaction_scope": "刀剑交击的火星在月光下一闪，Lin的剑脊顺着刀身滑到Shen的指节旁，逼得Shen必须向后缩手。",
+              "unaffected_behavior": "rest of rooftop and Master_Shen left side",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "从中央偏左持续向右侧推进",
+              "target_screen_position": "从右侧三分线持续向屋脊边缘后退",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 1.654,
+            "reaction_at_seconds": 2.029,
+            "response_kind": "impact",
+            "flow_from_previous": "承接低扫前送的余劲，架刀与滑步合一，不回中"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "瞥见Shen缩手时左脚踩霜打滑、上半身稍向右歪露出胸口空门，立刻旋腰进步，剑走中门直刺向Shen的胸口，剑尖带着冷光直逼空门。",
+            "target": "Master_Shen",
+            "visible_result": "剑尖距Shen胸口仅半尺，Shen仓促抬刀用刀身横挡，因重心不稳，格挡力道被Lin的前冲压得向后滑了半步。",
+            "start_seconds": 2.404,
+            "end_seconds": 3.75,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Master_Lin jian tip",
+              "effect_region": "straight forward path toward Master_Shen chest center",
+              "reaction_scope": "剑尖距Shen胸口仅半尺，Shen仓促抬刀用刀身横挡，因重心不稳，格挡力道被Lin的前冲压得向后滑了半步。",
+              "unaffected_behavior": "rooftop tiles beyond the path and Master_Shen limbs outside the chest line",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从中央偏左持续向右侧推进",
+              "target_screen_position": "从右侧三分线持续向屋脊边缘后退",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.942,
+            "reaction_at_seconds": 3.346,
+            "response_kind": "deflection",
+            "flow_from_previous": "承接滑步削指节的动势，旋身直刺不回中"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "不收回直刺的剑势，顺着前冲的力道旋腕变招，剑由直刺转横劈，腰高扫向Shen的腰侧，同时再蹬瓦面进一步，把Shen的退路压向屋脊边缘。",
+            "target": "Master_Shen",
+            "visible_result": "剑刃擦着Shen的靛蓝衣摆扫过，带起衣料边角，Shen被迫向后仰身避过，脚跟已经踩到了屋脊边缘的瓦当位置。",
+            "start_seconds": 3.75,
+            "end_seconds": 5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "sweep",
+              "source": "Master_Lin jian blade edge",
+              "effect_region": "waist-height horizontal arc across Master_Shen torso",
+              "reaction_scope": "剑刃擦着Shen的靛蓝衣摆扫过，带起衣料边角，Shen被迫向后仰身避过，脚跟已经踩到了屋脊边缘的瓦当位置。",
+              "unaffected_behavior": "rooftop tiles beyond the arc and Master_Shen head",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从中央偏左持续向右侧推进",
+              "target_screen_position": "从右侧三分线持续向屋脊边缘后退",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 4.25,
+            "reaction_at_seconds": 4.625,
+            "response_kind": "evasion",
+            "flow_from_previous": "承接直刺的前冲力，变招横劈不回剑"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高琉璃瓦屋脊",
+          "subject": "Master_Lin低扫剑势前送，Master_Shen提膝后跃避过下盘剑扫",
+          "action_phase": "momentum驱动的连续交锋，进入破绽捕捉的转折点阶段",
+          "camera": "中景truck right跟随，保持两人相向轴线",
+          "screen_direction": "Master_Lin从中央偏左向右推进，Master_Shen从右侧三分线向后移位",
+          "pose_and_gaze": "Master_Lin低姿前压，目光紧盯Master_Shen的重心；Master_Shen提膝后落，重心稍晃，目光紧盯Master_Lin的剑路",
+          "prop_state": "双兵出鞘，Master_Lin的直剑刚擦过Master_Shen的靴底，Master_Shen的弯刀斜守右路",
+          "open_motion": "承接前一单元提膝后跃的动势，落步与挥刀合一，不回中",
+          "lighting": "冷银色满月侧光，高对比chiaroscuro"
+        },
+        "end_state": {
+          "location": "紫禁城最高琉璃瓦屋脊",
+          "subject": "Master_Lin抓住Master_Shen踩霜打滑的破绽，连续变招进攻，将其逼至屋脊右侧边缘",
+          "action_phase": "转折点完成，Master_Lin转为主动连续进攻，Master_Shen重心不稳",
+          "camera": "中景truck right落幅，两人保持相向",
+          "screen_direction": "Master_Lin在画面中央持续前压，Master_Shen在画面右侧边缘脚跟踩瓦当，重心后倾",
+          "pose_and_gaze": "Master_Lin身形前倾，剑势连贯，目光锁定Master_Shen的胸口空门；Master_Shen连连后退，刀势散乱，重心后倾",
+          "prop_state": "Master_Lin的直剑刚完成横劈，剑刃停在Master_Shen腰侧前方；Master_Shen的弯刀被压得下沉，横挡在身前",
+          "open_motion": "Master_Lin横劈剑势的余劲未消，Master_Shen向后仰身避剑的动势未收",
+          "lighting": "冷银色满月侧光，高对比chiaroscuro"
+        },
+        "camera": {
+          "primary_movement": "truck right",
+          "composition": "16:9宽幅中景，纳入两人腰至脚的交锋范围，斜向屋脊作为视线引导",
+          "start_framing": "medium shot",
+          "end_framing": "中景，Master_Lin位于画面中央，Master_Shen位于右侧屋脊边缘",
+          "speed": "smooth",
+          "screen_positions": {
+            "Master_Lin": "start:中央偏左，end:画面中央",
+            "Master_Shen": "start:右侧三分线，end:右侧屋脊边缘"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Master_Lin": {
+            "frame_position": "start:中央偏左，end:画面中央",
+            "body_orientation": "three-quarter toward Master_Shen",
+            "facing_target": "Master_Shen",
+            "eyeline_target": "Master_Shen",
+            "travel_direction": "从屋脊中线偏左向右侧持续滑进",
+            "action_target": "Master_Shen"
+          },
+          "Master_Shen": {
+            "frame_position": "start:右侧三分线，end:右侧屋脊边缘",
+            "body_orientation": "three-quarter toward Master_Lin",
+            "facing_target": "Master_Lin",
+            "eyeline_target": "Master_Lin",
+            "travel_direction": "从右侧三分线向屋脊右侧边缘移位",
+            "action_target": "Master_Lin"
+          }
+        },
+        "lighting": "冷银色满月侧光，高对比chiaroscuro，瓦面薄霜反射冷光，人物轮廓镶银边，刀剑交击火星呈细碎暖白高光。",
+        "mood": "cinematic wuxia, crisp moonlit night, taut elegant rising tension",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Master_Shen",
+          "Master_Lin"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "Master_Lin's slender straight steel jian",
+          "Master_Shen's slightly curved single-edged dao",
+          "glazed tile rooftop ridge with thin frost"
+        ],
+        "continuity_props": [
+          "冷银色满月",
+          "紫禁城琉璃瓦屋脊",
+          "Master_Lin黑色暗银云纹长袍",
+          "Master_Shen靛蓝 crimson滚边长袍"
+        ]
+      },
+      {
+        "shot_id": 3,
+        "duration": 5,
+        "scene_id": "zijin_roof_duel_03",
+        "scene_description": "紫禁城中轴最高处的琉璃瓦屋脊，月夜开阔，瓦面覆薄霜，斜向延伸，Master_Shen已被逼至屋脊右侧边缘，空间可容纳两人完成最终交锋、倒地与收剑的完整动作。",
+        "prompt_en": "冷银色满月悬于深蓝天幕，金琉璃瓦覆着薄霜反射清冷银白高光，远处宫殿重檐只剩黑色剪影；宽幅构图将斜向屋脊从左下到右侧完整纳入，人物轮廓被月光镶上银边，剑击的冷光、衣摆扬起的霜粒在暗背景下清晰可见，无多余杂物干扰最终结局的呈现。 承接前序横劈剑势的旋腕余劲，不撤步、不回剑、不复位，顺着横劈的离心力旋腰转腕，将腰高横劈的剑直接转为中门直刺，左脚蹬住覆霜瓦面向前滑进半寸，将全身前冲的力道凝在剑尖，直取Shen因后仰完全暴露的胸口空门。. 剑尖带着冷亮的银辉直逼Shen胸口，距离从半尺快速缩到一寸，Shen仓促抬刀斜挡却因重心后倾力道不足，刀身偏在腰侧，根本未碰到剑刃。. 剑势顺着前冲的力道直进，剑尖精准点在Shen胸口正中，没有额外的劈砍动作，力道干净收在剑尖，不造成血腥创口。. Shen的靛蓝长袍胸口位置被剑尖轻触，没有血迹渗出，Shen的身体瞬间僵住，抬到一半的弯刀脱手下坠。. 受击后重心完全失控，顺着瓦面薄霜向后仰倒，双臂自然张开，弯刀脱手坠落在身侧瓦面，带起细碎霜粒。. Shen仰面平躺在琉璃瓦面上，身体不再动弹，没有起身的迹象，胜负状态完全建立。. 收住前冲的脚步，旋腕将直剑从Shen身前平稳收回，手腕轻转将剑刃送入腰间的深色剑鞘，站直身形，目光平静看向倒地的Shen。. 直剑完全入鞘，Lin站在月光下，衣摆被夜风微动，整个决斗的最终结局完整可见。.",
+        "continuity_from_previous": "intentional_cut",
+        "composition_change": "medium",
+        "coverage_role": "interaction",
+        "required_visible_entities": [
+          "Master_Lin",
+          "Master_Shen"
+        ],
+        "interaction_geometry": {
+          "actor": "Master_Lin",
+          "target": "Master_Shen",
+          "interaction_mode": "direct_contact",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "static",
+          "source": "Master_Lin jian tip",
+          "effect_region": "Master_Shen chest center point",
+          "reaction_scope": "one clearly isolated intended target within the visible effect region",
+          "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+          "must_share_frame": true,
+          "line_of_action_visible": false,
+          "actor_screen_position": "从画面中央偏左沿屋脊小幅向右推进，决胜后停在画面中央",
+          "target_screen_position": "从右侧屋脊边缘向后仰倒，最终落在右侧瓦面",
+          "occlusion_policy": "none"
+        },
+        "narrative_beat": {
+          "function": "payoff",
+          "state_before": "决斗进入决胜前的转折点，Master_Lin完全掌握主动，将重心不稳的Master_Shen逼至屋脊边缘，为最终干净击杀创造了明确空门条件，双方仍保持连续交锋的动势，无停顿复位。",
+          "state_change": "承接前序横劈的连续动势，Master_Lin不撤步、不回剑、不复位，顺着旋腕力道将横劈剑势直接转为中门直刺；Master_Shen因重心后倾、刀势下沉，仓促抬刀格挡却失了准头，剑路直进；Master_Lin的剑尖精准点在Master_Shen胸口正中，力道干净收在剑尖，无血腥创口；Master_Shen受击后重心失控，仰面倒在覆霜瓦面，弯刀脱手，不再起身；Master_Lin收住脚步，从容将直剑收回剑鞘，整个过程动作连贯帅气，无停顿复位。",
+          "state_after": "紫禁之巅的终极决斗正式落幕，Master_Lin成为无可争议的胜者，Master_Shen倒地不再起身，胜负结果在冷银色月光下清晰可见，全片结局完整呈现。"
+        },
+        "production_slot": {
+          "shot_id": 3,
+          "duration": 5,
+          "narrative_function": "payoff",
+          "allowed_effect_phases": [
+            "active"
+          ],
+          "outcome_scope": "single",
+          "requires_visible_result": true,
+          "min_interaction_seconds": 3.5,
+          "min_interaction_events": 1,
+          "result_hold_seconds": 0.5,
+          "required_outcome": "一方被另一方干净利落、帅气明确的一剑击杀，非血腥呈现，败者倒下不再起身，胜者收剑，结局可见。",
+          "coverage_roles": [
+            "interaction"
+          ],
+          "framing_family": "wide",
+          "reference_policy": "state_and_identity"
+        },
+        "primary_action": "承接前序横劈剑势的旋腕余劲，不撤步、不回剑、不复位，顺着横劈的离心力旋腰转腕，将腰高横劈的剑直接转为中门直刺，左脚蹬住覆霜瓦面向前滑进半寸，将全身前冲的力道凝在剑尖，直取Shen因后仰完全暴露的胸口空门。; 剑势顺着前冲的力道直进，剑尖精准点在Shen胸口正中，没有额外的劈砍动作，力道干净收在剑尖，不造成血腥创口。; 受击后重心完全失控，顺着瓦面薄霜向后仰倒，双臂自然张开，弯刀脱手坠落在身侧瓦面，带起细碎霜粒。; 收住前冲的脚步，旋腕将直剑从Shen身前平稳收回，手腕轻转将剑刃送入腰间的深色剑鞘，站直身形，目光平静看向倒地的Shen。",
+        "action_beats": [
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "承接前序横劈剑势的旋腕余劲，不撤步、不回剑、不复位，顺着横劈的离心力旋腰转腕，将腰高横劈的剑直接转为中门直刺，左脚蹬住覆霜瓦面向前滑进半寸，将全身前冲的力道凝在剑尖，直取Shen因后仰完全暴露的胸口空门。",
+            "target": "Master_Shen",
+            "visible_result": "剑尖带着冷亮的银辉直逼Shen胸口，距离从半尺快速缩到一寸，Shen仓促抬刀斜挡却因重心后倾力道不足，刀身偏在腰侧，根本未碰到剑刃。",
+            "start_seconds": 0,
+            "end_seconds": 2,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "directed_path",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Master_Lin jian tip",
+              "effect_region": "straight forward path toward Master_Shen chest center",
+              "reaction_scope": "剑尖带着冷亮的银辉直逼Shen胸口，距离从半尺快速缩到一寸，Shen仓促抬刀斜挡却因重心后倾力道不足，刀身偏在腰侧，根本未碰到剑刃。",
+              "unaffected_behavior": "rooftop tiles beyond the path and Master_Shen limbs outside the chest line",
+              "must_share_frame": false,
+              "line_of_action_visible": true,
+              "actor_screen_position": "从画面中央偏左沿屋脊小幅向右推进，决胜后停在画面中央",
+              "target_screen_position": "从右侧屋脊边缘向后仰倒，最终落在右侧瓦面",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 0.8,
+            "reaction_at_seconds": 1.4,
+            "response_kind": "deflection"
+          },
+          {
+            "phase": "peak",
+            "actor": "Master_Lin",
+            "action": "剑势顺着前冲的力道直进，剑尖精准点在Shen胸口正中，没有额外的劈砍动作，力道干净收在剑尖，不造成血腥创口。",
+            "target": "Master_Shen",
+            "visible_result": "Shen的靛蓝长袍胸口位置被剑尖轻触，没有血迹渗出，Shen的身体瞬间僵住，抬到一半的弯刀脱手下坠。",
+            "start_seconds": 2,
+            "end_seconds": 3.5,
+            "activity": "interaction",
+            "interaction_geometry": {
+              "actor": "Master_Lin",
+              "target": "Master_Shen",
+              "interaction_mode": "direct_contact",
+              "effect_phase": "active",
+              "outcome_scope": "single",
+              "effect_motion": "static",
+              "source": "Master_Lin jian tip",
+              "effect_region": "Master_Shen chest center point",
+              "reaction_scope": "Shen的靛蓝长袍胸口位置被剑尖轻触，没有血迹渗出，Shen的身体瞬间僵住，抬到一半的弯刀脱手下坠。",
+              "unaffected_behavior": "rest of Master_Shen body and all rooftop tiles",
+              "must_share_frame": true,
+              "line_of_action_visible": false,
+              "actor_screen_position": "从画面中央偏左沿屋脊小幅向右推进，决胜后停在画面中央",
+              "target_screen_position": "从右侧屋脊边缘向后仰倒，最终落在右侧瓦面",
+              "occlusion_policy": "none"
+            },
+            "effect_at_seconds": 2.6,
+            "reaction_at_seconds": 3.05,
+            "response_kind": "impact",
+            "flow_from_previous": "承接直刺的前冲力道，剑尖点中后立刻收力，不深入造成额外创口"
+          },
+          {
+            "phase": "aftermath",
+            "actor": "Master_Shen",
+            "action": "受击后重心完全失控，顺着瓦面薄霜向后仰倒，双臂自然张开，弯刀脱手坠落在身侧瓦面，带起细碎霜粒。",
+            "target": "Master_Lin",
+            "visible_result": "Shen仰面平躺在琉璃瓦面上，身体不再动弹，没有起身的迹象，胜负状态完全建立。",
+            "start_seconds": 3.5,
+            "end_seconds": 4,
+            "activity": "hold"
+          },
+          {
+            "phase": "aftermath",
+            "actor": "Master_Lin",
+            "action": "收住前冲的脚步，旋腕将直剑从Shen身前平稳收回，手腕轻转将剑刃送入腰间的深色剑鞘，站直身形，目光平静看向倒地的Shen。",
+            "target": "Master_Shen",
+            "visible_result": "直剑完全入鞘，Lin站在月光下，衣摆被夜风微动，整个决斗的最终结局完整可见。",
+            "start_seconds": 4,
+            "end_seconds": 5,
+            "activity": "hold"
+          }
+        ],
+        "start_state": {
+          "location": "紫禁城最高处覆薄霜的琉璃瓦屋脊",
+          "subject": "Master_Lin横劈剑势余劲未消，剑刃停在Master_Shen腰侧前方；Master_Shen脚跟踩在屋脊边缘瓦当，重心后倾，弯刀被压得下沉横挡在身前",
+          "action_phase": "决胜阶段，Master_Lin完全掌握主动，抓住Master_Shen重心不稳的破绽发动最终一击",
+          "camera": "宽幅全景，承接前序truck right的跟随动势，保持两人相向的交锋轴线",
+          "screen_direction": "Master_Lin从中央偏左向右小幅推进，Master_Shen在右侧边缘向后仰避",
+          "pose_and_gaze": "Master_Lin身形前倾，目光紧盯Master_Shen的胸口空门，剑势连贯不回中；Master_Shen连连后退，重心后倾，目光紧盯Master_Lin的剑路，刀势散乱",
+          "prop_state": "双兵出鞘，Master_Lin的直剑刚完成横劈动作，Master_Shen的弯刀被压得下沉横挡在腰前",
+          "open_motion": "承接前序横劈的旋腕余劲，转招直刺不回中、不撤步",
+          "lighting": "冷银色满月侧光，高对比chiaroscuro，瓦面薄霜反射冷光"
+        },
+        "end_state": {
+          "location": "紫禁城最高处覆薄霜的琉璃瓦屋脊",
+          "subject": "Master_Lin干净一剑击中Master_Shen胸口（非血腥），Master_Shen仰面倒在瓦面不再起身，Master_Lin收剑入鞘站定",
+          "action_phase": "决斗完全结束，胜负已分",
+          "camera": "宽幅全景固定，完整呈现两人最终状态",
+          "screen_direction": "Master_Lin站在画面中央面向右侧，Master_Shen倒在右侧瓦面",
+          "pose_and_gaze": "Master_Lin站直身形，目光平静看向倒地的Master_Shen，神色无波；Master_Shen仰面躺倒在瓦面，弯刀脱手落在身侧，不再动弹",
+          "prop_state": "Master_Lin的直剑已完全收入腰间剑鞘，Master_Shen的弯刀落在身侧瓦面上",
+          "open_motion": "所有交锋动作停止，只有两人的衣摆被夜风轻轻吹动",
+          "lighting": "冷银色满月侧光，高对比chiaroscuro，瓦面薄霜反射冷光"
+        },
+        "camera": {
+          "primary_movement": "truck right",
+          "composition": "16:9宽幅全景，纳入两人从最终交锋到倒地、收剑的完整动作范围，斜向屋脊作为视线引导",
+          "start_framing": "wide shot",
+          "end_framing": "宽幅全景，Master_Lin站在画面中央，Master_Shen仰面倒在右侧瓦面，满月悬于天幕上方",
+          "speed": "smooth",
+          "screen_positions": {
+            "Master_Lin": "start:中央偏左，end:画面中央",
+            "Master_Shen": "start:右侧屋脊边缘，end:右侧瓦面倒地位置"
+          },
+          "axis_change": "hold"
+        },
+        "blocking": {
+          "Master_Lin": {
+            "frame_position": "start:中央偏左，end:画面中央",
+            "body_orientation": "three-quarter toward Master_Shen",
+            "facing_target": "Master_Shen",
+            "eyeline_target": "Master_Shen",
+            "travel_direction": "沿屋脊中线向右小幅滑进半尺，决胜后停步",
+            "action_target": "Master_Shen"
+          },
+          "Master_Shen": {
+            "frame_position": "start:右侧屋脊边缘，end:右侧瓦面倒地位置",
+            "body_orientation": "three-quarter toward Master_Lin",
+            "facing_target": "Master_Lin",
+            "eyeline_target": "Master_Lin",
+            "travel_direction": "向后仰倒，沿瓦面滑下半尺",
+            "action_target": "Master_Lin"
+          }
+        },
+        "lighting": "冷银色满月侧光，高对比chiaroscuro，瓦面薄霜反射冷光，人物轮廓镶银边，无额外暖光干扰",
+        "mood": "cinematic wuxia, crisp moonlit night, taut tension resolving into quiet dignified finality",
+        "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+        "subtitle_text": "",
+        "transition_to_next": "cut",
+        "generate_audio": true,
+        "characters": [
+          "Master_Lin",
+          "Master_Shen"
+        ],
+        "extract_character_ref": false,
+        "key_props": [
+          "Master_Lin's slender straight steel jian",
+          "Master_Shen's slightly curved single-edged dao",
+          "glazed tile rooftop ridge with thin frost"
+        ],
+        "continuity_props": [
+          "冷银色满月",
+          "紫禁城琉璃瓦屋脊",
+          "Master_Lin黑色暗银云纹长袍",
+          "Master_Shen靛蓝 crimson滚边长袍"
+        ]
+      }
+    ]
+  },
+  "reports": [
+    {
+      "source": "7f77491e7750e2eb49c7280017d5cf9da24edb5629fdb206b3b9f935c20515f5.json",
+      "sha256": "2f13af9ec9cb8fc2d0c28af7e7cb784cd17eade006048409acded758691698aa",
+      "video_hash": "7f77491e7750e2eb49c7280017d5cf9da24edb5629fdb206b3b9f935c20515f5",
+      "evidence": [
+        {
+          "event_id": 2,
+          "effect_visible": false,
+          "target_reaction_visible": false,
+          "causal_order_valid": false,
+          "scope_valid": false,
+          "result_visible": false,
+          "time_window_valid": true,
+          "flow_continuity_valid": true
+        },
+        {
+          "event_id": 3,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true
+        },
+        {
+          "event_id": 4,
+          "effect_visible": true,
+          "target_reaction_visible": false,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": false,
+          "time_window_valid": true,
+          "flow_continuity_valid": true
+        }
+      ],
+      "accepted": false
+    },
+    {
+      "source": "a2fdeec07dbe9e71458776168190df53a000abbd6dfc0c8a29555fc1c3bd8ce0.json",
+      "sha256": "dcd68ca2a12c52ffa3e6e3f33148d290884c3a3ad8cad0499d51ce6e19acc946",
+      "video_hash": "a2fdeec07dbe9e71458776168190df53a000abbd6dfc0c8a29555fc1c3bd8ce0",
+      "evidence": [
+        {
+          "event_id": 2,
+          "effect_visible": false,
+          "target_reaction_visible": false,
+          "causal_order_valid": false,
+          "scope_valid": false,
+          "result_visible": false,
+          "time_window_valid": false,
+          "flow_continuity_valid": true
+        },
+        {
+          "event_id": 3,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true
+        },
+        {
+          "event_id": 4,
+          "effect_visible": true,
+          "target_reaction_visible": true,
+          "causal_order_valid": true,
+          "scope_valid": true,
+          "result_visible": true,
+          "time_window_valid": true,
+          "flow_continuity_valid": true
+        }
+      ],
+      "accepted": false
+    }
+  ]
+}

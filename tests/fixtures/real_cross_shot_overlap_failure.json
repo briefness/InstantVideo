@@ -1,0 +1,185 @@
+{
+  "source": "output/20261029_150922_844598/planning_shot_002.json",
+  "sha256": "88dcb8fa7e27031f69c490db1ec9c5c19310ccd32d0b5fcefecaadd5bab262e9",
+  "shot": {
+    "shot_id": 2,
+    "scene_id": "zijin_roof_deep_night_01",
+    "scene_description": "深夜紫禁城连通的青灰琉璃瓦高屋脊，两侧衔接相邻殿宇的檐角，瓦面覆着薄霜，远处是暗蓝色的重檐宫阙剪影，无多余杂物遮挡，是两位剑客赴约决战的开阔屋脊平台",
+    "visual_description": "16:9宽幅720p电影质感画面，冷调月光下青灰琉璃瓦泛着淡冷银光泽，中景构图聚焦两人膝部以上的交锋范围，剑刃运动轨迹清晰入镜，无多余遮挡，写实武侠影调",
+    "camera": {
+      "primary_movement": "fixed",
+      "composition": "中景构图，框住两位剑客从膝部以上的交锋范围",
+      "start_framing": "两人分别在画面左右半区，相距一臂半，剑的运动轨迹完整入镜",
+      "end_framing": "两人随交锋小幅移动到画面中心区域，玄衣剑客指向白衣剑客肋下空当的剑刃完整入镜",
+      "speed": "fixed",
+      "screen_positions": {
+        "Sword_Xuan": "画面左半区向中心移动",
+        "Sword_Bai": "画面右半区向中心移动"
+      },
+      "axis_change": "hold"
+    },
+    "blocking": {
+      "Sword_Xuan": {
+        "frame_position": "起始在画面左半区，随交锋小步移动到画面中心偏左位置",
+        "body_orientation": "全程面向画面右侧",
+        "facing_target": "Sword_Bai",
+        "eyeline_target": "Sword_Bai的剑路与防御空当",
+        "travel_direction": "小步向画面中心右方移动，步法连贯不复位",
+        "action_target": "Sword_Bai的上盘、下盘与肋下空当"
+      },
+      "Sword_Bai": {
+        "frame_position": "起始在画面右半区，随交锋小步移动到画面中心偏右位置",
+        "body_orientation": "全程面向画面左侧",
+        "facing_target": "Sword_Xuan",
+        "eyeline_target": "Sword_Xuan的剑刃与重心变化",
+        "travel_direction": "小步向画面中心左方移动，步法连贯不复位",
+        "action_target": "Sword_Xuan的右肋与腰侧空当"
+      }
+    },
+    "start_state": {
+      "location": "深夜紫禁城连通青灰琉璃瓦高屋脊中心区域",
+      "subject": "Sword_Xuan与Sword_Bai两位顶尖剑客",
+      "action_phase": "开场连续交锋第一回合中段，Sword_Bai刺向Sword_Xuan右肋的动势正向前推进",
+      "camera": "固定中景机位",
+      "screen_direction": "Sword_Xuan在左半区，Sword_Bai在右半区，两人相距一臂半距离",
+      "pose_and_gaze": "Sword_Xuan重心压在前脚，剑斜指向前，目光紧盯Sword_Bai刺来的剑；Sword_Bai重心前移，剑直抵Sword_Xuan右肋前方，目光紧盯Sword_Xuan的闪避动作",
+      "prop_state": "两剑均保持出鞘状态，剑穗随之前的动作轻晃",
+      "open_motion": "Sword_Bai的刺剑动势正向前推进，Sword_Xuan正准备侧身闪避来剑",
+      "lighting": "冷调满月柔光均匀洒落"
+    },
+    "end_state": {
+      "location": "深夜紫禁城连通青灰琉璃瓦高屋脊中心区域",
+      "subject": "Sword_Xuan与Sword_Bai两位顶尖剑客",
+      "action_phase": "连续密集交锋后，Sword_Xuan以虚招晃开Sword_Bai的防御，抓住其肋下空当的决胜前瞬间",
+      "camera": "固定中景机位",
+      "screen_direction": "Sword_Xuan在画面中心偏左，Sword_Bai在画面中心偏右，两人距离缩到半臂",
+      "pose_and_gaze": "Sword_Xuan重心压在前脚，剑从刺面的虚招位置转成指向Bai肋下空当，目光锁定空当位置；Sword_Bai的剑被虚招带偏到身体左侧，重心前倾失衡，目光错愕看向自己肋下的空当位置",
+      "prop_state": "两剑均保持出鞘状态，剑穗随快速变招的动作扬起",
+      "open_motion": "Sword_Xuan的剑势正向前指向Bai的肋下空当，Sword_Bai来不及回防的失衡状态",
+      "lighting": "冷调满月柔光均匀洒落"
+    },
+    "story_change": "承接上一镜Sword_Bai刺向Xuan右肋的动势，Xuan侧身闪避同时以剑脊磕开刺来的剑，顺着反弹力连续变招：先斜劈Bai肩颈做出实劈架势，Bai抬剑格挡时立刻翻腕横削Xuan腰侧，Xuan垫步收腰闪避同时沉剑下扫Bai膝弯，Bai撤步抬膝闪避时Xuan垫步向前抖出刺面虚招，Bai本能抬剑挡面门的瞬间，Xuan的剑势顺着力道下沉指向Bai肋下空当；全程无停顿复位、无架剑僵持，步法、重心、剑势连贯延续，Xuan凭借连续变招抢得重心优势，晃开Bai的防御，完全暴露决胜空当",
+    "story_state_after": "两位剑客经过连续四回合的密集无停顿交锋，玄衣剑客以虚实结合的连续变招打乱白衣剑客的防御节奏，让白衣剑客重心前倾失衡、剑路偏离防御位置，肋下的决胜空当完全暴露，双方的交锋动势没有中断，为下一镜的最终击杀做好完整的动作衔接",
+    "action_plan": [
+      {
+        "id": "act_xuan_evade_parry",
+        "actor": "Sword_Xuan",
+        "action": "承接Bai刺向右肋的前冲动势，上半身向左侧拧腰半尺，让过刺来的剑刃，同时右手持剑向下压格，用剑脊精准磕开Bai刺来的剑路，动作连贯无停顿",
+        "result": "两剑在Xuan右肋前方清脆磕开，Xuan重心随侧身动作落到左脚，剑势顺着磕开的力道自然向上扬起，没有收招停顿",
+        "kind": "interaction",
+        "target": "Sword_Bai",
+        "effect": {
+          "mode": "direct_contact",
+          "motion": "static",
+          "source": "两剑剑脊的接触位置",
+          "region": "两剑相交的短段剑刃",
+          "unaffected": "两人的躯干、下肢与持剑手臂",
+          "scope": "single"
+        },
+        "response": "deflection",
+        "carry": "承接上一镜Bai刺剑的前冲动势，侧身闪避与下压力格同步完成，无停顿复位",
+        "overlap": true,
+        "weight": 1
+      },
+      {
+        "id": "act_xuan_fake_slash",
+        "actor": "Sword_Xuan",
+        "action": "顺着剑刃扬起的动势，拧腰抬臂，长剑带着冷光斜劈向Bai的肩颈位置，做出实劈的架势，剑势扫动Bai额前的碎发",
+        "result": "剑刃劈到Bai上盘前方，Bai本能抬素银格长剑向上架住劈来的剑刃，Xuan重心随劈砍动作压向前脚，没有收招停顿",
+        "kind": "interaction",
+        "target": "Sword_Bai",
+        "effect": {
+          "mode": "directed_path",
+          "motion": "sweep",
+          "source": "Xuan手中的黑檀剑格精钢长剑",
+          "region": "Bai肩颈前方半尺范围",
+          "unaffected": "Bai的下半身与持剑右臂",
+          "scope": "single"
+        },
+        "response": "deflection",
+        "carry": "承接上一镜压格磕开剑刃的上扬剑势，直接转腰出劈，无停顿复位",
+        "overlap": false,
+        "weight": 1
+      },
+      {
+        "id": "act_bai_counter_sweep",
+        "actor": "Sword_Bai",
+        "action": "顺着架住劈剑的反弹力，手腕翻转，剑路变向横削向Xuan的腰侧，动作连贯无停顿",
+        "result": "两剑在Bai肩前位置交击后立刻分开，Bai的剑顺着反弹动势横削到Xuan腰侧前方，没有架剑僵持，重心随削剑动作前移",
+        "kind": "interaction",
+        "target": "Sword_Xuan",
+        "effect": {
+          "mode": "directed_path",
+          "motion": "sweep",
+          "source": "Bai手中的素银剑格精钢长剑",
+          "region": "Xuan腰侧前方半尺范围",
+          "unaffected": "Xuan的上半身核心与持剑右臂",
+          "scope": "single"
+        },
+        "response": "evasion",
+        "carry": "承接上一镜抬架劈剑的反弹动势，翻腕削剑的动作连贯衔接，无停顿复位",
+        "overlap": true,
+        "weight": 1
+      },
+      {
+        "id": "act_xuan_low_sweep",
+        "actor": "Sword_Xuan",
+        "action": "看到横削来的剑，立刻垫步向后收腰半尺，让过削向腰侧的剑刃，同时沉腰坠腕，手中长剑顺着收腰的动势向下斜扫向Bai的膝弯位置，动作同步无停顿",
+        "result": "剑刃扫到Bai膝弯前方，Bai本能向后撤步抬膝闪避，Xuan的重心随下扫动作沉到后腿，剑势顺着扫动的力道自然扬起",
+        "kind": "interaction",
+        "target": "Sword_Bai",
+        "effect": {
+          "mode": "directed_path",
+          "motion": "sweep",
+          "source": "Xuan手中的黑檀剑格精钢长剑",
+          "region": "Bai膝弯前方半尺范围",
+          "unaffected": "Bai的上半身与持剑右臂",
+          "scope": "single"
+        },
+        "response": "evasion",
+        "carry": "承接上一镜斜劈被架住的反弹动势，收腰闪避、下扫剑的动作同步完成，无停顿复位",
+        "overlap": false,
+        "weight": 1
+      },
+      {
+        "id": "act_xuan_fake_thrust_open",
+        "actor": "Sword_Xuan",
+        "action": "顺着剑刃扬起的动势，垫步向前，手腕抖出一记直刺，剑刃直指Bai的面门位置，做出全力刺面的架势，动作连贯无停顿",
+        "result": "剑刃刺到Bai面门前方，Bai本能抬剑向上挡面门的来剑，重心随抬剑动作前倾失衡，肋下的防御空当完全暴露，Xuan的剑势顺着刺面的力道自然下沉，直指向Bai的肋下空当，为下一镜的决胜剑招做好衔接",
+        "kind": "interaction",
+        "target": "Sword_Bai",
+        "effect": {
+          "mode": "directed_path",
+          "motion": "static",
+          "source": "Xuan手中的黑檀剑格精钢长剑",
+          "region": "Bai面门前方半尺范围",
+          "unaffected": "Bai的下半身与持剑右臂",
+          "scope": "single"
+        },
+        "response": "evasion",
+        "carry": "承接上一镜下扫膝弯的上扬剑势，垫步出刺，无停顿复位",
+        "overlap": false,
+        "weight": 1
+      }
+    ],
+    "key_props": [
+      "黑檀剑格精钢长剑",
+      "素银剑格精钢长剑",
+      "青灰琉璃瓦屋脊",
+      "墨色丝绦剑穗",
+      "素白丝绦剑穗"
+    ],
+    "continuity_props": [
+      "玄色绣暗竹纹交领劲装",
+      "月白暗纹交领长袍",
+      "墨色发带",
+      "银质发冠",
+      "藏牛皮宽腰带",
+      "玄色织锦腰带",
+      "黑皮快靴",
+      "黑布快靴"
+    ],
+    "lighting": "冷调满月柔光从斜上方45度均匀洒落，在青灰琉璃瓦表面形成淡冷银反光，人物衣料与面部明暗过渡自然，无生硬阴影，整体光线连贯统一，符合深夜紫禁之巅的环境氛围",
+    "mood": "冷峻肃杀，写实武侠电影质感"
+  }
+}
