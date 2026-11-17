@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+from pipeline.intent_evidence import EvidenceSelection, evidence_grounded
 
 
 VERSION = 'requested-outcome-v1'
@@ -15,15 +16,15 @@ reason解释证据与完整要求的关系，以及缺失或相矛盾之处。�
 '''
 
 
-def requested_ending(plan: dict) -> str:
+def requested_ending(plan: dict) -> str | dict:
     intent = plan.get('director_intent') or {}
     if not intent.get('ending_requirement'):
         return ''
     quote = intent.get('ending_evidence')
     request = intent.get('source_request', '')
-    if not isinstance(quote, str) or not quote.strip() or quote not in request:
+    if not evidence_grounded(quote, request):
         raise ValueError('用户结局缺少原始需求依据，不能用创作概要替代')
-    return quote
+    return quote if isinstance(quote, str) else EvidenceSelection.model_validate(quote).model_dump()
 
 
 def outcome_review_context(storyboard: dict) -> dict | None:

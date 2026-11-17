@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import time
 from types import SimpleNamespace
 
 import httpx
@@ -21,6 +22,14 @@ from pipeline.semantic_review import SemanticReviewUnavailableError
 from test_action_result_flow import annotated_verdict
 from test_action_results import annotated_story
 from test_director_intent import Responses, intent_reply
+
+
+def original_task_response(task_id):
+    """显式离线供应商元数据；URL不进行联网访问，下载仍由服务替身提供。"""
+    return SimpleNamespace(status='succeeded', model=config.SEEDANCE_MODEL,
+        created_at=int(time.time()), content=SimpleNamespace(
+            video_url=f'https://example.com/{task_id}',
+            last_frame_url=f'https://example.com/tail-{task_id}', audio_url=None))
 from test_performance_outcomes import outcome_response
 from tools import ffmpeg_ops
 
@@ -60,8 +69,13 @@ class ProductionServices:
                     'scene_identity_preserved')})
             if self.unknown_second and len(self.submissions) == 2:
                 response['identity_continuity_valid'] = None
+            from functional_observation_cases import annotated_observation_response
+            response = annotated_observation_response(response, kwargs)
             return completion(response)
         context = json.loads(user)
+        if context.get('protocol') in {'observation-support-v4-evidence-context', 'observation-support-v5-visual-evidence'}:
+            from functional_observation_cases import annotated_support_response
+            return completion(annotated_support_response(kwargs))
         if 'storyboard' in context:
             self.planning.append(context)
             from planning_protocol_cases import wire_verdict
@@ -70,6 +84,17 @@ class ProductionServices:
             self.entries.append(context)
             result = {'compatible': True, 'entry_action': 'continues from the observed guard',
                       'reason': 'offline compatibility annotation'}
+            if context.get('temporal_evidence'):
+                result['observed_motion'] = {
+                    'summary': 'Offline synthetic observation: the participants continue their established motion.',
+                    'sample_indices': [1, len(context['temporal_evidence']['sources'][0]['frames'])]}
+            if context.get('spatial_context') is not None:
+                spatial = context['spatial_context']
+                # 明确不可定位，不能以成功流程替身冒充真实视觉识别。
+                result['spatial_guidance'] = (dict.fromkeys(spatial['entities'])
+                    if spatial['version'] == 'observed-layout-v1' else [])
+            if context.get('camera_view'):
+                result['view_window'] = None
             if not context.get('entry_result_bound', context['version'] == 'observed-entry-v5-bound-results'):
                 result['entry_visible_result'] = 'palms remain in range'
             return completion(result)
@@ -107,8 +132,9 @@ def production_services(tmp_path, monkeypatch):
     for index in range(3):
         path = tmp_path / f'source-{index}.mp4'
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
-            f'testsrc2=s=1280x720:r=24:d={5.125 + index / 24}', '-f', 'lavfi', '-i',
-            'sine=frequency=440:duration=6', '-vf', f'hue=h={index * 90}',
+            f'testsrc2=s=1280x720:r=24:d={5.125 + index / 24 + index * 7}', '-f', 'lavfi', '-i',
+            'sine=frequency=440:duration=6', '-vf',
+            f'trim=start={index * 7},setpts=PTS-STARTPTS,hue=h={index * 90}',
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-shortest', str(path)], check=True)
         sources.append(path)
@@ -133,12 +159,13 @@ async def test_brief_to_three_clips_to_final_and_completed_resume(tmp_path, prod
     assert len(services.planning) == 1
     assert len(services.submissions) == len(services.reviews) == 3
     assert len(services.entries) == 2
-    assert [call['image_role'] for call in services.submissions] == [None, 'first_frame', 'first_frame']
+    assert [call['image_role'] for call in services.submissions] == [None, 'reference_image', 'reference_image']
     for index, call in enumerate(services.submissions[1:], 1):
         assert Path(call['image_urls'][0]).is_file()
-        assert services.entries[index - 1]['observed_state'] == {
-            'location': 'training roof', 'subject': 'attacker and defender',
-            'action_phase': 'guard yielded; both remain upright', 'prop_state': 'Door open; empty hands'}
+        observed = services.entries[index - 1]['observed_state']
+        assert observed['location'] == 'training roof' and observed['subject'] == 'attacker and defender'
+        assert 'guard yielded; both remain upright' in observed['action_phase']
+        assert 'Door open; empty hands' in observed['prop_state']
     assert services.submissions[0]['model'] == config.SEEDANCE_MODEL
     assert all(call['model'] == config.SEEDANCE_MODEL for call in services.submissions)
     manifest = RunWorkspace.resume(pipeline.workspace).manifest
@@ -175,12 +202,15 @@ async def test_uncertain_second_clip_resumes_same_media_without_resubmission(pro
         shot.pop('observed_end_state', None)
     assert restored == frozen
     services.unknown_second = False
-    output = await VideoPipeline.from_workspace(pipeline.workspace).run()
-    assert Path(output).is_file() and second.read_bytes() == before
-    assert len(services.submissions) == 3
+    # New protocols preserve unavailable evidence; resume is not implicit permission to re-review.
+    calls = len(services.reviews)
+    with pytest.raises(SemanticReviewUnavailableError, match='未重复调用'):
+        await VideoPipeline.from_workspace(pipeline.workspace).run()
+    assert second.read_bytes() == before
+    assert len(services.submissions) == 2 and len(services.reviews) == calls
     assert len(services.author.calls) == 5
-    assert len(services.entries) == 2
-    assert len(RunWorkspace.resume(pipeline.workspace).manifest.paid_take_budget.reservations) == 3
+    assert len(services.entries) == 1
+    assert len(RunWorkspace.resume(pipeline.workspace).manifest.paid_take_budget.reservations) == 2
 
 
 @pytest.mark.asyncio

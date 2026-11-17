@@ -11,6 +11,8 @@ from pathlib import Path
 from openai import OpenAI
 
 import config
+from pipeline.action_vocabulary import INDEPENDENT_ACTIVITIES
+from pipeline.semantic_preservation import authored_semantics, semantic_snapshot, assert_semantics_preserved
 from pipeline.llm_options import structured_output_options
 from pipeline.structured_response import collect_structured_response, load_unique_json
 from pipeline.director_intent import resolve_director_intent
@@ -282,6 +284,7 @@ def generate_storyboard(
     motion_control: str = "auto",
     save_diagnostic: Callable[[str, dict], None] | None = None,
     planning_checkpoint=None,
+    allow_repair: bool = True,
 ) -> dict:
     """
     调用 LLM 根据用户需求生成结构化分镜脚本
@@ -291,6 +294,10 @@ def generate_storyboard(
     """
     if not isinstance(motion_control, str) or motion_control not in {"auto", "text_guided", "reference_motion"}:
         raise ValueError("不支持的动作控制模式")
+    if type(allow_repair) is not bool:
+        raise ValueError('规划修正策略必须为布尔值')
+    from pipeline.provider_capabilities import planning_execution_contract
+    execution_contract = planning_execution_contract(resolution, aspect_ratio)
     client = OpenAI(
         api_key=config.ARK_API_KEY,
         base_url=config.ARK_BASE_URL,
@@ -298,20 +305,31 @@ def generate_storyboard(
     )
 
     system_prompt = _load_system_prompt()
+    intent_options = {'save_diagnostic': save_diagnostic}
+    if motion_control != 'auto':
+        intent_options['motion_control'] = motion_control
+    if style != 'cinematic':
+        intent_options['style_input'] = style
 
     if planning_checkpoint is None:
-        intent = resolve_director_intent(client, user_request, save_diagnostic=save_diagnostic)
+        intent = resolve_director_intent(client, user_request, **intent_options)
     else:
         import hashlib
         from pipeline.models import DirectorIntentSpec
+        from pipeline.creative_direction import creative_catalog_fingerprint
         # 意图提示词目前与解释器同文件；修改解释方式不能静默复用旧解释。
         recipe = hashlib.sha256(Path(__file__).with_name('director_intent.py').read_bytes()).hexdigest()
-        intent = planning_checkpoint.step('intent', {'request': user_request, 'recipe': recipe},
-            lambda: resolve_director_intent(client, user_request, save_diagnostic=save_diagnostic))
+        intent = planning_checkpoint.step('intent', {'request': user_request, 'recipe': recipe,
+            'style': style, 'creative_catalog': creative_catalog_fingerprint(),
+            **({'motion_control': motion_control} if motion_control != 'auto' else {})},
+            lambda: resolve_director_intent(client, user_request, **intent_options))
         intent = DirectorIntentSpec.model_validate(intent).model_dump()
     content_focus = intent['content_focus']
     target_duration = intent.get('requested_duration_seconds') or target_duration
-    production_plan = build_production_plan(content_focus, target_duration, intent=intent)
+    production_plan = build_production_plan(content_focus, target_duration, intent=intent,
+        duration_limits={key: execution_contract['hard_limits'][key]
+                         for key in ('min_duration', 'max_duration')})
+    execution_contract = planning_execution_contract(resolution, aspect_ratio, production_plan)
     requires_reference = motion_control == "reference_motion" or intent.get("motion_control") == "reference_motion"
     control_guidance = "text_guided：以文字动作合同约束生成；未使用数值动作参考。"
     if requires_reference:
@@ -319,7 +337,8 @@ def generate_storyboard(
         if issues:
             raise ValueError("生产计划超出动作参考执行能力：" + "；".join(issues))
         control_guidance = "reference_motion：" + MOTION_PREVIS_GUIDANCE
-    if any(slot.get('min_interaction_events') for slot in production_plan['slots']):
+    if any(slot.get('min_interaction_events') or slot.get('authoring_protocol') == 'scene-units-v1'
+           for slot in production_plan['slots']):
         from pipeline.storyboard_authoring import generate_event_storyboard
         return generate_event_storyboard(client, user_request, production_plan,
                                          aspect_ratio=aspect_ratio, resolution=resolution,
@@ -335,10 +354,14 @@ def generate_storyboard(
 - 叙事重心: {_content_focus_guidance(content_focus)}
 - 动作执行方式: {control_guidance}
 
-动作编排以连续动作句组织，不按“甲打一招、乙回一招、双方复位”机械轮换。
-仅在符合用户风格时运用轻功接步、虚实变化、闪让与反击并行、借势转身；少量清晰动作也可以流畅，不增加招数凑复杂度。
-每一招交代身体重心、步法或兵器运动如何给下一招创造条件，镜头跟随这个变化，不能用快速剪辑掩盖断裂。
-交互事件可选 response_kind=impact/evasion/deflection，分别表示命中、避开、拨挡；省略按原命中语义。
+执行能力（程序与提交端共用的硬约束）:
+{json.dumps(execution_contract, ensure_ascii=False)}
+
+表演围绕当前场景任务连续发展，动作、停顿和反应服务于人物与故事，不强制主体交替行动或复位。
+只使用用户要求和当前场景适用的表现方法；少量清晰动作也可以流畅，不增加动作凑复杂度。
+交代已有姿态、运动方向或对象状态如何给下一步创造条件，镜头帮助观众理解这个变化，不能用剪辑掩盖断裂。
+交互事件可选 response_kind=impact/evasion/deflection/state_change，分别表示命中、避开、拨挡、目标的受控或非冲击性状态变化；省略按原命中语义。
+activity=performance 表达主体自身的主动表演或变化，target仅为关注对象，不产生独立外部作用；不能用该类型掩盖真正作用于其他对象的行为。
 evasion 必须使用 directed_path 并展示可读威胁和避开的结果，不要求身体接触或受伤。
 承接前一节拍时填写 flow_from_previous（具体承接的步法/姿态/运动方向，不是“流畅”“帅气”等形容词）。
 仅有该衔接说明且共同参与者一致的相邻 interaction 可以时间搭接；开始、结束与作用时刻保持顺序，重叠时间只计一次，hold 不得重叠。
@@ -350,7 +373,10 @@ evasion 必须使用 directed_path 并展示可读威胁和避开的结果，不
 请生成完整的分镜脚本 (JSON 格式)。"""
 
     def draft():
-        return _generate_storyboard_draft(client, system_prompt, user_prompt, production_plan)
+        options = {'save_diagnostic': save_diagnostic} if save_diagnostic else {}
+        if not allow_repair:
+            options['allow_repair'] = False
+        return _generate_storyboard_draft(client, system_prompt, user_prompt, production_plan, **options)
     storyboard = (planning_checkpoint.step('legacy_draft', {
         'system': system_prompt, 'user': user_prompt, 'plan': production_plan}, draft)
         if planning_checkpoint else draft())
@@ -374,6 +400,8 @@ evasion 必须使用 directed_path 并展示可读威胁和避开的结果，不
             print(f"   {w}")
 
     if is_critical:
+        if not allow_repair:
+            raise ValueError('分镜初稿未通过生成就绪要求；规划修正已关闭，未重新调用模型或提交视频')
         print("\n   [自动修正] 检测到严重问题, 重新生成分镜...")
         def correct():
             return _correct_storyboard_draft(client, user_prompt, storyboard, warnings, production_plan)
@@ -418,11 +446,15 @@ def _generate_storyboard_draft(
     system_prompt: str,
     user_prompt: str,
     production_plan: dict,
+    *,
+    allow_repair: bool = True,
+    save_diagnostic: Callable[[str, dict], None] | None = None,
 ) -> dict:
     """Generate one bounded artifact at a time while keeping one global spine."""
     slots = production_plan["slots"]
     if len(slots) <= _STORYBOARD_SHOTS_PER_BATCH:
-        return _call_llm_for_storyboard(client, system_prompt, user_prompt)
+        return _call_llm_for_storyboard(client, system_prompt, user_prompt, repair_json=allow_repair,
+            save_response=(lambda value: save_diagnostic('planning_legacy_response.json', value)) if save_diagnostic else None)
 
     spine_prompt = _build_story_spine_prompt(user_prompt, production_plan)
     spine = validate_story_spine(
@@ -431,6 +463,8 @@ def _generate_storyboard_draft(
             _STORY_SPINE_SYSTEM_PROMPT,
             spine_prompt,
             temperature=0.3,
+            repair_json=allow_repair,
+            save_response=(lambda value: save_diagnostic('planning_spine_response.json', value)) if save_diagnostic else None,
         )
     )
     _project_spine_onto_plan(spine, production_plan)
@@ -439,10 +473,12 @@ def _generate_storyboard_draft(
     for start in range(0, len(slots), _STORYBOARD_SHOTS_PER_BATCH):
         batch_slots = slots[start:start + _STORYBOARD_SHOTS_PER_BATCH]
         batch_prompt = _build_shot_batch_prompt(
-            user_prompt, spine, production_plan, batch_slots
+            user_prompt, spine, production_plan, batch_slots,
+            previous_shot=shots[-1] if shots else None,
         )
         batch_result = _call_llm_for_storyboard(
-            client, system_prompt, batch_prompt, temperature=0.5
+            client, system_prompt, batch_prompt, temperature=0.5, repair_json=allow_repair,
+            save_response=(lambda value: save_diagnostic(f'planning_batch_{start + 1:03d}_response.json', value)) if save_diagnostic else None,
         )
         batch_shots = batch_result.get("shots")
         if not isinstance(batch_shots, list) or len(batch_shots) != len(batch_slots):
@@ -614,6 +650,7 @@ def _build_shot_batch_prompt(
     spine: dict,
     production_plan: dict,
     batch_slots: list[dict],
+    *, previous_shot: dict | None = None,
 ) -> str:
     batch_ids = {slot["shot_id"] for slot in batch_slots}
     batch_plan = deepcopy(production_plan)
@@ -631,6 +668,9 @@ def _build_shot_batch_prompt(
 
 全局故事脊柱已经冻结，不得改写：
 {json.dumps(global_spine, ensure_ascii=False, indent=2)}
+
+上一批已创作的末镜（首批为null）。延续其实际结束状态，不重新推测人物、道具和空间：
+{json.dumps(previous_shot, ensure_ascii=False, indent=2)}
 
 只为下列 intent 生成完整镜头字段：
 {json.dumps(intents, ensure_ascii=False, indent=2)}
@@ -685,7 +725,10 @@ def _call_llm_for_storyboard(
                 ) if save_response else None,
             )
     except Exception as e:
-        print(f"   [ERROR] LLM 调用失败: {e}")
+        from pipeline.operation_failure import mark_failure_phase, failure_evidence
+        mark_failure_phase(e, 'request')
+        diagnostic = failure_evidence(e)
+        print(f"   [ERROR] LLM 调用失败: {diagnostic['category']} / {diagnostic['phase']} / {type(e).__name__}")
         raise
     raw_content = response.choices[0].message.content
     if save_response:
@@ -960,6 +1003,9 @@ def _apply_coverage_defaults(
     ))
     theme_elements = theme_elements or []
     for index, shot in enumerate(shots):
+        # typed authoring 已拥有完整的参与者、动作和几何；只对旧稿推断缺省。
+        if authored_semantics(shot):
+            continue
         registry = shot_entity_registry(shot, character_names, theme_elements)
         normalize_structured_entity_references(shot, registry)
         if index == 0:
@@ -994,13 +1040,14 @@ def _apply_coverage_defaults(
         interaction = next(
             (
                 beat for beat in beats
-                if str(beat.get("actor", "")).strip()
-                and str(beat.get("target", "")).strip()
+                if canonical_entity_id(beat.get('actor'), registry.characters) in registry.characters
+                and canonical_target_id(beat.get('target'), registry) in registry.target_ids
+                and beat.get('activity') not in INDEPENDENT_ACTIVITIES
             ),
             None,
         )
         if interaction:
-            if shot.get("coverage_role") in (None, "", "establish"):
+            if shot.get("coverage_role") in (None, ""):
                 shot["coverage_role"] = "interaction"
             actor = str(interaction["actor"]).strip()
             target = str(interaction["target"]).strip()
@@ -1143,12 +1190,14 @@ def _apply_defaults(storyboard: dict, aspect_ratio: str, resolution: str, style:
         shot.setdefault("start_state", {})
         shot.setdefault("end_state", {})
         shot.setdefault("blocking", {})
-        normalize_shot_participants(
-            shot,
-            character_names,
-            storyboard.get("theme_elements", []),
-        )
-        visible_characters = visible_character_names(shot, character_names)
+        if not authored_semantics(shot):
+            normalize_shot_participants(
+                shot,
+                character_names,
+                storyboard.get("theme_elements", []),
+            )
+        visible_characters = (shot.get('characters', []) if authored_semantics(shot)
+                              else visible_character_names(shot, character_names))
         if visible_characters != shot.get("characters", []):
             added = [
                 name for name in visible_characters
@@ -1193,15 +1242,19 @@ def _compile_storyboard_contract(
     *,
     production_plan: dict | None = None,
 ) -> dict:
-    """Normalize LLM labels before compiling their deterministic consequences."""
+    """Bind production decisions, preserving the semantics owned by typed authoring."""
+    storyboard = deepcopy(storyboard)
     if production_plan is not None:
         apply_production_plan(storyboard, production_plan)
+    semantics = semantic_snapshot(storyboard)
     _apply_defaults(storyboard, aspect_ratio, resolution, style)
     normalized = validate_storyboard_draft(storyboard)
     if production_plan is not None:
         apply_production_plan(normalized, production_plan)
     _apply_defaults(normalized, aspect_ratio, resolution, style)
-    return validate_storyboard(normalized)
+    result = validate_storyboard(normalized)
+    assert_semantics_preserved(semantics, result)
+    return result
 
 
 def _normalize_positive_duration(value):
@@ -1523,8 +1576,9 @@ _BUILTIN_SYSTEM_PROMPT = """你是一个题材适应能力很强的影视导演�
 - 禁止 prompt 中要求画面出现文字/Logo/数字 (用 subtitle_text 代替)
 - 单镜头最多 2 个角色互动, 超过用远景
 - 手部特写追加 negative_prompt: anatomically correct hands
-- duration > 10s 的镜头用 fixed 运镜 + 简单动作
-- fast speed 镜头 duration ≤ 5s
+- 接口硬约束以用户消息中的执行能力为准，不从运镜或风格标签推导时长上限。
+- camera.speed仅表示摄影机运动速度；主体动作节奏、影像播放速度、交互占用时间分别表达，不互相替代。
+- 镜头复杂度是创作与画面可读性问题；不得通过缩短既定镜头或降低用户要求的动作速度来规避。
 
 ## 运镜 6 步公式
 [Subject] -> [Action] -> [Environment] -> [Camera] -> [Style] -> [Constraints]
@@ -1825,7 +1879,8 @@ def _validate_storyboard_richness(
     warnings: list[str] = []
     critical_count = 0  # 严重问题计数
     plan = storyboard.get("production_plan") or {}
-    structured_events = any(slot.get('min_interaction_events') for slot in plan.get('slots', []))
+    structured_events = any(slot.get('min_interaction_events') or slot.get('authoring_protocol') == 'scene-units-v1'
+                            for slot in plan.get('slots', []))
     intent = plan.get("director_intent")
     content_focus = intent["content_focus"] if intent else _infer_content_focus(user_request)
 
@@ -1883,10 +1938,13 @@ def _validate_storyboard_richness(
     has_insert = any(not s.get("characters") for s in shots)
     if content_focus == "product" and not has_insert and len(shots) >= 3:
         warnings.append(
+            "⚠ 产品展示所有镜头都包含角色；是否充分呈现产品由完整需求与语义审查判断"
+            if structured_events else
             "🚨 缺少 insert shot: 产品展示请求的所有镜头都包含角色, "
             "必须加入至少 1 个产品细节或纯产品镜头"
         )
-        critical_count += 1
+        if not structured_events:
+            critical_count += 1
 
     # --- 5. 时序因果校验 ---
     if _requires_process_order(user_request):
@@ -2102,22 +2160,6 @@ def _validate_storyboard_richness(
         if reference_issue:
             warnings.append(
                 f"🚨 Shot {shot.get('shot_id', '?')} {reference_issue}"
-            )
-            critical_count += 1
-
-    # --- 13. Seedance 快动作预算 ---
-    for shot in shots:
-        speed = str(shot.get("camera", {}).get("speed", "")).lower()
-        movement = str(
-            shot.get("camera", {}).get("primary_movement", "")
-        ).lower()
-        duration = shot.get("duration", config.DEFAULT_DURATION)
-        if duration > 5 and (
-            speed in {"fast", "quick", "rapid"} or "fast" in movement
-        ):
-            warnings.append(
-                f"🚨 Shot {shot.get('shot_id', '?')} fast 动作时长为 {duration}s, "
-                "超过 Seedance 稳定预算 5s, 必须缩短或降速"
             )
             critical_count += 1
 

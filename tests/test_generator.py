@@ -203,7 +203,7 @@ class TestBuildImageRefs:
         assert role == "first_frame"
 
     def test_same_scene_intentional_cut_uses_official_first_frame_state_role(self, generator):
-        """同场景状态交接使用 Seedance 官方 first_frame 职责。"""
+        """同场景切镜携带状态与身份参考，不锁定上一镜首帧。"""
         ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
         Path(ref_path).parent.mkdir(parents=True, exist_ok=True)
         Path(ref_path).write_bytes(b"fake_image")
@@ -220,8 +220,8 @@ class TestBuildImageRefs:
             "http://a/last.jpg",
             {"shot_id": 2, "scene_id": "street"},
         )
-        assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert urls == ["http://a/last.jpg", ref_path]
+        assert role == "reference_image"
 
     def test_large_same_scene_cut_keeps_state_and_identity_separate(
         self, generator
@@ -243,8 +243,8 @@ class TestBuildImageRefs:
             {"shot_id": 2, "scene_id": "street"},
         )
 
-        assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert urls == ["http://a/last.jpg", ref_path]
+        assert role == "reference_image"
 
     def test_medium_same_scene_cut_without_identity_ref_falls_back_to_state_tail(
         self, generator
@@ -262,7 +262,7 @@ class TestBuildImageRefs:
         )
 
         assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert role == "reference_image"
 
     def test_medium_same_scene_cut_uses_state_and_identity_refs(
         self, generator
@@ -284,8 +284,8 @@ class TestBuildImageRefs:
             {"shot_id": 1, "scene_id": "street", "output_reference_depth": 0},
         )
 
-        assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert urls == ["http://a/last.jpg", ref_path]
+        assert role == "reference_image"
 
     def test_medium_same_scene_object_handoff_uses_tail_as_state_reference(
         self, generator
@@ -303,7 +303,7 @@ class TestBuildImageRefs:
         )
 
         assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert role == "reference_image"
 
     def test_cross_scene_intentional_cut_uses_only_character_reference(self, generator):
         ref_path = str(Path(generator.output_dir) / "character_refs" / "hero.jpg")
@@ -352,7 +352,7 @@ class TestBuildImageRefs:
             {"shot_id": 3, "scene_id": "street"},
         )
         assert urls == ["http://a/last.jpg"]
-        assert role == "first_frame"
+        assert role == "reference_image"
 
     def test_local_prev_frame_supported(self, generator):
         """恢复时提取的本地尾帧可由 API 转成 data URI 继续衔接"""
@@ -689,7 +689,7 @@ def test_identity_reanchor_privacy_fallback_preserves_tail_state(tmp_path: Path)
         shot,
         str(tmp_path / "tail.jpg"),
         {"scene_id": "street"},
-    ) == ([str(tmp_path / "tail.jpg")], "first_frame")
+    ) == ([str(tmp_path / "tail.jpg")], "reference_image")
 
 
 @pytest.mark.asyncio
@@ -2001,7 +2001,7 @@ async def test_privacy_rejection_without_references_stops_without_duplicate_requ
 
     assert result.status == "failed"
     assert generator.api.calls == 1
-    assert "停止重试" in result.errors[-1]
+    assert "停止自动重试" in result.errors[-1]
 
 
 @pytest.mark.asyncio
@@ -2336,8 +2336,8 @@ async def test_privacy_rejection_of_state_only_first_frame_does_not_repeat_reque
     )
 
     assert result.status == "failed"
-    assert generator.api.calls == [([str(previous_tail)], "first_frame")]
-    assert "没有可移除的身份参考" in result.errors[-1]
+    assert generator.api.calls == [([str(previous_tail)], "reference_image")]
+    assert "保留全部身份和连续性要求" in result.errors[-1]
 
 
 @pytest.mark.asyncio
@@ -2391,8 +2391,9 @@ async def test_privacy_rejection_retries_once_when_identity_refs_are_removed(
     )
 
     assert result.status == "failed"
-    assert generator.api.calls == [([str(identity_ref)], "reference_image"), (None, None)]
-    assert "纯文本请求仍被隐私审核拒绝" in result.errors[-1]
+    # 历史行为是删身份图后二次提交；现在拒绝即停，保留原引用。
+    assert generator.api.calls == [([str(identity_ref)], "reference_image")]
+    assert "停止自动重试" in result.errors[-1]
 
 
 @pytest.mark.asyncio

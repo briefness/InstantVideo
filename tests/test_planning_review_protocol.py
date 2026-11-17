@@ -227,9 +227,9 @@ def test_local_and_provider_schemas_describe_same_bound_keys():
 
 @pytest.mark.parametrize('fault', [None, 'missing_claim', 'semantic_rejection'])
 def test_actual_sdk_boundary_caches_raw_success_and_failure_without_retry(tmp_path, monkeypatch, fault):
-    from planning_protocol_cases import annotated_outcome, sourced_wire
+    from planning_protocol_cases import annotated_outcome, sourced_wire, strict_intent_wire
     story = real_story()
-    wire = sourced_wire(annotated_outcome(synthetic_wire(story), story), story)
+    wire = strict_intent_wire(sourced_wire(annotated_outcome(synthetic_wire(story), story), story), story)
     if fault == 'missing_claim':
         first_claim_unit(wire)['result_admission']['decisions'].popitem()
     elif fault:
@@ -245,7 +245,7 @@ def test_actual_sdk_boundary_caches_raw_success_and_failure_without_retry(tmp_pa
                 assert all(s['result_admission'] == 'reviewed-results-v1' for s in result['shots'])
     assert len(calls) == 1
     payload = json.loads(calls[0]['messages'][-1]['content'])
-    assert payload['review_targets'] == protocol.review_targets(story)
+    assert payload['review_targets'] == protocol.review_targets(story, admit_intents=True)
     fmt = calls[0]['response_format']['json_schema']
     assert fmt['strict'] is True and fmt['schema']['properties']['units']['type'] == 'object'
     saved = json.loads((tmp_path / 'planning_semantic_review.json').read_text())
@@ -290,7 +290,7 @@ def test_unknown_cache_version_stops_without_migration(tmp_path, monkeypatch):
 
 
 def test_bound_batch_interruption_resumes_without_repeating_saved_judgments(tmp_path, monkeypatch):
-    from planning_protocol_cases import annotated_outcome, sourced_wire
+    from planning_protocol_cases import annotated_outcome, sourced_wire, strict_intent_wire
     story = real_story()
     story['shots'] = [{**deepcopy(story['shots'][0]), 'shot_id': i} for i in range(1, 10)]
     fail = True
@@ -301,7 +301,7 @@ def test_bound_batch_interruption_resumes_without_repeating_saved_judgments(tmp_
         if batch['shots'][0]['shot_id'] > 1 and fail:
             fail = False
             raise RuntimeError('offline interruption')
-        return sourced_wire(annotated_outcome(synthetic_wire(batch), batch), batch)
+        return strict_intent_wire(sourced_wire(annotated_outcome(synthetic_wire(batch), batch), batch), batch)
     sdk, calls = sdk_reviewer(monkeypatch, answer)
     with sdk:
         with pytest.raises(Exception, match='offline interruption|Connection|调用失败|LLM'):

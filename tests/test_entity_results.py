@@ -23,10 +23,12 @@ def captured():
 
 
 def test_original_role_reversal_remains_visible_and_rejected_without_retry(tmp_path, monkeypatch):
+    import config
     from pipeline.action_authoring import compile_authored_storyboard
     from pipeline.storyboard import _compile_storyboard_contract
     from pipeline.planning_review import ensure_planning_semantics
     from test_director_intent import Responses
+    from pipeline.run_state import RunWorkspace
     data = captured()
     raw, saved = data['planning_authoring.json'], data['storyboard.json']
     before = deepcopy(raw)
@@ -39,12 +41,22 @@ def test_original_role_reversal_remains_visible_and_rejected_without_retry(tmp_p
     assert bad['outcomes'][1] == {'entity': original['actor'], 'state': original['resolution']['actor_state']}
     assert bad['outcomes'] == saved['shots'][1]['action_beats'][2]['outcomes']
     assert raw == before
+    # 原始负面判断用原协议重放；不能替捕获响应补写新功能审定。
+    legacy = tmp_path / 'legacy'
+    legacy.mkdir()
+    RunWorkspace._atomic_write_json(legacy / 'planning_semantic_review.json', data['planning_semantic_review.json'])
+    monkeypatch.setattr(config, 'LLM_MODEL', 'doubao-seed-2.1-lite')
+    monkeypatch.setattr('pipeline.planning_review.OpenAI', lambda **_: pytest.fail('legacy negative cache re-reviewed'))
+    for _ in range(2):
+        with pytest.raises(ValueError, match='结果合同无效'):
+            ensure_planning_semantics(saved, legacy,
+                lambda name, value: RunWorkspace._atomic_write_json(legacy / name, value))
     client = Responses(data['planning_semantic_review.json']['verdict'])
     monkeypatch.setattr('pipeline.planning_review.OpenAI', lambda **_: client)
     def save(name, value):
         (tmp_path / name).write_text(json.dumps(value))
     for _ in range(2):
-        with pytest.raises(ValueError, match='结果合同无效'):
+        with pytest.raises(ValueError, match='RequiredIntent|功能'):
             ensure_planning_semantics(saved, tmp_path, save)
     assert len(client.calls) == 1
 
@@ -185,7 +197,7 @@ def test_role_switching_through_real_sdk_keeps_entity_results_and_requests_once(
     before = deepcopy(raw)
     values = [{k: v for k, v in intent.items() if k != 'source_request'},
               {k: v for k, v in raw.items() if k != 'shots'}]
-    values += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(shot), slot).items()
+    values += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(shot), slot, execution_timing=True).items()
                          if k != 'shot_id'}} for shot, slot in zip(raw['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, values)
     with sdk:
@@ -198,5 +210,5 @@ def test_role_switching_through_real_sdk_keeps_entity_results_and_requests_once(
     assert raw == before and len(calls) == 5
     for call in calls[2:]:
         context = json.loads(call['messages'][-1]['content'])
-        assert context['authoring_protocol'] == 'story-context-v6-candidate-results'
+        assert context['authoring_protocol'] == 'story-context-v9-temporal-relations'
         assert 'AuthoredResolution' not in call['response_format']['json_schema']['schema']['$defs']

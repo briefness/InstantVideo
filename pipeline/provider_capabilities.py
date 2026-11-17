@@ -8,6 +8,65 @@ from typing import Any
 import config
 
 
+def execution_profile(resolution: str, *, model: str | None = None,
+                      requested_resolution: str | None = None) -> dict:
+    """选取实际配置的执行档位；创意标签没有改变接口能力的权限。"""
+    if (not isinstance(resolution, str) or not resolution
+            or requested_resolution is not None and (not isinstance(requested_resolution, str) or not requested_resolution)
+            or model is not None and (not isinstance(model, str) or not model.strip())):
+        raise ValueError('provider model/resolution 必须是有效的配置标识')
+    issues = capability_contract_issues()
+    if issues:
+        raise ValueError('Provider capability contract 不完整: ' + '; '.join(issues))
+    requested = resolution if requested_resolution is None else requested_resolution
+    chain = config.GENERATION_CHAINS.get(requested, ())
+    matches = [p for p in chain if p['resolution'] == resolution
+               and (model is None or p['model'] == model)]
+    if not matches:
+        raise ValueError(f'provider model={model}、resolution={resolution} 不属于请求分辨率 {requested} 的 generation chain')
+    profile = matches[0]
+    return {'model': profile['model'], 'resolution': resolution,
+            'min_duration': config.MIN_SHOT_DURATION,
+            'max_duration': min(p['max_duration'] for p in matches if p['model']==profile['model']),
+            'aspect_ratios': list(config.SUPPORTED_ASPECT_RATIOS)}
+
+
+def execution_request_issues(*, model: str | None = None, resolution: str,
+                             ratio: str, duration: int,
+                             requested_resolution: str | None = None) -> list[str]:
+    try:
+        profile = execution_profile(resolution, model=model, requested_resolution=requested_resolution)
+    except ValueError as exc:
+        return [str(exc)]
+    issues = []
+    if ratio not in profile['aspect_ratios']:
+        issues.append(f'provider 不支持画幅 {ratio}')
+    if type(duration) is not int or not profile['min_duration'] <= duration <= config.MAX_SHOT_DURATION:
+        issues.append(f'provider 时长必须是 {profile["min_duration"]}-{config.MAX_SHOT_DURATION} 秒整数')
+    elif duration > profile['max_duration']:
+        issues.append(f'duration={duration} 超出当前 generation profile 上限 {profile["max_duration"]}；未截短计划时长')
+    return issues
+
+
+def planning_execution_contract(resolution: str, ratio: str, plan: dict | None = None) -> dict:
+    """创作前拒绝不可执行的既定槽位，同一限制在提交边界再次验证。"""
+    profile = execution_profile(resolution)
+    issues = execution_request_issues(resolution=resolution, ratio=ratio, duration=profile['min_duration'])
+    for slot in (plan or {}).get('slots', []):
+        issues.extend(f'Shot {slot["shot_id"]}: {issue}' for issue in execution_request_issues(
+            resolution=resolution, ratio=ratio, duration=slot['duration']))
+    if issues:
+        raise ValueError('执行能力约束不满足：'+'；'.join(issues))
+    return {'version':'configured-execution-v1', 'hard_limits':profile,
+            'duration_policy':'explicit-integer-seconds; preserve planned duration',
+            'semantic_dimensions':{
+                'camera.speed':'camera movement only; not performer tempo or a duration limit',
+                'motion_timing.performer_tempo':'subject motion tempo',
+                'motion_timing.playback':'real-time/slow-motion treatment',
+                'interaction_seconds':'activity occupancy, not speed'},
+            'quality_policy':'Camera and action readability require evidence; style labels do not prove success or impose provider limits.'}
+
+
 def capability_contract_issues(
     *,
     resolutions: Sequence[str] | None = None,

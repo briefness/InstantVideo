@@ -53,14 +53,18 @@ def test_actual_capture_is_rejected_by_wire_and_local_boundary_without_rewrite()
 def test_actual_capture_stops_formal_flow_before_requesting_next_shot(monkeypatch):
     from test_authoring_transport import http_client
     from pipeline.storyboard import generate_storyboard
+    from pipeline.authoring_contract import AuthoringContractError
     data = captured()
+    before = deepcopy(data)
     request = data['planning_compiled.json']['production_plan']['director_intent']['source_request']
     values = [json.loads(data['planning_intent_response.json']['content']), data['planning_identity.json'],
               json.loads(data['planning_shot_001_response.json']['content'])]
-    sdk, calls = http_client(monkeypatch, values)
-    with sdk, pytest.raises(ValueError, match='camera.screen_positions.*未注册'):
+    sdk, calls = http_client(monkeypatch, values, annotate_legacy_intent=True)
+    with sdk, pytest.raises(AuthoringContractError) as caught:
         generate_storyboard(request, target_duration=15)
-    assert len(calls) == 3
+    assert {'path': '/shot/camera/screen_positions', 'constraint': 'additionalProperties'} in caught.value.issues
+    assert {'path': '/shot/action_plan/interaction_1', 'constraint': 'additionalProperties'} in caught.value.issues
+    assert len(calls) == 3 and data == before
 
 
 @pytest.mark.parametrize('field,value', [

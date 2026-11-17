@@ -293,9 +293,15 @@ async def test_multiple_primary_claims_cross_actual_generator_review_continuatio
     assert Path(output).is_file() and len(services.submissions) == 3
     for contract in services.reviews:
         for event in contract['action_events']:
-            assert {'entity': event['target'], 'state': 'keeps both hands free'} in event['outcomes']
+            criteria = contract['completion_contract']['criteria']
+            keys = criteria[f"beat:{event['event_id']}/completion"]['supports']
+            assert keys
+            goal = '; '.join(criteria[key]['action'] for key in keys)
+            assert 'keeps both hands free' not in goal  # 作者添加的姿态不能证明自身必要。
             assert {'entity': event['target'], 'state': 'clothes flutter'} not in event['outcomes']
-    assert all('clothes flutter' in call['prompt'] for call in services.submissions)
+            assert 'clothes flutter' not in goal and 'functional_responses' not in event
+    assert all('clothes flutter' in call['prompt'] and 'keeps both hands free' in call['prompt']
+               for call in services.submissions)
     assert len(services.entries) == 2
     assert await VideoPipeline.from_workspace(pipeline.workspace).run() == output
     assert len(services.submissions) == 3

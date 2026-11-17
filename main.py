@@ -34,10 +34,12 @@ def main():
     parser.add_argument('--authorize-paid-takes', type=int,
                         help='恢复已通过纯规划且无视频提交的工作区时，显式授权本次视频提交总上限')
     parser.add_argument("--plan-only", action="store_true", help="只生成并审查分镜，保存后停止，不提交视频任务；可用 --resume 继续")
+    parser.add_argument('--no-planning-repair', dest='planning_repair', action='store_false', default=None,
+                        help='规划失败立即停止，不自动修复 JSON 或重写分镜；随工作区保存')
     parser.add_argument('--take-policy', choices=['completion_first', 'single_pass'],
                         help='提交策略：默认为后续镜头保留首次额度；single_pass 每镜最多一次，失败即停')
-    parser.add_argument('--delivery-mode', choices=['reviewed', 'preview'],
-                        help='交付方式：默认逐镜验收；preview 先拼接完整预览片，人物、动作及运镜待验收')
+    parser.add_argument('--delivery-mode', choices=['strict', 'reviewed', 'normal', 'preview'],
+                        help='审查模式：strict（默认，兼容 reviewed）有问题即停；normal 非严重问题带警告成片；preview 为旧版未审查预览')
     parser.add_argument("--resolution", choices=config.SUPPORTED_RESOLUTIONS)
     parser.add_argument("--ratio", choices=config.SUPPORTED_ASPECT_RATIOS)
     parser.add_argument("--style",
@@ -72,6 +74,7 @@ def main():
             args.motion_control,
             args.take_policy,
             args.delivery_mode,
+            args.planning_repair,
         ]
         if any(value is not None for value in overrides):
             parser.error(
@@ -96,7 +99,8 @@ def main():
                 paid_take_budget=args.paid_take_budget,
                 motion_control=args.motion_control or "auto",
                 take_policy=args.take_policy or 'completion_first',
-                delivery_mode=args.delivery_mode or 'reviewed',
+                delivery_mode='reviewed' if args.delivery_mode in (None, 'strict') else args.delivery_mode,
+                planning_repair=args.planning_repair if args.planning_repair is not None else True,
             )
         )
         pipeline.plan_only = args.plan_only
@@ -105,6 +109,8 @@ def main():
             print(f"\n📋 分镜准备完成，未提交视频任务: {result}")
         elif pipeline.delivery_mode == 'preview':
             print(f"\n🎬 预览成片已保存（人物、动作和运镜待验收）: {result}")
+        elif pipeline.delivery_mode == 'normal':
+            print(f"\n🎬 正常模式成片已保存，审查问题请查看交付报告: {result}")
         else:
             print(f"\n🎉 完成! 视频已保存到: {result}")
     except KeyboardInterrupt:
@@ -114,7 +120,8 @@ def main():
         print(f"\n⏸️ {e}")
         sys.exit(2)
     except Exception as e:
-        print(f"\n❌ 错误: {e}")
+        from pipeline.operation_failure import failure_message
+        print(f"\n❌ 错误: {failure_message(e)}")
         sys.exit(1)
 
 

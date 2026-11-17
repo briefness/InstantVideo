@@ -82,6 +82,7 @@ def test_formal_new_plan_uses_links_through_provider_contract(monkeypatch):
             if unit['kind'] == 'interaction':
                 unit.pop('carry', None)
                 unit['link_previous'] = index > 0
+                unit['overlap'] = index > 1
     raw['scene_entities'] = ['Door', 'Dust']
     brief = '15秒连续动作展示'
     client = Responses({**intent_reply(brief), 'choreography': 'flexible'}, raw)
@@ -92,13 +93,15 @@ def test_formal_new_plan_uses_links_through_provider_contract(monkeypatch):
         contract = compile_action_contract(shot)
         assert 'Beat 2 -> Beat 3' in ' '.join(contract.prompt_parts)
     schema = client.calls[2]['response_format']['json_schema']['schema']
-    assert 'link_previous' in json.dumps(schema)
+    assert 'link_previous' not in json.dumps(schema)
+    assert 'timing' in json.dumps(schema)
     assert '"carry"' not in json.dumps(schema)
 
 
 def test_captured_outgoing_carry_is_not_an_executable_new_protocol_cause(monkeypatch):
     from jsonschema import validate, ValidationError
     from pipeline.action_authoring import InteractionUnit
+    from pipeline.authoring_contract import AuthoringContractError
     record = json.loads((Path(__file__).parent / 'fixtures/real_outgoing_carry.json').read_text())
     original = deepcopy(record)
     schema = authored_shot_response_schema(['Lingfeng', 'Zhenwei'], require_outcomes=True, bound_handoffs=True)
@@ -112,12 +115,15 @@ def test_captured_outgoing_carry_is_not_an_executable_new_protocol_cause(monkeyp
     raw['scene_entities'] = ['Door', 'Dust']
     raw['shots'][0]['action_plan'][1].pop('link_previous')
     raw['shots'][0]['action_plan'][1]['carry'] = record['unit']['carry']
+    before = deepcopy(raw)
     client = Responses({**intent_reply('offline'), 'choreography': 'flexible'}, raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **_: client)
-    with pytest.raises(ValueError, match='link_previous'):
+    with pytest.raises(AuthoringContractError) as caught:
         generate_storyboard('offline', target_duration=15)
+    assert {'path': '/shot/action_plan/interaction_1', 'constraint': 'additionalProperties'} in caught.value.issues
+    assert {'path': '/shot/action_plan/interaction_1', 'constraint': 'required'} in caught.value.issues
     assert len(client.calls) == 3  # Intent, identity, first shot; no retry or next shot.
-    assert record == original
+    assert record == original and raw == before
 
 
 def test_independent_action_and_cross_shot_entry_keep_their_own_meaning():

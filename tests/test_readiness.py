@@ -124,7 +124,7 @@ def test_provider_submission_preflight_rejects_incomplete_capability_contract(
     monkeypatch,
 ):
     monkeypatch.setattr(
-        "pipeline.readiness.capability_contract_issues",
+        "pipeline.provider_capabilities.capability_contract_issues",
         lambda: ["720p generation chain is empty"],
     )
 
@@ -139,7 +139,7 @@ def test_provider_submission_preflight_rejects_incomplete_capability_contract(
     )
 
     assert issues[0] == (
-        "Provider capability contract 不完整: 720p generation chain is empty"
+        "Shot 4: Provider capability contract 不完整: 720p generation chain is empty"
     )
 
 

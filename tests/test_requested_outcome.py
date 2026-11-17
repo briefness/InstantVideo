@@ -21,15 +21,17 @@ def offline(monkeypatch):
 
 def test_real_identity_downgrade_stops_before_any_shot_authored():
     from pipeline.storyboard_authoring import generate_event_storyboard
+    from pipeline.authoring_contract import AuthoringContractError
     from test_director_intent import Responses
     raw = json.loads((Path(__file__).parent / 'fixtures/real_outcome_identity_failure.json').read_text())
     identity = raw['sources']['planning_identity.json']['value']
     story = recorded()['storyboard.json']['value']
     before = deepcopy((identity, story))
     client = Responses(identity)
-    with pytest.raises(ValueError, match='用户结局'):
+    with pytest.raises(AuthoringContractError) as caught:
         generate_event_storyboard(client, story['production_plan']['director_intent']['source_request'],
             story['production_plan'], aspect_ratio='16:9', resolution='480p', style='cinematic')
+    assert {'path': '/story_arc/resolution', 'constraint': 'const'} in caught.value.issues
     assert len(client.calls) == 1 and (identity, story) == before
     schema = client.calls[0]['response_format']['json_schema']['schema']
     arc_type = schema['properties']['story_arc']['$ref'].rsplit('/', 1)[-1]
@@ -39,8 +41,9 @@ def test_real_identity_downgrade_stops_before_any_shot_authored():
 @pytest.mark.parametrize('relation', ['contradicted', 'undetermined'])
 def test_grounded_negative_outcome_cannot_be_overridden_by_general_approval(tmp_path, monkeypatch, relation):
     from pipeline.planning_review import ensure_planning_semantics
+    from planning_protocol_cases import strict_intent_wire
     story = recorded()['storyboard.json']['value']
-    wire = sourced_wire(synthetic_wire(story), story)
+    wire = strict_intent_wire(sourced_wire(synthetic_wire(story), story), story)
     wire.pop('requested_outcome_valid')
     wire['requested_outcome'] = {'relation': relation,
         'evidence': ['/shots/2/action_beats/1/visible_result'],
@@ -116,8 +119,9 @@ def test_unmodified_real_approval_cannot_answer_new_outcome_contract():
 @pytest.mark.parametrize('change', ['requirement', 'unknown_version', 'omit_version'])
 def test_cache_cannot_hide_changed_requirement_or_protocol(tmp_path, monkeypatch, change):
     from pipeline.planning_review import ensure_planning_semantics
+    from planning_protocol_cases import strict_intent_wire
     story = recorded()['storyboard.json']['value']
-    wire = sourced_wire(synthetic_wire(story), story)
+    wire = strict_intent_wire(sourced_wire(synthetic_wire(story), story), story)
     wire.pop('requested_outcome_valid')
     wire['requested_outcome'] = {'relation': 'undetermined', 'evidence': [], 'reason': 'Not established.'}
     sdk, calls = sdk_reviewer(monkeypatch, wire)

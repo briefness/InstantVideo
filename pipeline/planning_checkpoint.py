@@ -9,12 +9,17 @@ import stat
 
 import config
 from pipeline.structured_response import load_unique_json
+from pipeline.operation_failure import FailureEvidence, failure_evidence, add_secondary_failure
 
 
 FILENAME = 'planning_checkpoint.json'
 VERSION = 'planning-checkpoint-v1'
 MAX_BYTES = 32 * 1024 * 1024
 MAX_STEPS = 512
+
+
+class PlanningCheckpointError(ValueError):
+    """进度准入失败；不是对创作内容的新一次审查，不应覆盖原始结论。"""
 
 
 def _digest(value) -> str:
@@ -35,7 +40,7 @@ class PlanningCheckpoint:
             if resume:
                 self._read()
             elif self.path.exists() or self.path.is_symlink():
-                raise ValueError('规划记录已存在；必须使用正式恢复入口，不能覆盖已有成果')
+                raise PlanningCheckpointError('规划记录已存在；必须使用正式恢复入口，不能覆盖已有成果')
             else:
                 self._write({'version': VERSION, 'context': self.context, 'steps': []})
 
@@ -76,6 +81,9 @@ class PlanningCheckpoint:
                     fields.add('error_type')
                     if not isinstance(item.get('error_type'), str):
                         raise ValueError('invalid failure')
+                    if 'failure' in item:
+                        fields.add('failure')
+                        FailureEvidence.model_validate(item['failure'])
                 elif state != 'started':
                     raise ValueError('unknown checkpoint state')
                 if (set(item) != fields or not isinstance(item['key'], str) or not item['key']
@@ -85,7 +93,7 @@ class PlanningCheckpoint:
                 names.add(item['key'])
             return record
         except (OSError, ValueError, KeyError, TypeError) as exc:
-            raise ValueError('规划进度缺失、损坏或与当前需求/模型配置不一致；未重新调用模型') from exc
+            raise PlanningCheckpointError('规划进度缺失、损坏或与当前需求/模型配置不一致；未重新调用模型') from exc
 
     def step(self, key: str, inputs: dict, operation) -> dict:
         signature = _digest(inputs)
@@ -95,13 +103,13 @@ class PlanningCheckpoint:
             if self.cursor < len(steps):
                 entry = steps[self.cursor]
                 if entry['key'] != key or entry['input_hash'] != signature:
-                    raise ValueError('规划步骤的输入或顺序已变化；不能复用旧结果或自动重新生成')
+                    raise PlanningCheckpointError('规划步骤的输入或顺序已变化；不能复用旧结果或自动重新生成')
                 if entry['state'] != 'returned':
-                    raise ValueError('规划步骤已失败或请求结果不明；保留现场，未自动重发模型请求')
+                    raise PlanningCheckpointError('规划步骤已失败或请求结果不明；保留现场，未自动重发模型请求')
                 self.cursor += 1
                 return deepcopy(entry['value'])
             if self.cursor != len(steps) or len(steps) >= MAX_STEPS or any(e['key'] == key for e in steps):
-                raise ValueError('规划步骤重复或超出上限；未调用模型')
+                raise PlanningCheckpointError('规划步骤重复或超出上限；未调用模型')
             entry = {'key': key, 'input_hash': signature, 'state': 'started'}
             steps.append(entry)
             self._write(record)  # 必须先落盘；崩溃后的 started 不能当成未提交。
@@ -111,8 +119,12 @@ class PlanningCheckpoint:
                     raise ValueError('规划步骤必须返回完整对象')
                 digest = _digest(value)
             except Exception as exc:
-                entry.update(state='failed', error_type=type(exc).__name__)
-                self._write(record)
+                entry.update(state='failed', error_type=type(exc).__name__,
+                             failure=failure_evidence(exc, phase='planning_step'))
+                try:
+                    self._write(record)
+                except Exception as secondary:
+                    add_secondary_failure(exc, secondary, 'save_checkpoint')
                 raise
             entry.update(state='returned', value=deepcopy(value), value_hash=digest)
             self._write(record)

@@ -24,13 +24,15 @@ class Reviewer:
 
     def create(self, **kwargs):
         from types import SimpleNamespace
+        from test_action_result_flow import annotated_verdict
+        from planning_protocol_cases import wire_verdict
         payload = json.loads(kwargs['messages'][-1]['content'])
         self.calls.append(payload)
         if len(self.calls) == self.fail_batch:
             raise RuntimeError('offline interruption')
-        verdict = verdict_for(payload['storyboard'])
+        verdict = annotated_verdict(payload['storyboard'])
         return SimpleNamespace(choices=[SimpleNamespace(finish_reason='stop',
-            message=SimpleNamespace(content=json.dumps(verdict), refusal=None))])
+            message=SimpleNamespace(content=json.dumps(wire_verdict(verdict, kwargs)), refusal=None))])
 
 
 def test_large_plan_review_covers_all_units_and_boundaries_without_oversized_response(tmp_path, monkeypatch):
@@ -111,9 +113,9 @@ async def test_formal_long_plan_preserves_duration_and_resumes_all_admission_bat
     from pipeline.orchestrator import VideoPipeline
     from test_director_intent import Responses, draft
     from test_request_shape import intent
-    from authoring_cases import authoring_from_legacy
+    from authoring_cases import scene_authoring_from_legacy
 
-    authored = authoring_from_legacy(draft())
+    authored = scene_authoring_from_legacy(draft())
     original = authored['shots'][0]
     transition, interaction, _, hold = original['action_plan']
     original['action_plan'] = [transition, *[

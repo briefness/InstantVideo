@@ -49,6 +49,8 @@ async def test_formal_plan_only_preserves_multiple_results_and_resumes_without_c
                     {'entity': prop, 'state': prop_state, 'importance': 'required'},
                     {'entity': 'Dust', 'state': 'briefly airborne', 'importance': 'incidental'}])
     author = Responses({**intent_reply(brief), 'choreography': 'flexible',
+        'completion_goals': [{'goal': action + '; ' + target_state + '; ' + prop_state,
+                              'basis': 'user', 'evidence': brief}],
         'requested_duration_seconds': 15, 'duration_evidence': '15秒',
         'requested_shot_count': 3, 'shot_count_evidence': '三段'}, raw)
     calls = []
@@ -80,9 +82,14 @@ async def test_formal_plan_only_preserves_multiple_results_and_resumes_without_c
         assert any(c['entity'] == 'Dust' for b in shot['action_beats'] for c in result_claims(b).values())
     admitted = json.loads((pipeline.workspace / 'result_admission.json').read_text())['execution_storyboard']
     for shot in admitted['shots']:
-        event = compile_action_contract(shot).review_projection['action_events'][0]
-        assert {'entity': prop, 'state': prop_state} in event['outcomes']
-        assert event['incidental_changes'][0]['entity'] == 'Dust'
+        contract = compile_action_contract(shot).review_projection
+        event = contract['action_events'][0]
+        criteria = contract['completion_contract']['criteria']
+        function_keys = criteria[f"beat:{event['event_id']}/completion"]['supports']
+        assert function_keys and any(prop_state in criteria[k]['action'] for k in function_keys)
+        assert 'functional_responses' not in event  # One admitted goal owns completion.
+        assert 'Dust' not in json.dumps(contract['completion_contract'])
+        assert any(c['entity'] == 'Dust' for b in shot['action_beats'] for c in result_claims(b).values())
     assert not pipeline.run_workspace.manifest.paid_take_budget.reservations
     resumed = VideoPipeline.from_workspace(pipeline.workspace)
     resumed.plan_only = True
@@ -141,12 +148,14 @@ def test_visual_review_consumes_classified_contract_and_invalidates_changed_cach
 
 def test_real_old_response_cannot_slip_through_new_formal_protocol(monkeypatch):
     from pipeline.storyboard import generate_storyboard
+    from pipeline.authoring_contract import AuthoringContractError
     raw = json.loads((Path(__file__).parent / 'fixtures/real_outcome_ownership_failure.json').read_text())
     before = deepcopy(raw)
     identity = {k: v for k, v in annotated_story().items() if k != 'shots'}
     identity['scene_entities'] = ['Door', 'Dust']
     client = Responses({**intent_reply('连续动作'), 'choreography': 'flexible'}, identity, raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
-    with pytest.raises(ValueError, match='槽位绑定的必需作用'):
+    with pytest.raises(AuthoringContractError) as rejected:
         generate_storyboard('连续动作', target_duration=15)
+    assert {'path': '/shot/action_plan', 'constraint': 'type'} in rejected.value.issues
     assert len(client.calls) == 3 and raw == before

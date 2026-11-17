@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
 
 import config
 from pipeline.action_results import SceneChangeSpec, scene_change_issues
+from pipeline.motion_timing import MotionTimingSpec
+from pipeline.creative_direction import CreativeDirectionSpec
+from pipeline.completion_intent import CompletionIntent, CompletionGoal
+from pipeline.action_vocabulary import Activity, ResponseKind
+from pipeline.intent_evidence import Evidence, RequiredEvidence, evidence_grounded, has_evidence
+from pipeline.production_shape import DurationLimitsSpec
 
 
 class CameraSpec(BaseModel):
@@ -82,14 +88,17 @@ class ActionBeatSpec(BaseModel):
     outcomes: list[VisibleOutcomeSpec] | None = Field(default=None, min_length=1, max_length=16)
     scene_changes: list[SceneChangeSpec] | None = Field(default=None, max_length=14)
     result_directions: list[str] | None = Field(default=None, max_length=30)
+    result_functions: list[str] | None = Field(default=None, max_length=30)
+    completion_intent: CompletionIntent | None = None
     start_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
     end_seconds: float | None = Field(default=None, gt=0, strict=True, allow_inf_nan=False)
-    activity: Literal["interaction", "transition", "hold"] | None = None
+    activity: Activity | None = None
     interaction_geometry: InteractionGeometrySpec | None = None
     effect_at_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
     reaction_at_seconds: float | None = Field(default=None, ge=0, strict=True, allow_inf_nan=False)
-    response_kind: Literal["impact", "evasion", "deflection"] | None = None
+    response_kind: ResponseKind | None = None
     flow_from_previous: str | None = Field(default=None, min_length=1, max_length=800)
+    temporal_relation: Literal['sequential', 'overlap_previous'] | None = None
 
     @model_validator(mode='after')
     def owned_outcomes(self):
@@ -347,38 +356,62 @@ class DirectorIntentSpec(BaseModel):
     source_request: str = Field(min_length=1, max_length=16000)
     content_focus: Literal["action", "product", "balanced"]
     pacing: Literal["dense", "balanced", "atmospheric"]
-    intent_evidence: str = Field(min_length=1, max_length=16000)
+    intent_evidence: RequiredEvidence
     ending_requirement: str = Field(default="", max_length=1200)
-    ending_evidence: str = Field(default="", max_length=16000)
+    ending_evidence: Evidence = ''
     motion_control: Literal["text_guided", "reference_motion"] = "text_guided"
-    motion_control_evidence: str = Field(default="", max_length=16000)
+    motion_control_evidence: Evidence = ''
     choreography: Literal["exact", "flexible"] | None = None
     requested_duration_seconds: int | None = Field(default=None, strict=True, ge=4, le=600)
-    duration_evidence: str | None = Field(default=None, min_length=1, max_length=16000)
+    duration_evidence: RequiredEvidence | None = None
+    duration_mode: Literal['exact', 'approximate'] | None = None
     requested_shot_count: int | None = Field(default=None, strict=True, ge=1, le=150)
-    shot_count_evidence: str | None = Field(default=None, min_length=1, max_length=16000)
+    shot_count_evidence: RequiredEvidence | None = None
+    motion_timing: MotionTimingSpec | None = None
+    style_input: str | None = Field(default=None, min_length=1, max_length=1600)
+    creative_direction: CreativeDirectionSpec | None = None
+    completion_goals: list[CompletionGoal] | None = Field(default=None, min_length=1, max_length=150)
+
+    # 程序冻结执行协议；缺省表示历史流程，不由模型选择或恢复时推断。
+    authoring_protocol: Literal['scene-units-v1'] | None = None
+
+    @model_serializer(mode='wrap')
+    def serialize_intent(self, handler):
+        data = handler(self)
+        for name in ('motion_timing', 'style_input', 'creative_direction', 'authoring_protocol', 'completion_goals', 'duration_mode'):
+            if data.get(name) is None:
+                data.pop(name, None)
+        return data
 
     @model_validator(mode="after")
     def grounded_intent(self) -> "DirectorIntentSpec":
+        if self.completion_goals:
+            if any(not evidence_grounded(goal.evidence, self.source_request) for goal in self.completion_goals):
+                raise ValueError('可观察目标必须逐字引用用户原需求')
+        if self.creative_direction and not evidence_grounded(
+            self.creative_direction.evidence, self.source_request, self.style_input):
+            raise ValueError('创作方向必须逐字引用用户需求或风格输入')
+        if self.motion_timing and not evidence_grounded(self.motion_timing.evidence, self.source_request):
+            raise ValueError('动作速度要求必须逐字引用用户原文')
         for value, evidence in ((self.requested_duration_seconds, self.duration_evidence),
                                 (self.requested_shot_count, self.shot_count_evidence)):
             if (value is None) != (evidence is None):
                 raise ValueError('时长或段数要求与原文依据必须成对提供')
-            if evidence is not None and (not evidence.strip() or evidence not in self.source_request):
+            if evidence is not None and not evidence_grounded(evidence, self.source_request):
                 raise ValueError('时长或段数要求必须逐字引用原文')
-        if not self.intent_evidence.strip() or self.intent_evidence not in self.source_request:
+        if not evidence_grounded(self.intent_evidence, self.source_request):
             raise ValueError("意图依据必须逐字引用用户原文")
         if self.pacing == "dense" and self.content_focus != "action":
             raise ValueError("密集交互节奏必须与动作重心一致")
         if self.ending_requirement:
-            if not self.ending_evidence.strip() or self.ending_evidence not in self.source_request:
+            if not evidence_grounded(self.ending_evidence, self.source_request):
                 raise ValueError("结局要求必须有原文依据")
-        elif self.ending_evidence:
+        elif has_evidence(self.ending_evidence):
             raise ValueError("结局依据缺少对应要求")
         if self.motion_control == "reference_motion":
-            if not self.motion_control_evidence.strip() or self.motion_control_evidence not in self.source_request:
+            if not evidence_grounded(self.motion_control_evidence, self.source_request):
                 raise ValueError("动作参考要求必须有原文依据")
-        elif self.motion_control_evidence:
+        elif has_evidence(self.motion_control_evidence):
             raise ValueError("动作参考依据缺少对应要求")
         return self
 
@@ -403,6 +436,9 @@ class ProductionSlotSpec(BaseModel):
     required_outcome: str | None = Field(default=None, max_length=1200)
     choreography: Literal["exact", "flexible"] | None = None
     creative_brief: str | None = Field(default=None, max_length=16000)
+    authoring_protocol: Literal['scene-units-v1'] | None = None
+    motion_timing: MotionTimingSpec | None = None
+    creative_direction: CreativeDirectionSpec | None = None
     coverage_roles: list[
         Literal[
             "establish", "action_subject", "target_reaction",
@@ -415,6 +451,14 @@ class ProductionSlotSpec(BaseModel):
         "identity_or_state", "identity_only",
     ]
 
+    @model_serializer(mode='wrap')
+    def serialize_slot(self, handler):
+        data = handler(self)
+        for name in ('motion_timing', 'creative_direction', 'authoring_protocol'):
+            if data.get(name) is None:
+                data.pop(name, None)
+        return data
+
 
 class ProductionPlanSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -425,7 +469,16 @@ class ProductionPlanSpec(BaseModel):
     content_focus: Literal["balanced", "action", "product"]
     target_duration: int = Field(gt=0)
     planned_duration: int = Field(gt=0)
+    duration_allocation: list[Annotated[int, Field(strict=True, ge=4, le=15)]] | None = None
+    duration_limits: DurationLimitsSpec | None = None
     slots: list[ProductionSlotSpec] = Field(min_length=1)
+
+    @model_serializer(mode='wrap')
+    def preserve_legacy_capacity(self, handler):
+        value = handler(self)
+        if self.duration_limits is None:
+            value.pop('duration_limits', None)
+        return value
 
 
 class MotionReferenceSpec(BaseModel):
@@ -480,10 +533,20 @@ class ShotSpec(BaseModel):
     ] = "none"
     composition_change: Literal["small", "medium", "large"] = "medium"
     result_admission: Literal['review-required-v1', 'reviewed-results-v1'] | None = None
+    result_policy: Literal['functional-v1'] | None = None
+    completion_policy: Literal['admitted-intent-v1', 'source-goals-v1', 'goal-allocation-v1'] | None = None
+    completion_goals: dict[str, CompletionGoal] | None = None
     # 新编译稿显式启用；历史任务缺省保持原提示、合同指纹和恢复语义。
     generation_rhythm: Literal['allocated-v1'] | None = None
     generation_direction: Literal['authored-staging-v1'] | None = None
+    generation_execution: Literal['local-events-v1', 'local-events-v2', 'scene-instructions-v1', 'scene-instructions-v2'] | None = None
+    action_semantics: Literal['authored-v1'] | None = None
+    execution_semantics: Literal['intent-bounded-v1'] | None = None
     media_selection: Literal['planned-prefix-v1'] | None = None
+    continuity_evidence: Literal['temporal-window-v1'] | None = None
+    evidence_policy: Literal['witness-decisions-v1', 'grounded-requirements-v2'] | None = None
+    spatial_control: Literal['grounded-diagram-v1', 'observed-layout-v1'] | None = None
+    presentation_policy: Literal['local-reframe-v1'] | None = None
     coverage_role: Literal[
         "establish", "action_subject", "target_reaction",
         "interaction", "aftermath", "insert",
@@ -514,7 +577,10 @@ class ShotSpec(BaseModel):
 
     @model_validator(mode='after')
     def registered_scene_results(self):
-        if any(beat.scene_changes is not None or beat.result_directions is not None for beat in self.action_beats):
+        from pipeline.completion_intent import admitted_shot_intents
+        admitted_shot_intents(self.model_dump(mode='json'))
+        if any(beat.scene_changes is not None or beat.result_directions is not None
+               or beat.result_functions is not None for beat in self.action_beats):
             issues = scene_change_issues(self.model_dump(mode='json'))
             if issues:
                 raise ValueError('；'.join(issues))
@@ -729,7 +795,8 @@ class RunOptions(BaseModel):
     # Missing on disk means the original submission policy; new entrypoints select explicitly.
     take_policy: Literal['legacy', 'completion_first', 'single_pass'] = 'legacy'
     # Preserve the existing review gate for workspaces saved before delivery modes.
-    delivery_mode: Literal['reviewed', 'preview'] = 'reviewed'
+    delivery_mode: Literal['reviewed', 'normal', 'preview'] = 'reviewed'
+    planning_repair: bool = Field(default=True, strict=True)
     motion_control: Literal["auto", "text_guided", "reference_motion"] = "auto"
 
     @model_serializer(mode="wrap")
@@ -738,6 +805,8 @@ class RunOptions(BaseModel):
         # Default mode must keep existing checkpoint hashes and experiment identities.
         if data.get("delivery_mode") == "reviewed":
             data.pop("delivery_mode")
+        if data.get('planning_repair') is True:
+            data.pop('planning_repair')
         return data
 
     @field_validator("resolution")
@@ -787,6 +856,22 @@ class FailureEvidenceState(BaseModel):
     details: dict[str, str] = Field(default_factory=dict)
 
 
+class SubmissionDiagnosticState(BaseModel):
+    """提交边界白名单元数据，不接收异常正文、请求头或素材 URL。"""
+    model_config = ConfigDict(extra='forbid')
+    version: Literal['submission-evidence-v1']
+    phase: Literal['create_request', 'create_response']
+    observed_at: str = Field(min_length=1, max_length=64)
+    exception_type: str | None = Field(default=None, max_length=200)
+    cause_type: str | None = Field(default=None, max_length=200)
+    http_status: int | None = Field(default=None, ge=100, le=599, strict=True)
+    request_id: str | None = Field(default=None, max_length=200)
+    sdk_request_id: str | None = Field(default=None, max_length=200, pattern=r'^[A-Za-z0-9_.:-]+$')
+    response_request_id: str | None = Field(default=None, max_length=200, pattern=r'^[A-Za-z0-9_.:-]+$')
+    body_request_id: str | None = Field(default=None, max_length=200, pattern=r'^[A-Za-z0-9_.:-]+$')
+    error_code: str | None = Field(default=None, max_length=200)
+
+
 class PromptAttemptState(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -800,6 +885,7 @@ class PromptAttemptState(BaseModel):
     provider_error_locus: str | None = None
     provider_error_code: str | None = None
     failure_evidence: list[FailureEvidenceState] = Field(default_factory=list)
+    submission_diagnostic: SubmissionDiagnosticState | None = None
 
 
 class PendingTaskDescriptor(BaseModel):
@@ -845,7 +931,8 @@ class TakeRecordState(BaseModel):
         default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
     )
     semantic_evaluator_version: str | None = None
-    acceptance_policy: Literal["semantic_reviewed", "technical_only"] | None = None
+    acceptance_policy: Literal["semantic_reviewed", "reviewed_with_warnings", "technical_only"] | None = None
+    review_warnings: list[str] = Field(default_factory=list)
     rejection_evidence: list[FailureEvidenceState] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
@@ -874,7 +961,8 @@ class ShotTaskState(BaseModel):
         default=None, min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
     )
     semantic_evaluator_version: str | None = None
-    acceptance_policy: Literal["semantic_reviewed", "technical_only"] | None = None
+    acceptance_policy: Literal["semantic_reviewed", "reviewed_with_warnings", "technical_only"] | None = None
+    review_warnings: list[str] = Field(default_factory=list)
     recovery_actions: list[str] = Field(default_factory=list)
     prompt_attempts: list[PromptAttemptState] = Field(default_factory=list)
     take_history: list[TakeRecordState] = Field(default_factory=list)
@@ -926,6 +1014,10 @@ class RunManifest(BaseModel):
     paid_take_budget: PaidTakeBudgetState = Field(default_factory=PaidTakeBudgetState)
     shots: dict[str, ShotTaskState] = Field(default_factory=dict)
     final_path: str | None = None
+    delivery_fingerprint: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$"
+    )
+    delivery_base: dict[str, Any] | None = None
     error: str | None = None
 
 

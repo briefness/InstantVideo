@@ -20,6 +20,7 @@ def test_result_and_target_ids_are_constrained_to_the_same_frozen_registry():
 
 @pytest.mark.parametrize('where', ['target', 'scene_change', 'prop'])
 def test_provider_ignoring_registry_stops_before_next_shot_without_alias_guessing(monkeypatch, where):
+    from pipeline.authoring_contract import AuthoringContractError
     story = annotated_story()
     story['scene_entities'] = ['Door', 'Dust']
     shot = story['shots'][0]
@@ -32,8 +33,14 @@ def test_provider_ignoring_registry_stops_before_next_shot_without_alias_guessin
     original = deepcopy(story)
     client = Responses({**intent_reply('15秒连续交互'), 'choreography': 'flexible'}, story)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
-    with pytest.raises(ValueError, match='未注册|已登记'):
+    with pytest.raises(AuthoringContractError) as caught:
         generate_storyboard('15秒连续交互', target_duration=15)
+    path, constraint = {
+        'target': ('/shot/action_plan/interaction_1/target', 'enum'),
+        'scene_change': ('/shot/action_plan/interaction_1/resolution/states', 'additionalProperties'),
+        'prop': (f'/shot/prop_roles/{len(shot["key_props"])-1}/entity', 'enum'),
+    }[where]
+    assert {'path': path, 'constraint': constraint} in caught.value.issues
     assert len(client.calls) == 3 and story == original
 
 
@@ -67,7 +74,7 @@ def test_actual_http_schema_uses_frozen_ids_and_derives_per_shot_registrations(m
     values = [{**intent_reply('15秒连续交互'), 'choreography': 'flexible'},
               {k: v for k, v in story.items() if k != 'shots'}]
     plan = build_production_plan('action', 15, intent={**values[0], 'source_request': '15秒连续交互'})
-    values += [{'shot': {k: v for k, v in scheduled_shot_fixture(shot, slot).items() if k != 'shot_id'}}
+    values += [{'shot': {k: v for k, v in scheduled_shot_fixture(shot, slot, execution_timing=True).items() if k != 'shot_id'}}
                for shot, slot in zip(story['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, values)
     with sdk:

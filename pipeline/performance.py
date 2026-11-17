@@ -5,11 +5,27 @@ import math
 import json
 from copy import deepcopy
 from bisect import bisect_left, bisect_right
-from pipeline.action_results import required_outcomes, incidental_changes
+from pipeline.action_results import required_outcomes, incidental_changes, functional_outcomes
+from pipeline.motion_timing import motion_timing_projection, motion_timing_instruction, PHRASE_SCOPE
 
 
 OBSERVED_TIMES = ('observed_start_seconds', 'observed_effect_seconds',
                   'observed_reaction_seconds', 'observed_end_seconds')
+
+
+def local_event_execution(shot: dict) -> bool:
+    """新编译稿显式选择执行投影；不把已提交旧请求按新语义重建。"""
+    version = shot.get('generation_execution')
+    if version is None:
+        return False
+    if version not in ('local-events-v1', 'local-events-v2', 'scene-instructions-v1', 'scene-instructions-v2'):
+        raise ValueError('未知的逐镜执行投影协议')
+    return True
+
+
+def scene_frame_execution(shot: dict) -> bool:
+    """场景状态与取景范围分离只用于新稿，不迁移历史请求。"""
+    return local_event_execution(shot) and shot['generation_execution'] in ('local-events-v2', 'scene-instructions-v1', 'scene-instructions-v2')
 
 
 def flexible_choreography(shot: dict) -> bool:
@@ -26,13 +42,49 @@ def performance_projection(shot: dict) -> dict:
     has_outcomes = [bool(b.get('outcomes')) for b in events]
     if any(has_outcomes) and not all(has_outcomes):
         raise ValueError('独立结果合同不能只覆盖部分交互')
-    return {'version': 'performance-v2-outcomes' if events and all(has_outcomes) else 'performance-v1', 'duration': shot['duration'],
+    motion_timing = motion_timing_projection(shot)
+    policy = {'version': 'performance-v2-outcomes' if events and all(has_outcomes) else 'performance-v1', 'duration': shot['duration'],
             'creative_brief': slot.get('creative_brief', ''),
             'shot_function': slot.get('narrative_function', ''),
             'min_interaction_seconds': slot.get('min_interaction_seconds', 0),
             'result_hold_seconds': slot.get('result_hold_seconds', 0),
+            **({'motion_timing': motion_timing} if motion_timing else {}),
             **({'result_authority': 'reviewed-results-v1'}
                if shot.get('result_admission') == 'reviewed-results-v1' else {})}
+    if shot.get('execution_semantics') == 'intent-bounded-v1':
+        policy['time_basis'] = 'sample-bounds-v1'
+    if any(b.get('temporal_relation') is not None for b in shot.get('action_beats', [])):
+        from pipeline.action_timing import action_timing_issues, sequence_events
+        if action_timing_issues(shot):
+            raise ValueError('不能从无效时间轴构建事件依赖')
+        ordered = sequence_events(shot)
+        policy['event_order'] = [{
+            'event_id': event['event_id'],
+            'after_ends': [prior['event_id'] for prior in ordered[:i]
+                           if prior['end_seconds'] <= event['start_seconds']],
+            'after_effects': [prior['event_id'] for prior in ordered[:i]
+                              if event.get('flow_from_previous') and prior['event_id'] == event['event_id'] - 1],
+        } for i, event in enumerate(ordered)]
+    # 无测时义务的结构化场景仍须证明因果顺序与结果，但不要求臆测秒数。
+    # 全片密度分配不能因逐镜下限为零而被误豁免。
+    if (policy['version'] == 'performance-v2-outcomes'
+            and slot.get('authoring_protocol') == 'scene-units-v1'
+            and not shot.get('generation_rhythm')
+            and policy['min_interaction_seconds'] == 0 and policy['result_hold_seconds'] == 0):
+        policy['temporal_evidence'] = 'causal-order-v1'
+    return policy
+
+
+def requires_measured_timing(policy: dict | None) -> bool:
+    if not policy:
+        return False
+    scope = policy.get('temporal_evidence')
+    if scope is None:
+        return True
+    if (scope != 'causal-order-v1' or policy.get('min_interaction_seconds', 0) != 0
+            or policy.get('result_hold_seconds', 0) != 0):
+        raise ValueError('时间证据范围与执行义务不一致')
+    return False
 
 
 def outcome_text(outcomes: list[dict]) -> str:
@@ -52,14 +104,18 @@ def active_interval_shape_issues(item: dict) -> list[str]:
 def performance_review_projection(shot: dict, events: list[dict]) -> dict:
     """Do not expose suggested paths as alternate acceptance authorities."""
     projected = []
+    event_ids = {event['event_id'] for event in events}
     for event in events:
         geometry = event['interaction_geometry']
         projected.append({**{k: event[k] for k in ('event_id', 'actor', 'target',
             'start_seconds', 'end_seconds', 'effect_at_seconds', 'reaction_at_seconds')},
             'outcomes': required_outcomes(event),
+            **({'functional_responses': functional_outcomes(event)} if event.get('result_functions') else {}),
             **({'incidental_changes': incidental_changes(event)} if event.get('scene_changes') else {}),
             'response_kind': event.get('response_kind', 'impact'),
             'flow_from_previous': 'continuous momentum handoff' if event.get('flow_from_previous') else '',
+            **({'temporal_relation': event['temporal_relation']}
+               if event.get('temporal_relation') and event['event_id'] - 1 in event_ids else {}),
             'interaction_geometry': {k: geometry[k] for k in ('interaction_mode', 'outcome_scope', 'unaffected_behavior')}})
     final = outcome_text(required_outcomes(events[-1]))
     end_state = deepcopy(shot.get('end_state'))
@@ -96,15 +152,22 @@ def measured_performance(evidence: list[dict], policy: dict, timestamps: list[fl
             or not 0 < retained <= duration):
         raise ValueError('剪辑范围必须是原片内的有限正数')
     samples = sorted(set([0., duration, *(min(duration, t) for t in timestamps)]))
+    basis = policy.get('time_basis')
+    if basis not in (None, 'sample-bounds-v1'):
+        raise ValueError('未知的时间证据基准')
     lower, upper, previous_start, previous_effect = [], [], -1., -1.
     last_end_bounds = (0., 0.)
     for item in evidence:
         if observed_timing_shape_issues(item) or active_interval_shape_issues(item):
             raise ValueError('时间证据包含非法数值')
         start, effect, reaction, end = (item[k] for k in OBSERVED_TIMES)
-        if not 0 <= start <= effect < reaction <= end <= duration:
+        if basis == 'sample-bounds-v1':
+            valid_range = 0 <= start <= min(effect, reaction) <= max(effect, reaction) <= end <= duration
+        else:
+            valid_range = 0 <= start <= effect < reaction <= end <= duration
+        if not valid_range:
             raise ValueError('时间证据的作用反应顺序或范围无效')
-        if start < previous_start or effect <= previous_effect:
+        if basis is None and (start < previous_start or ('event_order' not in policy and effect <= previous_effect)):
             raise ValueError('时间证据事件顺序无效')
         def bracket(t):
             # Even a labeled frame does not establish a sub-frame transition.
@@ -124,6 +187,8 @@ def measured_performance(evidence: list[dict], policy: dict, timestamps: list[fl
             previous_end = b
         last_end_bounds = max(last_end_bounds[0], e0), max(last_end_bounds[1], e1)
         previous_start, previous_effect = start, effect
+    if basis is None and _observed_order_issues(evidence, policy):
+        raise ValueError('时间证据违背已声明的事件依赖')
     def occupancy(intervals):
         occupied, end = 0., 0.
         for start, stop in sorted(intervals):
@@ -137,8 +202,15 @@ def measured_performance(evidence: list[dict], policy: dict, timestamps: list[fl
     hold_low, hold_high = retained - last_end_bounds[1], retained - last_end_bounds[0]
     failed = high < minimum or hold_high < hold
     passed = low >= minimum and hold_low >= hold
+    order = None
+    if basis == 'sample-bounds-v1':
+        from pipeline.sample_order import sampled_causal_order
+        order = sampled_causal_order(evidence, policy, samples)
+        failed = failed or order['status'] == 'failed'
+        passed = passed and order['status'] == 'passed'
     return {'status': 'failed' if failed else 'passed' if passed else 'uncertain',
-            'interaction_seconds': [low, high], 'result_hold_seconds': [hold_low, hold_high]}
+            'interaction_seconds': [low, high], 'result_hold_seconds': [hold_low, hold_high],
+            **({'causal_order': order} if order is not None else {})}
 
 
 def allocated_interaction_target(shot: dict) -> float | None:
@@ -154,8 +226,23 @@ def allocated_interaction_target(shot: dict) -> float | None:
     return planned_interaction_seconds([shot])
 
 
-def performance_instruction(policy: dict, *, include_brief: bool = True,
+def performance_event_staging(event: dict) -> str:
+    """生成保留每个事件的空间原稿，不能拿精简的验收投影代替拍摄指导。"""
+    geometry = event['interaction_geometry']
+    direction = {key: geometry[key] for key in (
+        'source', 'effect_region', 'actor_screen_position', 'target_screen_position',
+        'effect_motion', 'must_share_frame', 'line_of_action_visible', 'occlusion_policy',
+    ) if key in geometry and geometry[key] not in (None, '')}
+    if not direction:
+        return ''
+    return ('; Spatial staging during this action, not the shot initial state '
+            '(authored direction, not additional outcomes): '
+            + json.dumps(direction, ensure_ascii=False, sort_keys=True, allow_nan=False))
+
+
+def performance_instruction(policy: dict, *, include_brief: bool = True, local_execution: bool = False,
                             interaction_target_seconds: float | None = None) -> str:
+    motion_timing = policy.get('motion_timing') or {}
     rhythm = (
         f"Show at least {policy['min_interaction_seconds']:g}s of actual interaction within "
         f"{policy['duration']:g}s; posing and camera movement do not count. "
@@ -163,18 +250,34 @@ def performance_instruction(policy: dict, *, include_brief: bool = True,
         f"Allocate about {interaction_target_seconds:g}s of this {policy['duration']:g}s shot "
         'to actual interaction, carrying the whole-film rhythm allocation into this performance. '
         'This is a pacing target, not fixed timestamps or a separate per-shot acceptance minimum. '
-        'Let the ordered causes and responses flow within that time; do not stretch holds or '
-        'invent extra events. Entrances, posing, pauses and camera-only movement do not count. '
+        'Let the ordered causes and responses flow within that time; '
+        + ('do not stretch gestures to consume the window or add new plot outcomes. '
+           if motion_timing else 'do not stretch holds or invent extra events. ')
+        + 'Entrances, posing, pauses and camera-only movement do not count. '
     )
+    if not requires_measured_timing(policy):
+        rhythm = ''
     return (
         'Choreography is performance-guided: planned paths, poses and absolute beat times are '
         'direction suggestions. Preserve each ordered actor/target cause, response kind, scope '
         'and visible state change, the shot endpoint, identity, readable physical continuity and '
         'camera intent. Adapt the route and pace to flowing movement; no teleportation, impossible '
-        'contact, extra injury or uncaused result. Explicit movements requested in creative_brief '
-        'remain required; apply whole-film requests to this shot_function, not every shot at once. '
+        'contact, extra injury or uncaused result. '
+        + ('Temporal overlap and momentum transfer are separate. Independent overlapping actions may have '
+           'effects in either order; preserve each cause-before-response and the event_order dependencies '
+           '(after_ends: predecessor finishes before this starts; after_effects: predecessor acts before this acts). '
+           'Do not serialize independent concurrent performances or invent a momentum transfer. '
+           if 'event_order' in policy else '')
+        + ('Explicit movements requested in creative_brief remain required; apply whole-film '
+           'requests to this shot_function, not every shot at once. '
+           if not local_execution else
+           'Perform the ordered actions and admitted states of this shot. The plan already '
+           'allocates the other story events to their own shots; do not replay or anticipate them. '
+           + 'Current narrative function: ' + json.dumps(policy['shot_function'], ensure_ascii=False) + '. ')
         + rhythm
-        + f"Establish the final result before holding it for {policy['result_hold_seconds']:g}s. "
+        + (motion_timing_instruction(motion_timing) + PHRASE_SCOPE + ' ' if motion_timing else '')
+        + (f"Establish the final result before holding it for {policy['result_hold_seconds']:g}s. "
+           if requires_measured_timing(policy) else '')
         + ('Independently reviewed outcomes are the state obligations. An empty outcomes list '
            'means no additional fixed-state requirement: the declared cause and target response '
            'must still visibly occur. Suggested performance details may vary; do not turn their '
@@ -202,13 +305,46 @@ def observed_performance_issues(evidence: list[dict], policy: dict) -> list[str]
         if not 0 <= start <= effect < reaction <= end <= policy['duration']:
             issues.append(f"事件{item['event_id']}实际作用与反应时间无效")
             continue
-        if start < previous_start or effect <= previous_effect:
+        if start < previous_start or ('event_order' not in policy and effect <= previous_effect):
             issues.append('实际动作因果顺序被颠倒')
         occupied += max(0., end - max(start, union_end))
         union_end = max(union_end, end)
         previous_start, previous_effect = start, effect
+    issues.extend(_observed_order_issues(evidence, policy))
     if occupied + 1e-6 < policy['min_interaction_seconds']:
         issues.append('实际可见交互时长不足；不能用计划时间或重叠重复计数补足')
     if evidence and union_end + policy['result_hold_seconds'] > policy['duration'] + 1e-6:
         issues.append('实际动作结束后没有足够时间确认结果')
+    return issues
+
+
+def _observed_order_issues(evidence: list[dict], policy: dict) -> list[str]:
+    """按冻结合同的偏序核对，不把没有依赖的并行作用强制排成全序。"""
+    if 'event_order' not in policy:
+        return []
+    order = policy['event_order']
+    if (not isinstance(order, list) or len(order) != len(evidence)
+            or any(not isinstance(row, dict) or set(row) != {'event_id', 'after_ends', 'after_effects'}
+                   for row in order)):
+        raise ValueError('事件依赖合同格式无效')
+    prior, issues = {}, []
+    for row, item in zip(order, evidence):
+        event_id = row['event_id']
+        if (type(event_id) is not int or event_id <= 0 or event_id in prior
+                or type(item.get('event_id')) is not int or item['event_id'] != event_id
+                or observed_timing_shape_issues(item)):
+            raise ValueError('事件依赖与实际证据身份不一致')
+        for field, earlier_key, later_key in (
+            ('after_ends', 'observed_end_seconds', 'observed_start_seconds'),
+            ('after_effects', 'observed_effect_seconds', 'observed_effect_seconds'),
+        ):
+            ids = row[field]
+            if (not isinstance(ids, list) or any(type(i) is not int or i not in prior for i in ids)
+                    or len(ids) != len(set(ids))):
+                raise ValueError('事件依赖必须指向已有事件，不能自引用、循环或重复')
+            for previous in ids:
+                a, b = prior[previous][earlier_key], item[later_key]
+                if a > b or (field == 'after_effects' and a == b):
+                    issues.append(f'事件{event_id}违反对事件{previous}的时序依赖')
+        prior[event_id] = item
     return issues

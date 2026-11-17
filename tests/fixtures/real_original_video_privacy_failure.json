@@ -1,0 +1,23 @@
+{
+  "run": "20261109_170639_010038",
+  "model": "doubao-seedance-2.0-fast",
+  "source_hashes": [
+    "c856508fd14c369b244c9097ed9ce9c93f5009930f859eb3de1b9e7d9c4c9453",
+    "f79c92317d3b81be50d6196224eff40aadc913a9b9383347fbd36fbd8d6dea91"
+  ],
+  "content_hashes": {
+    "2": "709bfe2b4344c7b67a5ed1659d67211c172f29d4357cac628ea743f612c55e41",
+    "3": "47ffb0ae33b6b09a2ced1476703396e9cc0731c7e9dea372544bde61afb2e846"
+  },
+  "error": {
+    "code": "InputVideoSensitiveContentDetected.PrivacyInformation",
+    "message": "The request failed because the input video 'content[1]' 'content[2]' may contain real person. Request id: 021794216055288a4e0bfe9b623ca70f9090a72d521bae2f0926b",
+    "param": "content[1]",
+    "type": "BadRequest"
+  },
+  "http_status": 400,
+  "request_id": "20261109172055gbc2lxO2ISeSUx76zNcC",
+  "request_id_source": "legacy diagnostic / SDK exception attribute; not proof of a response header",
+  "body_request_id": "021794216055288a4e0bfe9b623ca70f9090a72d521bae2f0926b",
+  "note": "仅保留原记录中的任务外诊断与摘要，不含凭据、签名素材地址或原视频。400 指向整个请求，不能据此给单个来源永久判定不合格。"
+}

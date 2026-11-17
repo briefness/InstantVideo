@@ -143,6 +143,11 @@ def infer_transitions(shots: list[dict]) -> list[tuple[str, float]]:
         current = shots[i]
         next_shot = shots[i + 1]
 
+        from pipeline.creative_direction import creative_direction_projection
+        if creative_direction_projection(current).get('editing') == 'cut':
+            transitions.append(('cut', 0.0))
+            continue
+
         # 提取运动信息
         cam_cur = current.get("camera", {})
         cam_nxt = next_shot.get("camera", {})

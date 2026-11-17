@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from pipeline.action_vocabulary import ACTIVITIES, RESPONSE_MODES
 
 MIN_INTERACTION_MS = 350
 MIN_PASSIVE_MS = 100
@@ -14,13 +15,6 @@ def passive_floor_ms(activities: list[str], result_hold_seconds: float) -> int:
         floor += max(0, round(result_hold_seconds * 1000) - MIN_PASSIVE_MS)
     return floor
 
-RESPONSE_MODES = {
-    'impact': ('direct_contact', 'directed_path', 'area_effect', 'indirect_effect'),
-    'evasion': ('directed_path',),
-    'deflection': ('direct_contact', 'directed_path'),
-}
-
-
 def _number(value: object) -> bool:
     return type(value) is int or (type(value) is float and math.isfinite(value))
 
@@ -28,7 +22,8 @@ def _number(value: object) -> bool:
 def sequence_required(shot: dict) -> bool:
     slot = shot.get('production_slot')
     beats = shot.get('action_beats')
-    return bool((isinstance(slot, dict) and slot.get('min_interaction_events')) or (
+    return bool((isinstance(slot, dict) and (slot.get('min_interaction_events')
+                 or slot.get('authoring_protocol') == 'scene-units-v1')) or (
         isinstance(beats, list) and any(isinstance(b, dict) and any(
             b.get(k) is not None for k in ('interaction_geometry', 'effect_at_seconds', 'reaction_at_seconds', 'response_kind', 'flow_from_previous')
         ) for b in beats)))
@@ -105,7 +100,7 @@ def timing_required(shot: dict) -> bool:
     if not isinstance(slot, dict) or not isinstance(beats, list):
         return True
     return bool(sequence_required(shot) or slot.get('min_interaction_seconds') or slot.get('result_hold_seconds') or any(
-        any(beat.get(key) is not None for key in ('start_seconds', 'end_seconds', 'activity'))
+        any(beat.get(key) is not None for key in ('start_seconds', 'end_seconds', 'activity', 'temporal_relation'))
         for beat in beats if isinstance(beat, dict)))
 
 
@@ -120,10 +115,11 @@ def action_timing_issues(shot: dict) -> list[str]:
             or not _number(duration) or duration <= 0):
         return [f'{label}: 缺少可执行的动作时间轴']
     issues, cursor, interaction, interaction_end = action_sequence_issues(shot), 0., 0., 0.
+    explicit = any(b.get('temporal_relation') is not None for b in beats)
     for index, beat in enumerate(beats):
         start, end, activity = (beat.get(k) for k in ('start_seconds', 'end_seconds', 'activity'))
         if (not _number(start) or not _number(end) or start < 0 or end <= start
-                or end > duration or activity not in ('interaction', 'transition', 'hold')
+                or end > duration or activity not in ACTIVITIES
                 or beat.get('phase') not in ('trigger', 'peak', 'aftermath')):
             issues.append(f'{label}: 节拍{index + 1}时间/活动类型无效')
             continue
@@ -137,7 +133,23 @@ def action_timing_issues(shot: dict) -> list[str]:
             and _number(beat.get('effect_at_seconds'))
             and previous['effect_at_seconds'] < beat['effect_at_seconds']
         )
-        if abs(start - cursor) > 1e-6 and not linked_overlap:
+        if explicit:
+            relation = beat.get('temporal_relation')
+            if relation == 'sequential':
+                valid = abs(start - cursor) <= 1e-6
+            elif relation == 'overlap_previous':
+                valid = bool(index and _number(previous.get('start_seconds'))
+                             and previous['start_seconds'] <= start < cursor < end)
+                if (valid and beat.get('flow_from_previous')
+                        and activity == previous.get('activity') == 'interaction'):
+                    valid = (_number(previous.get('effect_at_seconds'))
+                             and _number(beat.get('effect_at_seconds'))
+                             and previous['effect_at_seconds'] < beat['effect_at_seconds'])
+            else:
+                valid = False
+            if not valid:
+                issues.append(f'{label}: 节拍{index + 1}声明的时间关系与时间窗不一致')
+        elif abs(start - cursor) > 1e-6 and not linked_overlap:
             issues.append(f'{label}: 动作时间轴有空隙或重叠')
         cursor = end
         if activity == 'interaction':
@@ -163,6 +175,7 @@ def action_timing_issues(shot: dict) -> list[str]:
             established = any(b.get('phase') == 'peak' and b.get('activity') == 'interaction'
                               and b.get('visible_result') for b in beats[:-1])
             if (not established or last.get('phase') != 'aftermath' or last.get('activity') != 'hold'
+                    or last.get('temporal_relation') == 'overlap_previous'
                     or not last.get('visible_result') or not _number(last.get('start_seconds'))
                     or not _number(last.get('end_seconds'))
                     or last['end_seconds'] - last['start_seconds'] + 1e-6 < hold):
@@ -173,8 +186,10 @@ def action_timing_issues(shot: dict) -> list[str]:
 def timing_projection(shot: dict) -> dict:
     if not timing_required(shot) or action_timing_issues(shot):
         return {}
-    return {'version': 'action-timing-v1', 'duration': shot['duration'],
-            'intervals': [{key: beat[key] for key in ('start_seconds', 'end_seconds', 'activity', 'phase')}
+    explicit = any(b.get('temporal_relation') is not None for b in shot['action_beats'])
+    return {'version': 'action-timing-v2-relations' if explicit else 'action-timing-v1', 'duration': shot['duration'],
+            'intervals': [{key: beat[key] for key in ('start_seconds', 'end_seconds', 'activity', 'phase', 'temporal_relation')
+                           if beat.get(key) is not None}
                           for beat in shot['action_beats']],
             'min_interaction_seconds': (shot.get('production_slot') or {}).get('min_interaction_seconds', 0),
             'result_hold_seconds': (shot.get('production_slot') or {}).get('result_hold_seconds', 0)}
@@ -187,7 +202,7 @@ def sequence_events(shot: dict) -> list[dict]:
     return [dict(event_id=index, **{k: beat[k] for k in (
         'actor', 'target', 'action', 'visible_result', 'start_seconds', 'end_seconds',
         'effect_at_seconds', 'reaction_at_seconds', 'interaction_geometry')},
-        **{k: beat[k] for k in ('flow_from_previous', 'response_kind', 'outcomes', 'scene_changes', 'result_directions') if beat.get(k) is not None})
+        **{k: beat[k] for k in ('flow_from_previous', 'temporal_relation', 'response_kind', 'outcomes', 'scene_changes', 'result_directions', 'result_functions') if beat.get(k) is not None})
         for index, beat in enumerate(shot['action_beats'], 1) if beat.get('activity') == 'interaction']
 
 
@@ -199,6 +214,18 @@ def event_shot(event: dict) -> dict:
             'end_state': {'action_phase': event['visible_result']}}
 
 
+def beat_timing_instruction(beat: dict, index: int) -> str:
+    """生成可省略绝对秒数，但不能丢失动作之间的时间关系。"""
+    relation = beat.get('temporal_relation')
+    if relation is None or index == 1:
+        return ''
+    if relation == 'overlap_previous':
+        return f'Temporal relation for Beat {index}: begin while Beat {index - 1} is still underway.'
+    if relation == 'sequential':
+        return f'Temporal relation for Beat {index}: begin after Beat {index - 1} finishes, without an imposed pause.'
+    raise ValueError('未知动作时间关系')
+
+
 def timing_constraint(shot: dict) -> str:
     projection = timing_projection(shot)
     if not projection:
@@ -206,10 +233,19 @@ def timing_constraint(shot: dict) -> str:
     windows = '; '.join(f"{w['start_seconds']:g}-{w['end_seconds']:g}s {w['phase']}/{w['activity']}"
                         for w in projection['intervals'])
     flow = (
-        "Explicitly linked overlapping interactions unfold together; preserve momentum without resetting "
-        "between beats. Count overlapping time only once, not as extra action duration. "
+        ("For explicitly linked actions, preserve the declared momentum handoff without resetting between beats. "
+         if projection['version'] == 'action-timing-v2-relations' else
+         "Explicitly linked overlapping interactions unfold together; preserve momentum without resetting "
+         "between beats. Count overlapping time only once, not as extra action duration. ")
         if any(beat.get('flow_from_previous') for beat in shot['action_beats']) else ''
     )
+    if any(beat.get('temporal_relation') == 'overlap_previous' for beat in shot['action_beats']):
+        flow += ("Overlapping windows are simultaneous performances. Keep each actor and target assigned to its own action; "
+                 "concurrency alone does not imply a shared movement or transfer. Count overlapping time only once. ")
+    if ((shot.get('production_slot') or {}).get('authoring_protocol') == 'scene-units-v1'
+            and not projection['min_interaction_seconds']):
+        return (f"Timed scene schedule: {windows}. Follow the ordered performances within these windows. "
+                + flow + "Preserve each subject's action and visible state; add no unplanned interaction.")
     return (f"Timed action schedule: {windows}. Follow the ordered action beats within these windows. "
             f"Show at least {projection['min_interaction_seconds']:g}s of visible subject interaction; "
             "camera motion, posing, anticipation and an outcome held still do not count. "

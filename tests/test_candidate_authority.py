@@ -188,35 +188,55 @@ def test_invalid_candidate_state_is_not_coerced(value):
         CandidateResolution.model_validate({'states': {'B': [{'state': value}]}})
 
 
-def test_real_formal_replay_advances_once_without_inventing_uncaptured_shots(tmp_path, monkeypatch):
+@pytest.mark.parametrize('frozen_contract', [True, False])
+def test_real_formal_replay_advances_once_without_inventing_uncaptured_shots(tmp_path, monkeypatch, frozen_contract):
     import config
+    from pipeline.authoring_contract import AuthoringContractError
     from pipeline.orchestrator import VideoPipeline
     from test_director_intent import Responses
     import asyncio
     record = captured()
     sources = {n: json.loads(s['text']) for n, s in record['sources'].items()}
+    # 回放旧契约时直接使用冻结意图，不让新版意图解释器重标记历史记录。
+    assert not record['intent'].get('authoring_protocol')
+    if frozen_contract:
+        monkeypatch.setattr('pipeline.storyboard.resolve_director_intent',
+                            lambda *_args, **_kwargs: deepcopy(record['intent']))
+    responses = [sources['planning_identity.json'], sources['planning_shot_001.json']]
+    if not frozen_contract:
+        responses.insert(0, {k: v for k, v in record['intent'].items() if k != 'source_request'})
+    recorded_calls = len(responses)
     class EndOfCapture(RuntimeError):
         pass
     class Replay(Responses):
         def create(self, **kwargs):
-            if len(self.calls) == 3:
+            if len(self.calls) == recorded_calls:
                 assert json.loads(kwargs['messages'][-1]['content'])['slot']['shot_id'] == 2
                 raise EndOfCapture('second shot was never recorded')
             return super().create(**kwargs)
-    client = Replay({k: v for k, v in record['intent'].items() if k != 'source_request'},
-                    sources['planning_identity.json'], sources['planning_shot_001.json'])
+    client = Replay(*responses)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **_: client)
     monkeypatch.setattr(config, 'OUTPUT_DIR', tmp_path)
     pipeline = VideoPipeline(plan_only=True, paid_take_budget=0, take_policy='single_pass')
-    with pytest.raises(EndOfCapture):
+    failure = (pytest.raises(EndOfCapture) if frozen_contract else
+               pytest.raises(AuthoringContractError))
+    with failure as caught:
         asyncio.run(pipeline.run(record['intent']['source_request']))
-    assert len(client.calls) == 3
+    assert len(client.calls) == recorded_calls
     assert json.loads((pipeline.workspace / 'planning_shot_001.json').read_text()) == sources['planning_shot_001.json']
+    assert not pipeline.run_workspace.manifest.paid_take_budget.reservations
+    assert captured() == record
+    if not frozen_contract:
+        assert {'path': '/shot/action_plan/interaction_1', 'constraint': 'additionalProperties'} in caught.value.issues
+        assert {'path': '/shot/action_plan/interaction_1', 'constraint': 'required'} in caught.value.issues
+        diagnostic = json.loads((pipeline.workspace/'planning_shot_001_contract_error.json').read_text())
+        assert diagnostic == {'version': 'authoring-contract-v1', 'issues': caught.value.issues}
+        assert not (pipeline.workspace / 'planning_lowering.json').exists()
+        return
     trace = json.loads((pipeline.workspace / 'planning_lowering.json').read_text())
     assert trace['version'] == 'authoring-lowering-v2-candidates'
     assert any(c['entity'] == 'SWORD_WHITE' and c['importance'] == 'incidental'
                and c['destination'].startswith('outcomes/') for u in trace['units'] for c in u['claims'])
-    assert not pipeline.run_workspace.manifest.paid_take_budget.reservations
 
 
 @pytest.mark.asyncio

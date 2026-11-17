@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from pipeline.causality import EFFECT_PHASES, interaction_geometry
 from pipeline.camera_contract import compile_camera
+from pipeline.performance import local_event_execution, scene_frame_execution
 
 
 VISUAL_INVARIANTS_VERSION = "visual-invariants-v3-subject-motion"
@@ -40,14 +41,17 @@ def compile_visual_invariants(shot: dict) -> CompiledVisualInvariants:
     required_entities = _labels(shot.get("required_visible_entities"))
     key_props = _labels(shot.get("key_props"))
     continuity_props = _labels(shot.get("continuity_props"))
-    screen_positions = safe_screen_positions(
-        (shot.get("camera") or {}).get("screen_positions")
-        if isinstance(shot.get("camera"), dict)
-        else None
-    )
+    screen_positions = initial_screen_positions(shot)
 
     prompt_parts: list[str] = []
     projection: dict[str, object] = {"version": VISUAL_INVARIANTS_VERSION}
+    scoped = scene_frame_execution(shot)
+    if scoped:
+        projection['visibility_scope'] = {
+            'required_in_frame': list(required_entities),
+            'persistent_in_world': list(continuity_props),
+            'inventory_in_world': list(key_props),
+        }
     if setting:
         projection["setting_identity"] = setting
         prompt_parts.append(
@@ -79,10 +83,19 @@ def compile_visual_invariants(shot: dict) -> CompiledVisualInvariants:
     if continuity_props:
         projection["persistent_props"] = list(continuity_props)
         prompt_parts.append(
-            "positive lock - these continuity props must not disappear, duplicate, "
-            "or change form unless the Action Contract requires it: "
+            ("world persistence - these props retain identity, form and physical state across cuts; "
+             "leaving the camera field of view is not disappearance from the scene: " if scoped else
+             "positive lock - these continuity props must not disappear, duplicate, "
+             "or change form unless the Action Contract requires it: ")
             + ", ".join(continuity_props)
         )
+    if scoped:
+        prompt_parts.append(
+            'Frame visibility follows the current camera and required_in_frame subjects, including '
+            'the parts needed to show their action. Scene inventory does not require a wide shot or '
+            'every object and whole body in frame. Preserve off-screen world state for later shots; '
+            'do not move objects into frame or invent their completion. Required actions and their '
+            'spatial results must remain readable, including which surface or recipient receives an object.')
     if screen_positions:
         projection["initial_screen_positions"] = dict(screen_positions)
         prompt_parts.append(
@@ -94,7 +107,8 @@ def compile_visual_invariants(shot: dict) -> CompiledVisualInvariants:
         )
 
     camera_parts, camera_projection = compile_camera(shot)
-    orientations = safe_body_orientations(shot.get("blocking"))
+    from pipeline.completion_intent import admitted_shot_intents
+    orientations = {} if admitted_shot_intents(shot) else safe_body_orientations(shot.get("blocking"))
     if orientations:
         projection["body_orientations"] = orientations
         projection["body_orientation_scope"] = "initial; subject pose and camera-relative view may evolve with contracted actions"
@@ -145,6 +159,15 @@ def visual_invariants_fingerprint(shot: dict) -> str | None:
         projection, sort_keys=True, ensure_ascii=False, separators=(",", ":")
     ).encode()
     return hashlib.sha256(payload).hexdigest()
+
+
+def initial_screen_positions(shot: dict) -> tuple[tuple[str, str], ...]:
+    # 新创作的构图字段可含全镜运动路径，不是结构化的开场位置。
+    # 原文通过staging_projection保留；不能把其中的方位词另立为状态义务。
+    if local_event_execution(shot):
+        return ()
+    camera = shot.get('camera')
+    return safe_screen_positions(camera.get('screen_positions') if isinstance(camera, dict) else None)
 
 
 def safe_screen_positions(value: object) -> tuple[tuple[str, str], ...]:

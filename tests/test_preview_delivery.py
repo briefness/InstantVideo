@@ -1,5 +1,6 @@
 """Whole-film delivery is distinct from content approval; no real service calls."""
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -38,9 +39,14 @@ async def test_complete_preview_keeps_actual_tail_and_never_claims_content_appro
     assert not services.reviews and not services.entries
     assert all(call['model'] == config.SEEDANCE_MODEL for call in services.submissions)
     for shot_id, submission in enumerate(services.submissions[1:], 1):
-        assert submission['image_role'] == 'first_frame'
+        assert submission['image_role'] == 'reference_image'
         assert Path(submission['image_urls'][0]) == pipeline.workspace / f'shots/shot_{shot_id:03d}_lastframe.jpg'
         assert Path(submission['image_urls'][0]).is_file()
+        provenance = json.loads((pipeline.workspace / f'shots/shot_{shot_id + 1:03d}_generation.json').read_text())
+        assert provenance['reference_fingerprints'][0] == hashlib.sha256(
+            Path(submission['image_urls'][0]).read_bytes()).hexdigest()
+        assert provenance['acceptance_context']['policy'] == 'technical_only'
+    assert not (pipeline.workspace / 'continuations').exists()
     manifest = RunWorkspace.resume(pipeline.workspace).manifest
     assert manifest.status.value == 'succeeded'
     assert len(manifest.paid_take_budget.reservations) == 3
@@ -62,6 +68,24 @@ async def test_complete_preview_keeps_actual_tail_and_never_claims_content_appro
     assert restored.delivery_mode == 'preview'
     assert await restored.run() == output
     assert counts == (len(services.submissions), len(services.author.calls), len(services.planning))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('review_content', [None, True])
+async def test_only_explicit_preview_can_use_unreviewed_reference_handoff(tmp_path, monkeypatch, review_content):
+    from pipeline.generator import VideoGenerator
+    from pipeline.continuation import ContinuationUnavailableError
+    from test_temporal_visual_handoff import captured, ROOT
+    story, shot, previous, _ = captured()
+    previous.pop('observed_end_state')
+    monkeypatch.setattr(config, 'SEMANTIC_REVIEW_ENABLED', False)
+    monkeypatch.setattr('pipeline.generator.SeedanceAPI', lambda: object())
+    monkeypatch.setattr('pipeline.generator.SemanticTakeReviewer', lambda *_, **__: object())
+    monkeypatch.setattr('pipeline.continuation.OpenAI', lambda **_: pytest.fail('missing evidence cannot invoke a model'))
+    generator = VideoGenerator(str(tmp_path), review_content=review_content)
+    with pytest.raises(ContinuationUnavailableError, match='缺少上一镜观察状态'):
+        await generator._generate_single_shot(
+            shot, str(ROOT / 'shots/shot_001_lastframe.jpg'), previous, story)
 
 
 @pytest.mark.asyncio

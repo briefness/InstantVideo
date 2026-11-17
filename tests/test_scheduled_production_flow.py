@@ -67,17 +67,17 @@ class ScheduledServices(ProductionServices):
                 boundary_state_evidence={key: True for key in (
                     'prior_state_preserved', 'state_progress_not_reversed',
                     'open_motion_handoff_valid', 'persistent_entities_preserved', 'scene_identity_preserved')})
-            return completion(response)
+            from functional_observation_cases import annotated_observation_response
+            return completion(annotated_observation_response(response, kwargs))
         context = json.loads(user)
+        if context.get('protocol') in {'observation-support-v4-evidence-context', 'observation-support-v5-visual-evidence'}:
+            return super().create(**kwargs)
         if 'storyboard' in context:
             self.planning.append(context)
             story = context['storyboard']
             return completion(wire_verdict(annotated_outcome(annotated_verdict(story), story), kwargs))
         if 'observed_state' in context:
-            self.entries.append(context)
-            return completion({'compatible': True,
-                'entry_action': 'continues the cooperative movement from the observed shared position',
-                'reason': 'explicit offline compatibility annotation'})
+            return super().create(**kwargs)
         return self.author.create(**kwargs)
 
 
@@ -93,8 +93,9 @@ def scheduled_services(tmp_path, monkeypatch):
     for index in range(3):
         source = tmp_path / f'source-{index}.mp4'
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
-            f'testsrc2=s={dimensions}:r=24:d={5.125 + index / 24}', '-f', 'lavfi', '-i',
-            'sine=frequency=440:duration=6', '-vf', f'hue=h={index * 90}',
+            f'testsrc2=s={dimensions}:r=24:d={5.125 + index / 24 + index * 7}', '-f', 'lavfi', '-i',
+            'sine=frequency=440:duration=6', '-vf',
+            f'trim=start={index * 7},setpts=PTS-STARTPTS,hue=h={index * 90}',
             '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-shortest', str(source)], check=True)
         sources.append(source)
@@ -123,7 +124,7 @@ async def test_variable_work_reaches_final_export_and_resumes_without_services(s
     assert len(services.author.calls) == 5 and len(services.planning) == 1
     assert len(services.submissions) == 3 and len(services.entries) == 2
     assert all(s['model'] == config.SEEDANCE_MODEL for s in services.submissions)
-    assert [s['image_role'] for s in services.submissions] == [None, 'first_frame', 'first_frame']
+    assert [s['image_role'] for s in services.submissions] == [None, 'reference_image', 'reference_image']
     for index, entry in enumerate(services.entries):
         assert entry['observed_state'] == {k: services.story['shots'][index]['end_state'][k]
             for k in ('location', 'subject', 'action_phase')}

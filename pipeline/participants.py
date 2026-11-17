@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 import re
 from typing import Literal
+from pipeline.action_vocabulary import INDEPENDENT_ACTIVITIES
 
 
 _BLOCKING_TARGET_FIELDS = (
@@ -49,30 +50,46 @@ def canonical_participant_id(
     fallback_to_single: bool = False,
 ) -> str:
     """Resolve descriptive LLM labels only when one stable entity ID is unambiguous."""
+    return _resolve_entity_id(value, candidates, exclude=exclude, fallback_to_single=fallback_to_single)
+
+
+def _resolve_entity_id(
+    value: object,
+    candidates: Iterable[str],
+    *,
+    exclude: Iterable[str] = (),
+    lexical_candidates: Iterable[str] = (),
+    fallback_to_single: bool = False,
+) -> str:
+    """一次解析决定优先级；精确身份、排除与歧义都不能降级成更弱的猜测。"""
     raw = str(value or "").strip()
     if not raw or raw.casefold() == "none":
         return raw
-    excluded = {str(name).strip() for name in exclude if str(name).strip()}
-    catalog = list(dict.fromkeys(
-        str(name).strip()
-        for name in candidates
-        if str(name).strip() and str(name).strip() not in excluded
-    ))
+    catalog = _entity_ids(candidates)
+    excluded = set(_entity_ids(exclude))
+    # exclude约束别名候选，不能把已经明确指向的ID改成另一身份。
     if raw in catalog:
         return raw
-
     key = _participant_key(raw)
+    if not key:
+        return raw
     exact = [name for name in catalog if _participant_key(name) == key]
-    if len(exact) == 1:
-        return exact[0]
+    if exact:
+        return exact[0] if len(exact) == 1 and exact[0] not in excluded else raw
+    allowed = [name for name in catalog if name not in excluded]
     contained = [
-        name for name in catalog
-        if _participant_key(name) in key or key in _participant_key(name)
+        name for name in allowed
+        if _participant_key(name) and (_participant_key(name) in key or key in _participant_key(name))
     ]
-    if len(contained) == 1:
-        return contained[0]
-    if fallback_to_single and len(catalog) == 1:
-        return catalog[0]
+    if contained:
+        return contained[0] if len(contained) == 1 else raw
+    lexical = set(lexical_candidates)
+    tokens = _entity_tokens(raw)
+    matches = [name for name in allowed if name in lexical and tokens.intersection(_entity_tokens(name))]
+    if matches:
+        return matches[0] if len(matches) == 1 else raw
+    if fallback_to_single and len(allowed) == 1:
+        return allowed[0]
     return raw
 
 
@@ -87,22 +104,8 @@ def canonical_entity_id(
     exclude: Iterable[str] = (),
 ) -> str:
     """Resolve an entity only with exact, contained, or unique lexical evidence."""
-    raw = str(value or "").strip()
-    resolved = canonical_participant_id(raw, candidates, exclude=exclude)
-    if resolved != raw:
-        return resolved
-    excluded = {str(name).strip() for name in exclude if str(name).strip()}
-    catalog = list(dict.fromkeys(
-        str(name).strip()
-        for name in candidates
-        if str(name).strip() and str(name).strip() not in excluded
-    ))
-    tokens = _entity_tokens(raw)
-    matches = [
-        name for name in catalog
-        if tokens.intersection(_entity_tokens(name))
-    ]
-    return matches[0] if len(matches) == 1 else raw
+    catalog = _entity_ids(candidates)
+    return _resolve_entity_id(value, catalog, exclude=exclude, lexical_candidates=catalog)
 
 
 def canonical_target_id(
@@ -112,11 +115,7 @@ def canonical_target_id(
     exclude: Iterable[str] = (),
 ) -> str:
     """Resolve targets across structured entities, then use lexical evidence for characters only."""
-    raw = str(value or "").strip()
-    resolved = canonical_participant_id(raw, registry.target_ids, exclude=exclude)
-    if resolved != raw:
-        return resolved
-    return canonical_entity_id(raw, registry.characters, exclude=exclude)
+    return _resolve_entity_id(value, registry.target_ids, exclude=exclude, lexical_candidates=registry.characters)
 
 
 def _entity_tokens(value: object) -> set[str]:
@@ -156,6 +155,9 @@ def _entity_ids(values: Iterable[str]) -> list[str]:
 
 
 def _canonical_prop_ids(shot: dict, themes: Iterable[str]) -> list[str]:
+    declared = _declared_prop_ids(shot)
+    if declared is not None:
+        return declared
     canonical: list[str] = []
     theme_ids = _entity_ids(themes)
     for field in ("key_props", "continuity_props"):
@@ -172,6 +174,12 @@ def _canonical_prop_ids(shot: dict, themes: Iterable[str]) -> list[str]:
 
 
 def _normalize_prop_fields(shot: dict, themes: Iterable[str]) -> list[str]:
+    declared = _declared_prop_ids(shot)
+    if declared is not None:
+        for field in ('key_props', 'continuity_props'):
+            if isinstance(shot.get(field), list):
+                shot[field] = _entity_ids(shot[field])
+        return declared
     canonical: list[str] = []
     theme_ids = _entity_ids(themes)
     for field in ("key_props", "continuity_props"):
@@ -188,6 +196,14 @@ def _normalize_prop_fields(shot: dict, themes: Iterable[str]) -> list[str]:
             canonical.append(resolved)
         shot[field] = list(dict.fromkeys(normalized))
     return list(dict.fromkeys(canonical))
+
+
+def _declared_prop_ids(shot: dict) -> list[str] | None:
+    # 新结构化创作的登记已经冻结，不能把两个独立主键当成描述性别名合并。
+    if (shot.get('production_slot') or {}).get('authoring_protocol') != 'scene-units-v1':
+        return None
+    return _entity_ids(value for field in ('key_props', 'continuity_props')
+                       if isinstance(shot.get(field), list) for value in shot[field])
 
 
 def iter_structured_entity_references(
@@ -225,8 +241,10 @@ def iter_structured_entity_references(
     for beat in shot.get("action_beats", []):
         if not isinstance(beat, dict):
             continue
+        scene_subject = ((shot.get('production_slot') or {}).get('authoring_protocol') == 'scene-units-v1'
+                         and beat.get('activity') in INDEPENDENT_ACTIVITIES)
         references.append(StructuredEntityReference(
-            "action_beats.actor", beat.get("actor"), "character"
+            "action_beats.actor", beat.get("actor"), "target" if scene_subject else "character"
         ))
         references.append(StructuredEntityReference(
             "action_beats.target", beat.get("target"), "target"
@@ -260,7 +278,7 @@ def structured_entity_reference_issues(
 ) -> list[str]:
     """Validate every structured entity reference against one registry."""
     registry = shot_entity_registry(shot, character_names, theme_elements)
-    if not registry.characters:
+    if not registry.characters and (shot.get('production_slot') or {}).get('authoring_protocol') != 'scene-units-v1':
         return []
 
     shot_id = shot.get("shot_id", "?")
@@ -275,6 +293,7 @@ def structured_entity_reference_issues(
                 issues.append(f"Shot {shot_id}: {field} 引用未注册实体 {raw}")
 
     blocking = shot.get("blocking", {})
+    has_action_target = False
     if isinstance(blocking, dict):
         geometry = shot.get("interaction_geometry", {})
         phase = str(geometry.get("effect_phase", "")).strip() if isinstance(geometry, dict) else ""

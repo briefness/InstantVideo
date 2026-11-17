@@ -19,12 +19,14 @@ from pipeline.readiness import ensure_storyboard_ready
 from pipeline.planning_review import ensure_planning_semantics
 from pipeline.scene_binding import resolve_scene_bindings
 from pipeline.run_state import RunWorkspace
+from pipeline.delivery import prepare_delivery, resume_delivery
 from pipeline.planning_checkpoint import PlanningCheckpoint, FILENAME as PLANNING_CHECKPOINT_FILENAME
 from pipeline.motion_reference import validate_workspace_motion
 from pipeline.motion_preparation import prepare_motion_previsualization
 from pipeline.semantic_review import SemanticReviewUnavailableError
 from tools import ffmpeg_ops, beat_analyzer
 from tools.tts import synthesize_voiceover, TTSSegment
+from tools.voiceover_state import VoiceoverStateError
 
 console = Console()
 
@@ -49,6 +51,7 @@ class VideoPipeline:
         plan_only: bool = False,
         take_policy: str = 'completion_first',
         delivery_mode: str = 'reviewed',
+        planning_repair: bool = True,
     ):
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
@@ -60,6 +63,7 @@ class VideoPipeline:
         self.delivery_mode = delivery_mode
         self.motion_control = motion_control
         self.plan_only = plan_only
+        self.planning_repair = planning_repair
         self.run_workspace = run_workspace
         self.workspace = run_workspace.path if run_workspace else None
         self._resuming = run_workspace is not None
@@ -79,6 +83,7 @@ class VideoPipeline:
             motion_control=options.motion_control,
             take_policy=options.take_policy,
             delivery_mode=options.delivery_mode,
+            planning_repair=options.planning_repair,
         )
 
     async def run(self, user_request: str | None = None) -> str:
@@ -101,6 +106,7 @@ class VideoPipeline:
                 paid_take_budget=self.paid_take_budget,
                 take_policy=self.take_policy,
                 delivery_mode=self.delivery_mode,
+                planning_repair=self.planning_repair,
                 motion_control=self.motion_control,
             )
             self.run_workspace = RunWorkspace.create(config.OUTPUT_DIR, options)
@@ -112,6 +118,16 @@ class VideoPipeline:
 
     async def _run_owned(self, user_request: str) -> str:
         """仅持有工作区执行权时读取恢复输入、运行与写入结束状态。"""
+        from pipeline.operation_failure import record_run_failure
+        # 母版交付是纯本地阶段，不因外部素材过期重新进入规划、生成或口播。
+        try:
+            delivered = resume_delivery(self.run_workspace)
+            if delivered:
+                console.print(f"[green]✓ 已核对成片并完成平台导出: {delivered}[/green]")
+                return delivered
+        except Exception as exc:
+            record_run_failure(self.run_workspace, exc)
+            raise
         if self._resuming and not (self.workspace / 'storyboard.json').exists():
             # 仅新协议的纯规划进度可恢复；已建立镜头/付费记录却丢稿不能重新规划。
             if (self.run_workspace.manifest.shots
@@ -141,7 +157,7 @@ class VideoPipeline:
             self.run_workspace.mark_interrupted()
             raise
         except Exception as exc:
-            self.run_workspace.mark_failed(str(exc))
+            record_run_failure(self.run_workspace, exc)
             raise
 
     def _prepare_execution_inputs(self, storyboard: dict) -> None:
@@ -207,6 +223,7 @@ class VideoPipeline:
                 resolution=self.resolution,
                 style=self.style,
                 planning_checkpoint=planning_checkpoint,
+                **({'allow_repair': False} if not self.run_workspace.options.planning_repair else {}),
             )
             self._save_json("storyboard_draft.json", storyboard)
 
@@ -237,7 +254,8 @@ class VideoPipeline:
                                              self._save_json, locked_shot_ids=locked_shots)
         ensure_storyboard_ready(storyboard)
         if self.plan_only:
-            if any(s.get('generation_direction') for s in storyboard['shots']):
+            if any(s.get('generation_direction') or (s.get('production_slot') or {}).get('creative_direction')
+                   for s in storyboard['shots']):
                 from pipeline.provider_prompt import compile_generation_preview
                 preview = compile_generation_preview(storyboard, model=config.SEEDANCE_MODEL)
                 self._save_json('generation_preview.json', preview)
@@ -282,6 +300,7 @@ class VideoPipeline:
                 accepted_contract_fingerprint=result.accepted_contract_fingerprint,
                 semantic_evaluator_version=result.semantic_evaluator_version,
                 acceptance_policy=result.acceptance_policy,
+                review_warnings=result.review_warnings,
                 recovery_actions=result.recovery_actions,
                 prompt_attempts=result.prompt_attempts,
                 rejection_evidence=result.rejection_evidence,
@@ -312,6 +331,7 @@ class VideoPipeline:
             resume_tasks=self.run_workspace.resumable_pending_tasks(),
             accepted_shot_artifacts=self.run_workspace.accepted_shot_artifacts(),
             review_content=False if preview_delivery else None,
+            review_mode=None if preview_delivery else ('normal' if self.delivery_mode == 'normal' else 'strict'),
         )
         results = await generator.generate_all(storyboard)
         self._save_json("generation_results.json", [r.__dict__ for r in results])
@@ -326,9 +346,11 @@ class VideoPipeline:
                 f"镜头 {', '.join(failed_ids)} 生成失败；运行状态已保存，可使用 --resume 继续"
             )
 
+        film_warnings = []
         if not preview_delivery:
             from pipeline.film_rhythm import ensure_observed_film_rhythm
-            ensure_observed_film_rhythm(storyboard, success_results, self.workspace)
+            film_warnings = ensure_observed_film_rhythm(storyboard, success_results, self.workspace,
+                **({'review_mode': 'normal'} if self.delivery_mode == 'normal' else {})) or []
         self.run_workspace.checkpoint("postprocessing", RunStatus.running)
 
         # ─── Stage 2.5: 规格统一 ───
@@ -343,9 +365,11 @@ class VideoPipeline:
         ]
 
         for r in success_results:
+            from pipeline.presentation_media import resolve_presentation
             norm_path = str(norm_dir / Path(r.local_path).name)
-            planned = next(shot["duration"] for shot in storyboard["shots"] if shot["shot_id"] == r.shot_id)
-            ffmpeg_ops.normalize_video(r.local_path, norm_path, resolution=target_res, duration=planned)
+            shot = next(shot for shot in storyboard["shots"] if shot["shot_id"] == r.shot_id)
+            presented = resolve_presentation(r.local_path, shot, self.workspace)
+            ffmpeg_ops.normalize_video(presented, norm_path, resolution=target_res, duration=shot['duration'])
             video_files.append(norm_path)
             media_durations[r.shot_id] = ffmpeg_ops.get_video_duration(norm_path)
         self._shot_media_durations = media_durations
@@ -387,6 +411,10 @@ class VideoPipeline:
         vo_segments: list[TTSSegment] = []
         try:
             vo_segments = await synthesize_voiceover(storyboard, str(self.workspace))
+        except VoiceoverStateError:
+            # 付费调用或来源记录未决不能降级成“可选音频不可用”，否则会
+            # 交付缺少已请求口播的成片，恢复也无法判断是否可以再次合成。
+            raise
         except Exception as e:
             console.print(f"   ⚠ TTS 合成失败 ({e}), 跳过口播")
 
@@ -455,48 +483,26 @@ class VideoPipeline:
         final_path = str(self.workspace / ("preview.mp4" if preview_delivery else "final.mp4"))
         shutil.copyfile(visual_path, final_path)
         expected_final_duration = sum(shot["duration"] for shot in storyboard["shots"]) - sum(t[1] for t in transitions)
-        validation_reports = {
-            "final": ffmpeg_ops.validate_publish_ready(
-                final_path,
-                expected_duration=expected_final_duration,
-                duration_tolerance=0.15,
-            ),
-            "exports": {},
-        }
-        final_duration = validation_reports["final"]["duration"]
-        console.print(f"   ✓ {Path(final_path).name} 技术校验通过")
-
-        # 多平台导出
-        exports_dir = self.workspace / "exports"
-        exports_dir.mkdir(exist_ok=True)
-        for platform in self.platforms:
-            export_path = str(exports_dir / f"{platform}.mp4")
-            ffmpeg_ops.export_for_platform(final_path, platform, export_path)
-            validation_reports["exports"][platform] = ffmpeg_ops.validate_publish_ready(
-                export_path,
-                platform=platform,
-                expected_duration=final_duration,
-            )
-            console.print(f"   📤 {platform}: {export_path}")
-            console.print("      ✓ 发布校验通过")
-
-        self._save_json("publish_validation.json", validation_reports)
-        self._save_json("delivery_report.json", {
+        prepare_delivery(self.run_workspace, final_path, expected_duration=expected_final_duration, report={
             "version": "delivery-v1",
             "mode": self.run_workspace.options.delivery_mode,
             "output": Path(final_path).name,
             "technical_validation": "passed",
+            "warnings": [*film_warnings, *[f'Shot {r.shot_id}: {w}'
+                for r in success_results for w in r.review_warnings]],
             "content_acceptance": (
+                "with_warnings" if film_warnings or any(r.review_warnings for r in success_results) else
                 "passed" if not preview_delivery and success_results
                 and all(r.semantic_accepted is True for r in success_results)
                 else "not_reviewed"
             ),
             "shots": [{"shot_id": r.shot_id, "acceptance_policy": r.acceptance_policy,
-                       "semantic_accepted": r.semantic_accepted} for r in success_results],
+                       "semantic_accepted": r.semantic_accepted, "warnings": r.review_warnings} for r in success_results],
         })
+        final_path = resume_delivery(self.run_workspace)
 
         # ─── 完成 ───
-        duration = final_duration
+        duration = ffmpeg_ops.get_video_duration(final_path)
         console.print(Panel(
             f"[bold green]✅ {'预览成片（内容待验收）' if preview_delivery else '成片输出'}[/bold green]\n\n"
             f"  路径: {final_path}\n"
@@ -506,7 +512,6 @@ class VideoPipeline:
             title="完成", border_style="green",
         ))
 
-        self.run_workspace.mark_succeeded(final_path)
         return final_path
 
     def _generate_srt(
@@ -602,6 +607,10 @@ class VideoPipeline:
 
     def _auto_select_music(self, storyboard: dict) -> str | None:
         """根据分镜 mood/music_style 自动匹配本地音乐"""
+        from pipeline.creative_direction import CreativeDirectionSpec
+        direction = ((storyboard.get('production_plan') or {}).get('director_intent') or {}).get('creative_direction')
+        if direction and CreativeDirectionSpec.model_validate(direction).sound == 'native_only':
+            return None
         music_style = storyboard.get("music_style", "").lower()
         mood = storyboard.get("mood", "").lower()
 

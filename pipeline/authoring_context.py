@@ -21,7 +21,7 @@ def contextual_shot_schema(schema: dict, locations: list[SceneLocation], entitie
     result = deepcopy(schema)
     shot = result['properties']['shot']
     # 与动作参与者共用已冻结的目录；对象位置和角色站位不是可自由命名的区域表。
-    names = result['$defs']['PassiveUnit']['properties']['actor']['enum']
+    names = result['$defs']['InteractionUnit']['oneOf'][0]['properties']['actor']['enum']
     for mapping, owners, description in (
         (result['$defs']['CameraSpec']['properties']['screen_positions'], [*names, *entities],
          '实体ID到画面位置的映射；区域、路径和构图描述写在值或composition中。'),

@@ -2,6 +2,8 @@
 dist/
 output/
 docs/*
+!docs/cinematic-style-atlas.md
+!docs/director-method-atlas.md
 !docs/adr/
 docs/adr/*
 !docs/adr/0001-single-action-contract-owner.md

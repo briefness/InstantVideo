@@ -21,10 +21,12 @@ def test_formal_planner_accepts_explicitly_empty_noninteraction_geometry(monkeyp
             if beat['activity'] != 'interaction':
                 beat['interaction_geometry'] = deepcopy(empty)
     # Historical persisted full storyboards keep their input-boundary compatibility.
-    client = Responses(intent_reply(request, pacing='balanced'), raw)
+    from test_planning_no_repair import frozen_legacy_intent
+    frozen_legacy_intent(monkeypatch, request)
+    client = Responses(raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     result = generate_storyboard(request, target_duration=15)
-    assert len(client.calls) == 2
+    assert len(client.calls) == 1
     assert all(b.get('interaction_geometry') is None for s in result['shots']
                for b in s['action_beats'] if b['activity'] != 'interaction')
     assert raw['shots'][0]['action_beats'][0]['interaction_geometry'] == empty
@@ -88,14 +90,16 @@ async def test_formal_failed_planning_keeps_both_raw_attempts_and_checks(tmp_pat
     bad = draft()
     bad['shots'][0]['action_beats'][1]['interaction_geometry']['source'] = ''
     # The legacy non-event authoring path still owns its bounded correction.
-    client = Responses(intent_reply(request, pacing='balanced'), bad, deepcopy(bad))
+    from test_planning_no_repair import frozen_legacy_intent
+    frozen_legacy_intent(monkeypatch, request)
+    client = Responses(bad, deepcopy(bad))
     monkeypatch.setattr(config, 'OUTPUT_DIR', tmp_path)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     monkeypatch.setattr('pipeline.orchestrator.VideoGenerator', lambda *a, **kw: pytest.fail('invalid plan reached provider'))
     pipeline = VideoPipeline(paid_take_budget=0)
     with pytest.raises(ValueError, match='自动修正 1 次后仍未通过'):
         await pipeline.run(request)
-    assert len(client.calls) == 3
+    assert len(client.calls) == 2
     for attempt in (1, 2):
         raw = json.loads((pipeline.workspace / f'planning_draft_{attempt}.json').read_text())
         check = json.loads((pipeline.workspace / f'planning_check_{attempt}.json').read_text())

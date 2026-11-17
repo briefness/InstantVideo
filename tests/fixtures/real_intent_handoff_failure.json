@@ -1,0 +1,737 @@
+{
+  "workspace": "output/20261103_194758_925345/",
+  "hashes": {
+    "storyboard.json": "dd6b0401655d0d88b8181f742b695eba5818aab9f53eeba30a1a207d9091e775",
+    "planning_authoring.json": "6906d5ed2a83f757140ebf44cad4660f4d9b5e6d1eea82600edd424bdc5a9b60",
+    "result_admission.json": "7c636e77be5d1ac00fc4df2753e6cf8267131bb7bfd246cfa22d7eed5f55029d",
+    "planning_semantic_review.json": "b2a624ccf94622425508cda2fdc446d963ce5d67d8f1ed08f4f4ac8163fffa37",
+    "semantic_reviews/responses/a4df43dc43a4a7adde44a0271cbb995edcb05a5678e32a66971078268fae7698/fdc62cc2443e45f1b077da9137d6f417.json": "70327e2a37f9c1afe658afaca72674c1c9ff94d23c32b738786973b7f93a3eb9"
+  },
+  "shot": {
+    "shot_id": 2,
+    "duration": 6,
+    "scene_id": "residential_dining_room",
+    "scene_description": "普通住宅内的餐厅空间，含通向玄关的门口阈值、一张木质餐桌、若干餐椅，窗边可见雨夜街灯；室内光线偏暖，无多余装饰。",
+    "prompt_en": "16:9宽幅固定中景，普通住宅餐厅内景。画面右侧是坐在木质餐桌旁的林阿姨，中左位置是一把空餐椅，左边缘露出站在餐厅门口阈值的小安上半身与黑色拉杆箱一角；背景是雨痕流淌的窗，窗外冷蓝光斑被暖黄桌面灯光压暗。480p质感平实克制，桌面区域被暖光罩住，人物动作集中在玻璃杯的移动上。 右手从桌边抬起，握住透明温水杯，沿木质桌面平稳移到空餐椅靠近过道的一侧，轻轻放下，没有发出磕碰声。. 玻璃杯立在空椅旁的桌面上，杯壁仍带温水的微汽；林阿姨的手松开杯身，收回桌边。. 站在门口阈值后，目光跟着玻璃杯从林阿姨手边移到空椅旁，搭在行李箱把手上的手指慢慢松开，肩头绷紧的弧度略微下沉。. 小安没有立刻迈步，但身体朝向餐桌的倾向更明显，视线从杯子抬回林阿姨脸上。. 保持坐姿，没有起身也没有开口，只把安静的视线落在小安身上，给她留出走近的空间。. 空椅旁的温水杯与门口的小安之间形成无声邀请，两人隔着餐桌距离继续对视。.",
+    "visual_description": "16:9宽幅固定中景，普通住宅餐厅内景。画面右侧是坐在木质餐桌旁的林阿姨，中左位置是一把空餐椅，左边缘露出站在餐厅门口阈值的小安上半身与黑色拉杆箱一角；背景是雨痕流淌的窗，窗外冷蓝光斑被暖黄桌面灯光压暗。480p质感平实克制，桌面区域被暖光罩住，人物动作集中在玻璃杯的移动上。",
+    "continuity_from_previous": "intentional_cut",
+    "composition_change": "medium",
+    "result_admission": "reviewed-results-v1",
+    "result_policy": "functional-v1",
+    "generation_direction": "authored-staging-v1",
+    "generation_execution": "local-events-v1",
+    "media_selection": "planned-prefix-v1",
+    "coverage_role": "interaction",
+    "required_visible_entities": [
+      "Lin_Ayi",
+      "Xiao_An",
+      "clear_glass_warm_water"
+    ],
+    "interaction_geometry": {
+      "actor": "Lin_Ayi",
+      "target": "clear_glass_warm_water",
+      "interaction_mode": "direct_contact",
+      "effect_phase": "active",
+      "outcome_scope": "single",
+      "effect_motion": "static",
+      "source": "Lin_Ayi's right hand",
+      "effect_region": "wooden_dining_table surface from Lin_Ayi's side to empty_dining_chair side",
+      "reaction_scope": "one clearly isolated intended target within the visible effect region",
+      "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+      "must_share_frame": true,
+      "line_of_action_visible": false,
+      "actor_screen_position": "right side seated at wooden_dining_table",
+      "target_screen_position": "right-center initially, then center-left beside empty_dining_chair",
+      "occlusion_policy": "none"
+    },
+    "narrative_beat": {
+      "function": "progress",
+      "state_before": "小安尚未入座，行李箱仍在门口，温水还放在林阿姨手边；重聚的接纳动作将在下一镜开始。",
+      "state_change": "林阿姨没有出声招呼，伸手把桌边的温水杯平稳移到空椅旁的桌面，用这个动作向小安留出座位；小安在门口看见杯子被放好，犹豫的姿态松动。",
+      "state_after": "温水已放在空椅旁，小安尚未入座，行李箱仍在门口；下一镜将靠近、放下行李、坐下并接住推来的杯子。"
+    },
+    "production_slot": {
+      "shot_id": 2,
+      "duration": 6,
+      "narrative_function": "progress",
+      "allowed_effect_phases": [
+        "none",
+        "setup",
+        "active",
+        "aftermath"
+      ],
+      "requires_visible_result": false,
+      "min_interaction_seconds": 0,
+      "min_interaction_events": 0,
+      "result_hold_seconds": 0,
+      "choreography": "flexible",
+      "creative_brief": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+      "authoring_protocol": "scene-units-v1",
+      "motion_timing": {
+        "performer_tempo": "natural",
+        "playback": "real_time",
+        "evidence": "正常时间播放，不用慢镜头。"
+      },
+      "creative_direction": {
+        "version": "creative-direction-v1",
+        "references": [
+          "domestic_restraint",
+          "ang_lee"
+        ],
+        "methods": [
+          "restrained_reaction",
+          "ensemble_space"
+        ],
+        "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+        "rationale": "用户明确要求以情绪与关系为主、不要密集肢体交互，并指定李安式克制反应；因此用视线、距离和小动作表达靠近，不加入夸张哭喊或额外冲突。硬切与现场声为明确要求，不使用配乐或叠化。",
+        "editing": "cut",
+        "sound": "native_only"
+      },
+      "coverage_roles": [
+        "action_subject",
+        "interaction",
+        "insert",
+        "target_reaction"
+      ],
+      "framing_family": "medium",
+      "reference_policy": "state_and_identity"
+    },
+    "primary_action": "右手从桌边抬起，握住透明温水杯，沿木质桌面平稳移到空餐椅靠近过道的一侧，轻轻放下，没有发出磕碰声。; 站在门口阈值后，目光跟着玻璃杯从林阿姨手边移到空椅旁，搭在行李箱把手上的手指慢慢松开，肩头绷紧的弧度略微下沉。; 保持坐姿，没有起身也没有开口，只把安静的视线落在小安身上，给她留出走近的空间。",
+    "action_beats": [
+      {
+        "phase": "peak",
+        "actor": "Lin_Ayi",
+        "action": "右手从桌边抬起，握住透明温水杯，沿木质桌面平稳移到空餐椅靠近过道的一侧，轻轻放下，没有发出磕碰声。",
+        "target": "clear_glass_warm_water",
+        "visible_result": "玻璃杯立在空椅旁的桌面上，杯壁仍带温水的微汽；林阿姨的手松开杯身，收回桌边。",
+        "outcomes": [
+          {
+            "entity": "Lin_Ayi",
+            "state": "seated at right side of table, right hand resting on table edge after releasing glass"
+          },
+          {
+            "entity": "clear_glass_warm_water",
+            "state": "placed upright on table surface beside empty_dining_chair"
+          }
+        ],
+        "scene_changes": [
+          {
+            "entity": "empty_dining_chair",
+            "state": "unoccupied, positioned directly beside the glass",
+            "importance": "required"
+          },
+          {
+            "entity": "wooden_dining_table",
+            "state": "table surface clear except the moved glass",
+            "importance": "required"
+          }
+        ],
+        "start_seconds": 0,
+        "end_seconds": 3,
+        "activity": "interaction",
+        "interaction_geometry": {
+          "actor": "Lin_Ayi",
+          "target": "clear_glass_warm_water",
+          "interaction_mode": "direct_contact",
+          "effect_phase": "active",
+          "outcome_scope": "single",
+          "effect_motion": "sweep",
+          "source": "Lin_Ayi's right hand",
+          "effect_region": "wooden_dining_table surface from Lin_Ayi's side to empty_dining_chair side",
+          "reaction_scope": "玻璃杯立在空椅旁的桌面上，杯壁仍带温水的微汽；林阿姨的手松开杯身，收回桌边。",
+          "unaffected_behavior": "Xiao_An, black_rolling_suitcase, rain_streaked_window",
+          "must_share_frame": true,
+          "line_of_action_visible": false,
+          "actor_screen_position": "right side seated at wooden_dining_table",
+          "target_screen_position": "right-center initially, then center-left beside empty_dining_chair",
+          "occlusion_policy": "none"
+        },
+        "effect_at_seconds": 1.2,
+        "reaction_at_seconds": 2.1,
+        "response_kind": "impact",
+        "completion_intent": {
+          "kind": "required",
+          "goal": "林阿姨右手从桌边抬起握住透明温水杯，沿木质桌面平稳移到空餐椅靠近过道的一侧轻轻放下，松开杯身收回桌边，杯子立在空椅旁桌面上。",
+          "basis": "user",
+          "reference": "/request/segments/1",
+          "reason": "用户明确要求母亲林阿姨将一杯温水放到桌边空椅旁，这是核心事件序列的关键接纳动作，必须可见。"
+        },
+        "result_directions": [
+          "scene_changes/1"
+        ],
+        "result_functions": [
+          "outcomes/0"
+        ]
+      },
+      {
+        "phase": "trigger",
+        "actor": "Xiao_An",
+        "action": "站在门口阈值后，目光跟着玻璃杯从林阿姨手边移到空椅旁，搭在行李箱把手上的手指慢慢松开，肩头绷紧的弧度略微下沉。",
+        "target": "dining_room_doorway_threshold",
+        "visible_result": "小安没有立刻迈步，但身体朝向餐桌的倾向更明显，视线从杯子抬回林阿姨脸上。",
+        "start_seconds": 3,
+        "end_seconds": 5,
+        "activity": "transition",
+        "completion_intent": {
+          "kind": "required",
+          "goal": "小安站在门口阈值后，目光跟着玻璃杯从林阿姨手边移到空椅旁，搭在行李箱把手上的手指慢慢松开，肩头绷紧的弧度略微下沉，身体朝向餐桌的倾向更明显。",
+          "basis": "story",
+          "reference": "/shots/1/narrative_beat/state_change",
+          "reason": "小安看到放杯动作后姿态松动，是从犹豫到准备入座的必要叙事转折，为后续靠近坐下的动作提供情绪依据。"
+        }
+      },
+      {
+        "phase": "aftermath",
+        "actor": "Lin_Ayi",
+        "action": "保持坐姿，没有起身也没有开口，只把安静的视线落在小安身上，给她留出走近的空间。",
+        "target": "empty_dining_chair",
+        "visible_result": "空椅旁的温水杯与门口的小安之间形成无声邀请，两人隔着餐桌距离继续对视。",
+        "start_seconds": 5,
+        "end_seconds": 6,
+        "activity": "hold",
+        "completion_intent": {
+          "kind": "required",
+          "goal": "林阿姨保持坐姿，不起身也不开口，安静视线落在小安身上，给她留出走近的空间，两人隔着餐桌距离继续对视。",
+          "basis": "story",
+          "reference": "/shots/1/narrative_beat/state_after",
+          "reason": "林阿姨保持安静等待的状态，是放杯邀请动作的延续，为小安后续靠近入座留出叙事空间。"
+        }
+      }
+    ],
+    "start_state": {
+      "location": "residential_dining_room",
+      "subject": "Xiao_An remains at threshold; Lin_Ayi has recognized her and is watching quietly",
+      "action_phase": "progress: mother's silent invitation through placing water",
+      "camera": "fixed medium shot",
+      "screen_direction": "Xiao_An left edge, Lin_Ayi right",
+      "pose_and_gaze": "Xiao_An fingers on suitcase handle, gaze shifting between empty chair and Lin_Ayi; Lin_Ayi seated, hand near glass, gaze fixed on Xiao_An",
+      "prop_state": "suitcase still at threshold; glass on table near Lin_Ayi; empty chair unoccupied",
+      "open_motion": "Lin_Ayi about to reach for the glass; Xiao_An about to decide whether to enter",
+      "lighting": "warm interior table light mixed with cool rainy window light"
+    },
+    "end_state": {
+      "location": "residential_dining_room",
+      "subject": "Lin_Ayi has placed the glass beside the empty chair; Xiao_An still at threshold but posture loosened",
+      "action_phase": "silent invitation established: water waits at empty seat, daughter about to release suitcase and approach",
+      "camera": "fixed medium shot",
+      "screen_direction": "Xiao_An left edge, Lin_Ayi right",
+      "pose_and_gaze": "Lin_Ayi seated, hand resting on table edge, gaze on Xiao_An; Xiao_An gaze moves from glass back to Lin_Ayi, fingers half-loosened from handle",
+      "prop_state": "glass now upright on table beside empty_dining_chair; suitcase still upright at threshold; empty chair unoccupied",
+      "open_motion": "Xiao_An about to step forward and release suitcase; Lin_Ayi waiting without speaking",
+      "lighting": "warm interior table light mixed with cool rainy window light"
+    },
+    "camera": {
+      "primary_movement": "fixed",
+      "composition": "medium two-zone framing: Lin_Ayi and table right, empty chair center-left, Xiao_An upper body at left doorway edge; keep glass movement readable, rain window soft background",
+      "start_framing": "medium shot",
+      "end_framing": "medium shot",
+      "speed": "real-time, no camera movement",
+      "screen_positions": {
+        "Xiao_An": "left edge of frame at dining_room_doorway_threshold, upper body visible",
+        "Lin_Ayi": "right side seated at wooden_dining_table",
+        "black_rolling_suitcase": "lower left edge beside Xiao_An",
+        "clear_glass_warm_water": "right-center initially, then center-left beside empty_dining_chair",
+        "wooden_dining_table": "center-right midground",
+        "empty_dining_chair": "center-left opposite Lin_Ayi",
+        "dining_room_doorway_threshold": "left edge of frame",
+        "rain_streaked_window": "soft background behind table"
+      },
+      "axis_change": "reestablish"
+    },
+    "blocking": {
+      "Xiao_An": {
+        "frame_position": "left edge at dining_room_doorway_threshold",
+        "body_orientation": "facing into dining room, shoulders slightly turned inward",
+        "facing_target": "wooden_dining_table",
+        "eyeline_target": "Lin_Ayi",
+        "travel_direction": "paused at threshold, no forward step yet",
+        "action_target": "black_rolling_suitcase"
+      },
+      "Lin_Ayi": {
+        "frame_position": "right side seated at wooden_dining_table",
+        "body_orientation": "upper body turned toward doorway",
+        "facing_target": "dining_room_doorway_threshold",
+        "eyeline_target": "Xiao_An",
+        "travel_direction": "seated, no movement",
+        "action_target": "clear_glass_warm_water"
+      }
+    },
+    "lighting": "暖黄桌面灯光集中在木质餐桌区域，背景雨夜窗透入冷蓝光，人物面部保留柔和明暗，无强对比。",
+    "mood": "克制、安静、试探性接纳，用视线距离和放杯动作表达母女之间的松动。",
+    "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+    "subtitle_text": "",
+    "transition_to_next": "cut",
+    "generate_audio": true,
+    "characters": [
+      "Lin_Ayi",
+      "Xiao_An"
+    ],
+    "extract_character_ref": false,
+    "key_props": [
+      "black_rolling_suitcase",
+      "clear_glass_warm_water",
+      "wooden_dining_table",
+      "empty_dining_chair",
+      "dining_room_doorway_threshold",
+      "rain_streaked_window"
+    ],
+    "continuity_props": [
+      "black_rolling_suitcase",
+      "clear_glass_warm_water",
+      "empty_dining_chair"
+    ],
+    "completion_policy": "admitted-intent-v1"
+  },
+  "intent": {
+    "source_request": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+    "content_focus": "balanced",
+    "pacing": "balanced",
+    "intent_evidence": "情绪与关系为主，不要密集肢体交互。",
+    "ending_requirement": "两人安静地坐在同一张桌旁。",
+    "ending_evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+    "motion_control": "text_guided",
+    "motion_control_evidence": "",
+    "choreography": "flexible",
+    "requested_duration_seconds": 24,
+    "duration_evidence": "制作24秒短片，分为4段。",
+    "requested_shot_count": 4,
+    "shot_count_evidence": "制作24秒短片，分为4段。",
+    "motion_timing": {
+      "performer_tempo": "natural",
+      "playback": "real_time",
+      "evidence": "正常时间播放，不用慢镜头。"
+    },
+    "style_input": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+    "creative_direction": {
+      "version": "creative-direction-v1",
+      "references": [
+        "domestic_restraint",
+        "ang_lee"
+      ],
+      "methods": [
+        "restrained_reaction",
+        "ensemble_space"
+      ],
+      "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+      "rationale": "用户明确要求以情绪与关系为主、不要密集肢体交互，并指定李安式克制反应；因此用视线、距离和小动作表达靠近，不加入夸张哭喊或额外冲突。硬切与现场声为明确要求，不使用配乐或叠化。",
+      "editing": "cut",
+      "sound": "native_only"
+    },
+    "authoring_protocol": "scene-units-v1"
+  },
+  "units": [
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安拖着黑色拉杆箱从玄关走到餐厅门口阈值前收住脚步，不跨过门槛，停在门口保持犹豫姿态。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求成年女儿小安带行李回到家、在餐厅门口犹豫，这是核心事件序列的起始环节，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "小安作为动作发起者，拖动行李箱移动到餐厅门口阈值后停步，动作与结果一致；该动作属于入场移动的transition类型，与描述的归家停步犹豫完全匹配。",
+      "shot_id": 1,
+      "beat_index": 0
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "林阿姨坐在餐桌旁原本低头，闻声抬眼望向门口，看清小安后不起身不出声，视线定在小安身上，两人隔着餐桌距离无声对视。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求母亲林阿姨看见归家的小安，这是后续放温水杯邀请动作的前提，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "林阿姨作为动作发起者，从低头状态抬眼望向门口的小安，动作与结果一致；该动作属于状态切换的transition类型，与描述的母亲看见女儿、无声对视完全匹配。",
+      "shot_id": 1,
+      "beat_index": 1
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安手指搭在行李箱把手上，目光在空椅与林阿姨之间短暂游移，仍不迈步，保持门口犹豫姿态。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求小安在餐厅门口犹豫，该停顿状态是后续母亲放杯邀请动作的叙事前提，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "小安作为动作发起者，保持在门口的犹豫姿态，动作与结果一致；该动作属于静止保持的hold类型，与描述的小安仍未迈步、拉长门口与餐桌的安静距离完全匹配。",
+      "shot_id": 1,
+      "beat_index": 2
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "outcome_contract_valid": true,
+      "result_admission": {
+        "decisions": [
+          {
+            "basis": "response",
+            "evidence": "/shots/1/action_beats/0/visible_result",
+            "minimal": true,
+            "reason": "林阿姨完成放杯动作后右手收回桌边，是本次放杯动作的直接可见功能结果，属于动作本身的最小反应状态。",
+            "source": "outcomes/0"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户明确要求母亲将一杯温水放到桌边空椅旁，杯子立在空椅旁桌面是该核心事件的必要可见结果。",
+            "source": "outcomes/1"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求温水放到桌边空椅旁，空椅保持空置且紧邻杯子是该邀请动作成立的必要空间状态。",
+            "source": "scene_changes/0"
+          },
+          {
+            "basis": "direction",
+            "evidence": "桌面除移动后的杯子外无其他物品是普通餐厅的默认状态，属于可替换的场景细节，不影响核心事件成立。",
+            "minimal": true,
+            "reason": "桌面除移动后的杯子外无其他物品是普通餐厅的默认状态，属于可替换的场景细节，不影响核心事件成立。",
+            "source": "scene_changes/1"
+          }
+        ],
+        "requirements_preserved": true,
+        "continuous_performance": true,
+        "reason": "林阿姨伸手握住温水杯、沿桌面移到空椅旁放下的动作连贯自然，所有结果均与动作对应，未遗漏用户要求的放杯核心事件，表演节奏符合克制日常的设定。"
+      },
+      "completion_intent": {
+        "kind": "required",
+        "goal": "林阿姨右手从桌边抬起握住透明温水杯，沿木质桌面平稳移到空餐椅靠近过道的一侧轻轻放下，松开杯身收回桌边，杯子立在空椅旁桌面上。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求母亲林阿姨将一杯温水放到桌边空椅旁，这是核心事件序列的关键接纳动作，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "target",
+        "action",
+        "visible_result",
+        "activity",
+        "response_kind",
+        "interaction_geometry",
+        "outcomes",
+        "scene_changes"
+      ],
+      "reason": "林阿姨作为动作发起者，直接接触温水杯并将其从自己桌边移到空椅旁桌面，动作与结果一致；该动作属于直接交互的interaction类型，与描述的放杯邀请动作完全匹配。",
+      "shot_id": 2,
+      "beat_index": 0
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安站在门口阈值后，目光跟着玻璃杯从林阿姨手边移到空椅旁，搭在行李箱把手上的手指慢慢松开，肩头绷紧的弧度略微下沉，身体朝向餐桌的倾向更明显。",
+        "basis": "story",
+        "reference": "/shots/1/narrative_beat/state_change",
+        "reason": "小安看到放杯动作后姿态松动，是从犹豫到准备入座的必要叙事转折，为后续靠近坐下的动作提供情绪依据。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "小安作为动作发起者，看到杯子移动后产生姿态松动的反应，动作与结果一致；该动作属于状态过渡的transition类型，与描述的小安犹豫姿态松动完全匹配。",
+      "shot_id": 2,
+      "beat_index": 1
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "林阿姨保持坐姿，不起身也不开口，安静视线落在小安身上，给她留出走近的空间，两人隔着餐桌距离继续对视。",
+        "basis": "story",
+        "reference": "/shots/1/narrative_beat/state_after",
+        "reason": "林阿姨保持安静等待的状态，是放杯邀请动作的延续，为小安后续靠近入座留出叙事空间。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "林阿姨作为动作发起者，保持坐姿不动、视线落在小安身上，动作与结果一致；该动作属于静止保持的hold类型，与描述的无声邀请、继续对视完全匹配。",
+      "shot_id": 2,
+      "beat_index": 2
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "outcome_contract_valid": true,
+      "result_admission": {
+        "decisions": [
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安放下行李，小安走到空椅旁、右手离开行李箱把手是放下行李动作的必要前置状态。",
+            "source": "outcomes/0"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安放下行李，行李箱竖直立在空椅脚边地面是放下行李的必要可见结果。",
+            "source": "outcomes/1"
+          }
+        ],
+        "requirements_preserved": true,
+        "continuous_performance": true,
+        "reason": "小安松开把手、拖行李箱走到空椅旁放下的动作连贯自然，所有结果均与动作对应，未遗漏用户要求的放下行李核心事件，表演节奏符合克制日常的设定。"
+      },
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安松开搭在行李箱把手上的手指，拖着黑色拉杆箱轻步走到空餐椅旁，把箱子竖直放在椅边的地面上，手从把手移到椅边准备坐下。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求小安放下行李，这是核心事件序列的关键靠近动作，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "target",
+        "action",
+        "visible_result",
+        "activity",
+        "response_kind",
+        "interaction_geometry",
+        "outcomes"
+      ],
+      "reason": "小安作为动作发起者，拖动行李箱从门口走到空椅旁放下，动作与结果一致；该动作属于直接交互的interaction类型，与描述的放下行李动作完全匹配。",
+      "shot_id": 3,
+      "beat_index": 0
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "outcome_contract_valid": true,
+      "result_admission": {
+        "decisions": [
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安坐下，小安坐在空餐椅上、身体朝向餐桌是坐下动作的必要可见结果。",
+            "source": "outcomes/0"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安在桌边空椅旁的位置坐下，空椅被小安坐上、位于餐桌旁是该动作的必要空间结果。",
+            "source": "outcomes/1"
+          }
+        ],
+        "requirements_preserved": true,
+        "continuous_performance": true,
+        "reason": "小安扶椅、拉开一点距离后坐下的动作连贯自然，所有结果均与动作对应，未遗漏用户要求的坐下核心事件，表演节奏符合克制日常的设定。"
+      },
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安侧身扶住空餐椅边缘，轻轻拉开一点距离后坐下，身体朝向餐桌，目光落在桌上的温水杯上。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求小安坐下，这是核心事件序列的关键入座动作，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "target",
+        "action",
+        "visible_result",
+        "activity",
+        "response_kind",
+        "interaction_geometry",
+        "outcomes"
+      ],
+      "reason": "小安作为动作发起者，扶住空餐椅后坐下，动作与结果一致；该动作属于直接交互的interaction类型，与描述的坐下动作完全匹配。",
+      "shot_id": 3,
+      "beat_index": 1
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "outcome_contract_valid": true,
+      "result_admission": {
+        "decisions": [
+          {
+            "basis": "response",
+            "evidence": "/shots/2/action_beats/2/visible_result",
+            "minimal": true,
+            "reason": "林阿姨推完杯子后右手松开杯壁停在桌面上方，是本次推杯动作的直接可见功能结果，属于动作本身的最小反应状态。",
+            "source": "outcomes/0"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求母亲将杯子推到小安手边，杯子被推到小安手肘旁仍盛着温水是该核心事件的必要可见结果。",
+            "source": "outcomes/1"
+          }
+        ],
+        "requirements_preserved": true,
+        "continuous_performance": true,
+        "reason": "林阿姨看着小安坐定后伸手推杯到她手肘旁的动作连贯自然，所有结果均与动作对应，未遗漏用户要求的推杯核心事件，表演节奏符合克制日常的设定。"
+      },
+      "completion_intent": {
+        "kind": "required",
+        "goal": "林阿姨看着小安坐定，右手轻轻碰到玻璃杯侧壁，沿木质桌面平稳把杯子推到小安的手肘旁，手停在桌面上方。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求母亲将杯子推到小安手边，这是核心事件序列的关键递杯动作，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "target",
+        "action",
+        "visible_result",
+        "activity",
+        "response_kind",
+        "interaction_geometry",
+        "outcomes"
+      ],
+      "reason": "林阿姨作为动作发起者，直接接触温水杯并将其推到小安手肘旁，动作与结果一致；该动作属于直接交互的interaction类型，与描述的推杯动作完全匹配。",
+      "shot_id": 3,
+      "beat_index": 2
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "outcome_contract_valid": true,
+      "result_admission": {
+        "decisions": [
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安接住杯子，小安右手稳稳握住玻璃杯杯身是接住杯子动作的必要可见结果。",
+            "source": "outcomes/0"
+          },
+          {
+            "basis": "user",
+            "evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+            "minimal": true,
+            "reason": "用户要求小安接住杯子，杯子被小安握在手中、直立在桌面上方是接住杯子的必要物体状态结果。",
+            "source": "outcomes/1"
+          }
+        ],
+        "requirements_preserved": true,
+        "continuous_performance": true,
+        "reason": "小安伸出右手握住杯身的动作连贯自然，所有结果均与动作对应，未遗漏用户要求的接住杯子核心事件，表演节奏符合克制日常的设定。"
+      },
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安伸出右手，轻轻握住玻璃杯的杯身，手指自然收拢，稳稳接住杯子。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求小安接住杯子，这是核心事件序列的关键接杯动作，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "target",
+        "action",
+        "visible_result",
+        "activity",
+        "response_kind",
+        "interaction_geometry",
+        "outcomes"
+      ],
+      "reason": "小安作为动作发起者，直接接触温水杯并握住杯身，动作与结果一致；该动作属于直接交互的interaction类型，与描述的接住杯子动作完全匹配。",
+      "shot_id": 3,
+      "beat_index": 3
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安握着玻璃杯的右手轻轻下移，把杯底搁在自己身前的桌面边缘，肩膀从紧绷状态慢慢放松，目光从杯壁抬向对面的林阿姨。",
+        "basis": "story",
+        "reference": "/shots/3/narrative_beat/state_change",
+        "reason": "小安放杯到桌面、放松姿态并抬眼看向母亲，是从接杯动作过渡到安静对坐的必要收束环节。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "小安作为动作发起者，将握着的杯子放到身前桌面、放松姿态抬眼，动作与结果一致；该动作属于状态过渡的transition类型，与描述的姿态松弛完全匹配。",
+      "shot_id": 4,
+      "beat_index": 0
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "林阿姨原本停在桌沿的右手轻轻收回，平稳放在自己的家居裤膝上，目光与小安抬起的视线相接，不开口也不移开。",
+        "basis": "story",
+        "reference": "/shots/3/narrative_beat/state_change",
+        "reason": "林阿姨收回手、与小安视线相接，是双方进入安静对坐状态的必要收束环节。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "林阿姨作为动作发起者，收回手放在膝上、与小安视线相接，动作与结果一致；该动作属于状态过渡的transition类型，与描述的端坐对视完全匹配。",
+      "shot_id": 4,
+      "beat_index": 1
+    },
+    {
+      "cause_and_participants_valid": true,
+      "classification_matches_description": true,
+      "completion_intent": {
+        "kind": "required",
+        "goal": "小安与林阿姨隔着木质餐桌安静对坐，手指仍松松挨着玻璃杯，直至镜头结束，两人保持克制的共处状态。",
+        "basis": "user",
+        "reference": "/request/segments/1",
+        "reason": "用户明确要求最终两人安静地坐在同一张桌旁，这是全片的最终结局，必须可见。"
+      },
+      "evidence_fields": [
+        "actor",
+        "action",
+        "visible_result",
+        "activity"
+      ],
+      "reason": "小安作为动作发起者，保持与林阿姨隔桌安静对坐的姿态，动作与结果一致；该动作属于静止保持的hold类型，与描述的最终安静同坐完全匹配。",
+      "shot_id": 4,
+      "beat_index": 2
+    }
+  ],
+  "raw_response": {
+    "path": "semantic_reviews/responses/a4df43dc43a4a7adde44a0271cbb995edcb05a5678e32a66971078268fae7698/fdc62cc2443e45f1b077da9137d6f417.json",
+    "text": "{\n  \"video_hash\": \"a4df43dc43a4a7adde44a0271cbb995edcb05a5678e32a66971078268fae7698\",\n  \"contract_hash\": \"f5abd05004d86448507bccb4a7d329195ff15de51c19c61ba933c8058443e82d\",\n  \"evaluator_hash\": \"52620e6ee76981bab29c2d3b90fa9c91811c25e0d3ad8eb40f653c6dd094f8de\",\n  \"attempts\": [\n    {\n      \"model\": \"doubao-seed-2.1-lite\",\n      \"choices\": [\n        {\n          \"content\": \"{\\\"required_entities_visible\\\": [true, true, true], \\\"action_geometry_valid\\\": true, \\\"identity_continuity_valid\\\": true, \\\"identity_crop_boxes\\\": [], \\\"action_timing_valid\\\": true, \\\"creative_brief_valid\\\": true, \\\"action_event_evidence\\\": [{\\\"event_id\\\": 1, \\\"effect_visible\\\": true, \\\"target_reaction_visible\\\": true, \\\"causal_order_valid\\\": true, \\\"scope_valid\\\": true, \\\"time_window_valid\\\": true}], \\\"effect_path_valid\\\": true, \\\"reaction_causality_valid\\\": true, \\\"blocking_valid\\\": true, \\\"composition_change_valid\\\": false, \\\"visual_invariants_valid\\\": true, \\\"boundary_continuity_valid\\\": true, \\\"environment_continuity_valid\\\": true, \\\"action_handoff_valid\\\": true, \\\"screen_direction_valid\\\": true, \\\"prop_continuity_valid\\\": true, \\\"boundary_state_evidence\\\": {\\\"prior_state_preserved\\\": true, \\\"state_progress_not_reversed\\\": true, \\\"open_motion_handoff_valid\\\": true, \\\"persistent_entities_preserved\\\": true, \\\"scene_identity_preserved\\\": true}, \\\"end_state_context\\\": {\\\"location\\\": \\\"residential dining room\\\", \\\"subject\\\": \\\"Xiao_An at the dining doorway threshold; Lin_Ayi seated at the wooden dining table\\\", \\\"camera\\\": \\\"fixed medium shot\\\", \\\"screen_direction\\\": \\\"Xiao_An left, Lin_Ayi right\\\", \\\"lighting\\\": \\\"warm interior table light mixed with cool rainy window light\\\"}, \\\"observations\\\": {\\\"beat:1/completion\\\": {\\\"status\\\": \\\"satisfied\\\", \\\"observation\\\": \\\"Lin_Ayi raises her right hand from the table edge, grips the clear glass of warm water, slides it steadily along the wooden table surface to the side of the empty dining chair near the aisle, releases the glass and retracts her hand back to the table edge, with the glass standing upright on the table surface beside the empty chair.\\\", \\\"sample_indices\\\": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]}, \\\"beat:1/outcomes/1\\\": {\\\"status\\\": \\\"satisfied\\\", \\\"observation\\\": \\\"The clear glass of warm water is placed upright on the wooden table surface directly beside the empty dining chair, remaining stable without tipping over.\\\", \\\"sample_indices\\\": [18, 19, 20, 21, 22, 23, 24, 25]}, \\\"beat:1/scene_changes/0\\\": {\\\"status\\\": \\\"satisfied\\\", \\\"observation\\\": \\\"The empty dining chair remains unoccupied, positioned directly adjacent to the glass on the table surface.\\\", \\\"sample_indices\\\": [18, 19, 20, 21, 22, 23, 24, 25]}, \\\"beat:2/completion\\\": {\\\"status\\\": \\\"satisfied\\\", \\\"observation\\\": \\\"Xiao_An stands at the dining room doorway threshold, her gaze follows the glass as it moves from Lin_Ayi's hand to beside the empty chair, her fingers slowly loosen from the suitcase handle, the tense curve of her shoulders sinks slightly, and her body's orientation toward the dining table becomes more obvious.\\\", \\\"sample_indices\\\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]}, \\\"beat:3/completion\\\": {\\\"status\\\": \\\"satisfied\\\", \\\"observation\\\": \\\"Lin_Ayi remains seated, does not stand up or speak, her quiet gaze rests on Xiao_An, leaving space for her to approach, and the two continue to look at each other across the dining table.\\\", \\\"sample_indices\\\": [18, 19, 20, 21, 22, 23, 24, 25]}}, \\\"end_state_sources\\\": {\\\"action_phase\\\": [\\\"beat:1\\\\/completion\\\"], \\\"pose_and_gaze\\\": [\\\"beat:3\\\\/completion\\\"], \\\"prop_state\\\": [\\\"beat:1\\\\/outcomes\\\\/1\\\"], \\\"open_motion\\\": []}}\",\n          \"finish_reason\": \"stop\",\n          \"refused\": false\n        }\n      ]\n    }\n  ]\n}"
+  },
+  "video": {
+    "path": "output/20261103_194758_925345/shots/shot_002.mp4",
+    "sha256": "a4df43dc43a4a7adde44a0271cbb995edcb05a5678e32a66971078268fae7698"
+  }
+}

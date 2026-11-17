@@ -11,7 +11,7 @@ from pipeline.production_plan import build_production_plan
 from pipeline.storyboard import generate_storyboard, _compile_storyboard_contract
 from pipeline.readiness import storyboard_readiness_issues
 from test_director_intent import draft, Responses, intent_reply
-from authoring_cases import authoring_from_legacy
+from authoring_cases import authoring_from_legacy, scene_authoring_from_legacy
 
 
 def plan_for(duration=15):
@@ -33,7 +33,7 @@ def test_payoff_budget_preserves_total_actions_without_counting_a_fall_as_new_at
 
 
 def test_structured_bilingual_action_is_not_measured_by_ascii_spaces(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     for shot in raw['shots']:
         shot['visual_description'] = '暮色下的训练屋脊，灰瓦与远处宫墙层次清晰，冷色散射光勾勒两名训练者的衣料与兵器。'
         for unit in shot['action_plan']:
@@ -48,7 +48,7 @@ def test_structured_bilingual_action_is_not_measured_by_ascii_spaces(monkeypatch
 def test_single_payoff_cause_includes_complete_fall_without_synthetic_second_effect(monkeypatch):
     request = '15秒持续交锋，最后对手倒下不再起身'
     intent = {**intent_reply(request), 'ending_requirement': '对手倒下不再起身', 'ending_evidence': '对手倒下不再起身'}
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     raw['story_arc']['resolution'] = intent['ending_evidence']
     middle = raw['shots'][1]['action_plan']
     redirect = deepcopy(middle[2])
@@ -68,7 +68,7 @@ def test_single_payoff_cause_includes_complete_fall_without_synthetic_second_eff
 
 
 def test_semantic_units_compile_without_duplicate_authority_or_model_repair(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     original = deepcopy(raw)
     client = Responses(intent_reply('continuous action'), raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
@@ -84,9 +84,11 @@ def test_semantic_units_compile_without_duplicate_authority_or_model_repair(monk
 
 
 def test_program_requests_each_fixed_slot_instead_of_asking_model_to_return_a_shot_count(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    from authoring_cases import SyntheticAuthoredResponse, contextual_shot_fixture
+    raw = scene_authoring_from_legacy(draft())
     metadata = {k: v for k, v in raw.items() if k != 'shots'}
-    responses = [{'shot': {k: v for k, v in s.items() if k != 'shot_id'}} for s in raw['shots']]
+    responses = [SyntheticAuthoredResponse(shot={k: v for k, v in contextual_shot_fixture(s).items()
+                                                if k != 'shot_id'}) for s in raw['shots']]
     client = Responses(intent_reply('continuous action'), metadata, *responses)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     result = generate_storyboard('continuous action', target_duration=15)
@@ -97,11 +99,11 @@ def test_program_requests_each_fixed_slot_instead_of_asking_model_to_return_a_sh
         assert context['slot']['shot_id'] == i + 1
         assert context['is_final'] is (i == 2)
         assert context['previous_shot'] is None if i == 0 else context['previous_shot']['shot_id'] == i
-        assert all(c['name'] in call['messages'][0]['content'] for c in raw['characters'])
+        assert all(c['name'] in {item['name'] for item in context['story']['characters']} for c in raw['characters'])
 
 
 def test_consistent_tone_does_not_override_visible_story_progress(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     for shot in raw['shots']:
         shot['mood'] = 'tense'
     client = Responses(intent_reply('continuous action'), raw)
@@ -146,20 +148,26 @@ def test_cross_shot_carry_and_linked_overlap_have_one_unambiguous_scope():
     lambda s: s['action_plan'][0].update(effect={'mode': 'direct_contact'}),
     lambda s: s['action_plan'][1].update(weight=float('nan')),
     lambda s: s['action_plan'][1].update(weight=True),
-    lambda s: s['action_plan'][2].update(id=s['action_plan'][1]['id']),
     lambda s: s['action_plan'][1].update(actor='unregistered'),
     lambda s: s['action_plan'][0].update(actor='attacker and defender'),
     lambda s: s['action_plan'].pop(2),
     lambda s: s['action_plan'][1].update(overlap=True),
 ])
 def test_ambiguous_or_infeasible_authoring_stops_without_rewriting(change, monkeypatch):
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     change(raw['shots'][0])
     client = Responses(intent_reply('continuous action'), raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
-    with pytest.raises(ValueError, match='创作稿'):
+    with pytest.raises(ValueError, match='创作响应契约|创作稿未通过编译'):
         generate_storyboard('continuous action', target_duration=15)
     assert len(client.calls) == 3  # metadata + first invalid slot; no later slot or retry
+
+
+def test_legacy_duplicate_unit_ids_are_still_rejected():
+    raw = authoring_from_legacy(draft())
+    raw['shots'][0]['action_plan'][2]['id'] = raw['shots'][0]['action_plan'][1]['id']
+    with pytest.raises(ValueError):
+        compile_authored_storyboard(raw, plan_for())
 
 
 RECORDS = json.loads((Path(__file__).parent / 'fixtures/real_planning_failures.json').read_text())['records']
@@ -184,15 +192,15 @@ def test_latest_real_missing_shot_and_joined_actor_are_rejected_without_mutation
 
 
 def test_single_slot_response_schema_matches_the_requested_envelope(monkeypatch):
-    client = Responses(intent_reply('continuous action'), authoring_from_legacy(draft()))
+    client = Responses(intent_reply('continuous action'), scene_authoring_from_legacy(draft()))
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     generate_storyboard('continuous action', target_duration=15)
-    schema = json.loads(client.calls[2]['messages'][0]['content'].split('\n')[-1])
+    schema = client.calls[2]['response_format']['json_schema']['schema']
     assert schema['required'] == ['shot'] and not schema['additionalProperties']
     assert 'shot_id' not in schema['properties']['shot']['properties']
     assert '$defs' in schema and '$defs' not in schema['properties']['shot']
     assert all(v['properties']['actor']['enum'] == ['attacker', 'defender']
-               for v in schema['$defs']['InteractionUnit']['oneOf'])
+               for v in schema['$defs']['ScheduledFirstInteraction']['oneOf'])
 
 
 @pytest.mark.parametrize('record', RECORDS, ids=lambda r: r['source'])
@@ -219,7 +227,7 @@ def test_real_raw_failure_replay_preserves_meaning_or_rejects_ambiguity(record):
 
 
 def test_long_event_authoring_keeps_one_spine_and_no_execution_schema_in_batches(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     raw['shots'] += deepcopy(raw['shots'])
     for i, shot in enumerate(raw['shots'], 1):
         shot['shot_id'] = i
@@ -257,20 +265,21 @@ def test_bad_json_never_triggers_a_repair_call_in_semantic_authoring(monkeypatch
 async def test_official_entry_archives_failed_semantic_input_without_video_or_rewrite(tmp_path, monkeypatch):
     import config
     from pipeline.orchestrator import VideoPipeline
-    raw = authoring_from_legacy(draft())
+    raw = scene_authoring_from_legacy(draft())
     raw['shots'][0]['action_plan'][1]['effect']['source'] = ''
     client = Responses(intent_reply('15秒连续交互'), raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     monkeypatch.setattr(config, 'OUTPUT_DIR', tmp_path)
     monkeypatch.setattr('pipeline.orchestrator.VideoGenerator', lambda **kw: pytest.fail('unexpected video'))
     pipeline = VideoPipeline(paid_take_budget=0)
-    with pytest.raises(ValueError, match='创作稿未通过编译'):
+    with pytest.raises(ValueError, match=r'创作响应契约.*effect/source \(minLength\)'):
         await pipeline.run('15秒连续交互')
     assert len(client.calls) == 3
     # 创建边界在汇总稿形成前拒绝；原始响应仍完整留存，不能把缺失汇总文件当成丢稿。
     saved = json.loads((pipeline.workspace / 'planning_shot_001.json').read_text())
     response = json.loads((pipeline.workspace / 'planning_shot_001_response.json').read_text())
-    assert {'shot_id': 1, **saved['shot']} == raw['shots'][0]
+    assert saved['shot']['action_plan']['interaction_1']['effect']['source'] == ''
+    assert saved['shot']['action_plan']['interaction_1']['action'] == raw['shots'][0]['action_plan'][1]['action']
     assert json.loads(response['content']) == saved
     assert json.loads((pipeline.workspace / 'planning_check.json').read_text())['critical']
     assert not pipeline.run_workspace.manifest.paid_take_budget.reservations
@@ -288,16 +297,27 @@ async def test_official_authoring_to_real_export_and_resume(tmp_path, monkeypatc
     from test_planning_semantics import verdict_for
     media = tmp_path / 'synthetic.mp4'
     clip(media)
-    client = Responses(intent_reply('15秒连续交互'), authoring_from_legacy(draft()), verdict_for(draft()))
+    from test_action_result_flow import annotated_verdict
+    # 此用例覆盖作者到导出，不以无测时证据的生成替身冒充密集动作验收。
+    brief = '15秒训练过程'
+    client = Responses(intent_reply(brief, pacing='balanced'), scene_authoring_from_legacy(draft()))
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
-    monkeypatch.setattr('pipeline.planning_review.OpenAI', lambda **kw: client)
+    from types import SimpleNamespace
+    def review(**kwargs):
+        story = json.loads(kwargs['messages'][-1]['content'])['storyboard']
+        return Responses(annotated_verdict(story)).create(**kwargs)
+    monkeypatch.setattr('pipeline.planning_review.OpenAI', lambda **kw: SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=review))))
     class Generated:
         def __init__(self, *a, on_progress=None, **kw):
             self.progress = on_progress
+            self.directory = Path(a[0])
         async def generate_all(self, storyboard):
             assert not storyboard_readiness_issues(storyboard)
             results = []
             for shot in storyboard['shots']:
+                from pipeline.presentation_media import ensure_presentation
+                assert ensure_presentation(str(media), shot, None, self.directory) == str(media)
                 result = ShotResult(shot_id=shot['shot_id'], status='success', local_path=str(media))
                 self.progress(result)
                 results.append(result)
@@ -314,12 +334,12 @@ async def test_official_authoring_to_real_export_and_resume(tmp_path, monkeypatc
     validate = ffmpeg_ops.validate_publish_ready
     monkeypatch.setattr('pipeline.orchestrator.ffmpeg_ops.validate_publish_ready', lambda *a, platform=None, **kw: validate(*a, **kw))
     pipeline = VideoPipeline(resolution='480p', platforms=['youtube'], paid_take_budget=0)
-    output = await pipeline.run('15秒连续交互')
+    output = await pipeline.run(brief)
     info = ffmpeg_ops.get_video_info(output)
     stream = next(s for s in info['streams'] if s['codec_type'] == 'video')
     assert int(stream['nb_frames']) == 360 and float(stream['duration']) == pytest.approx(15)
     assert await VideoPipeline.from_workspace(pipeline.workspace).run() == output
-    assert len(client.calls) == 6
+    assert len(client.calls) == 5
     assert (pipeline.workspace / 'planning_authoring.json').is_file()
     assert (pipeline.workspace / 'planning_compiled.json').is_file()
     subprocess.run(['ffmpeg', '-v', 'error', '-i', output, '-f', 'null', '-'], check=True)

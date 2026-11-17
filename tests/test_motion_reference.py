@@ -212,7 +212,8 @@ def test_provider_boundary_rejects_unsupported_inputs(asset, model, role, count)
 
 
 @pytest.mark.asyncio
-async def test_api_sends_reference_video_and_preserves_checkpoint_before_poll():
+async def test_api_sends_reference_video_and_preserves_checkpoint_before_poll(use_test_model):
+    use_test_model(MODEL)
     events = []
     create = Mock(return_value=SimpleNamespace(id="task-1"))
     api = object.__new__(SeedanceAPI)
@@ -232,7 +233,8 @@ async def test_api_sends_reference_video_and_preserves_checkpoint_before_poll():
 
 
 @pytest.mark.asyncio
-async def test_api_conflicting_first_frame_never_calls_provider():
+async def test_api_conflicting_first_frame_never_calls_provider(use_test_model):
+    use_test_model(MODEL)
     api = object.__new__(SeedanceAPI)
     api.ark_client = Mock()
     with pytest.raises(ValueError, match="混用"):

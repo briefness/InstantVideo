@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from pipeline.causality import compile_action_contract, interaction_geometry, event_execution_instruction
 from pipeline.action_timing import event_shot
-from pipeline.performance import performance_instruction, outcome_text, allocated_interaction_target
+from pipeline.performance import performance_instruction, outcome_text, allocated_interaction_target, local_event_execution, scene_frame_execution
 from pipeline.production_plan import classify_framing
 from pipeline.staging_direction import staging_projection
+from pipeline.generation_instructions import VERSIONS as SHOOTING_VERSIONS, shooting_projection, shooting_instruction_parts
 from pipeline.visual_invariants import (
     compile_visual_invariants,
-    safe_screen_positions,
+    initial_screen_positions,
 )
 
 
@@ -32,6 +33,8 @@ def compile_generation_preview(storyboard: dict, *, model: str) -> dict:
                 has_state_reference=False, image_role=None, reference_count=0),
         }
         rows.append({'shot_id': shot['shot_id'], 'duration': shot['duration'],
+            **({'execution_projection': shooting_projection(shot, storyboard)}
+               if shot.get('generation_execution') in SHOOTING_VERSIONS else {}),
             'allocated_interaction_seconds': round(planned_interaction_seconds([shot]), 3),
             'reference_policy': (shot.get('production_slot') or {}).get('reference_policy'),
             'profiles': {profile: {'prompt': prompt,
@@ -71,6 +74,10 @@ def compile_normal_provider_prompt(
         return ""
 
     contract = compile_action_contract(shot)
+    if shot.get('generation_execution') in SHOOTING_VERSIONS:
+        return _compile_shooting_prompt(shot, storyboard, contract, has_observed_start=has_observed_start)
+    if scene_frame_execution(shot):
+        return _compile_scene_frame_prompt(shot, storyboard, contract, has_observed_start=has_observed_start)
     parts = ["Create one coherent cinematic shot"]
     parts.extend(_normal_visual_parts(shot, storyboard))
     visual = _structured_text(shot.get('visual_description'))
@@ -88,9 +95,58 @@ def compile_normal_provider_prompt(
         parts.append(f"start exactly with {contract.prompt_start_state}")
     parts.extend(contract.prompt_parts)
     parts.extend(_normal_composition_parts(shot, has_observed_start=has_observed_start))
-    parts.append("do not introduce events beyond the ordered contract" if contract.review_projection.get('action_events')
-                 else "do not introduce another major action")
+    policy = contract.review_projection.get('performance_policy') or {}
+    if not policy.get('motion_timing'):
+        parts.append("do not introduce events beyond the ordered contract" if contract.review_projection.get('action_events')
+                     or (shot.get('production_slot') or {}).get('authoring_protocol') == 'scene-units-v1'
+                     else "do not introduce another major action")
     return ". ".join(part for part in parts if part).strip() + "."
+
+
+def _compile_shooting_prompt(shot: dict, storyboard: dict, contract, *, has_observed_start: bool) -> str:
+    from pipeline.camera_contract import compile_camera
+    # 保留原有边界验证及续拍路径验证，不把其协议说明再次交给视频模型。
+    staging_projection(shot)
+    projection = shooting_projection(shot, storyboard)
+    parts = ['Create one coherent cinematic shot', *_normal_visual_parts(shot, storyboard)]
+    camera_parts, _ = compile_camera(shot)
+    parts.extend(p for p in compile_visual_invariants(shot).prompt_parts if p not in camera_parts)
+    if has_observed_start:
+        parts.append('Begin from the observed physical and action state in Image 1; apply the current camera composition')
+    elif contract.prompt_start_state:
+        parts.append('start exactly with ' + contract.prompt_start_state)
+    parts.extend(_normal_composition_parts(shot, has_observed_start=has_observed_start))
+    parts.extend(shooting_instruction_parts(projection))
+    return '. '.join(p for p in parts if p).strip() + '.'
+
+
+def _compile_scene_frame_prompt(shot: dict, storyboard: dict, contract, *, has_observed_start: bool) -> str:
+    """必要功能/摄影、局部动作、艺术呈现分别编译；不重写作者动作或抽取新义务。"""
+    from pipeline.completion_intent import intent_instruction
+    from pipeline.camera_contract import compile_camera
+    required = intent_instruction(shot)
+    camera_parts, _ = compile_camera(shot)
+    parts = ['Create one coherent cinematic shot', required, *camera_parts]
+    if has_observed_start:
+        parts.append('Begin from the observed physical and action state in Image 1; '
+                     'the current camera selects a new view of that world state')
+    elif contract.prompt_start_state:
+        parts.append(f'start exactly with {contract.prompt_start_state}')
+    parts.append('Execute the following local actions to realize the required functions above. '
+                 'Keep necessary participants, destinations, support surfaces and causal results; '
+                 'incidental gaze and resting poses may adapt. A named nearby object is not interchangeable '
+                 'with the surface or recipient specified by the action')
+    parts.extend(p for p in contract.prompt_parts if p != required)
+    parts.extend(_normal_visual_parts(shot, storyboard))
+    visual = _structured_text(shot.get('visual_description'))
+    if visual:
+        parts.append(f'Authored visual direction for setting, materials and light: {visual}')
+    parts.append(staging_projection(shot)['instruction'])
+    parts.extend(p for p in compile_visual_invariants(shot).prompt_parts if p not in camera_parts)
+    parts.extend(_normal_composition_parts(shot, has_observed_start=has_observed_start))
+    if not (contract.review_projection.get('performance_policy') or {}).get('motion_timing'):
+        parts.append('do not introduce events beyond the ordered contract')
+    return '. '.join(p for p in parts if p).strip() + '.'
 
 
 def compile_policy_safe_prompt(
@@ -127,7 +183,7 @@ def compile_policy_safe_prompt(
         parts.append(f"camera: stable {framing}")
     positions = [
         f"{entity}={position}"
-        for entity, position in safe_screen_positions(camera.get("screen_positions"))
+        for entity, position in initial_screen_positions(shot)
     ]
     if positions:
         parts.append("screen positions: " + ", ".join(positions))
@@ -135,17 +191,33 @@ def compile_policy_safe_prompt(
     events = action_contract.review_projection.get('action_events') or []
     performance = action_contract.review_projection.get('performance_policy')
     if performance and performance['version'] == 'performance-v2-outcomes':
+        if shot.get('completion_policy'):
+            from pipeline.action_timing import sequence_events
+            from pipeline.performance import performance_review_projection
+            # 生成保留全部作者事件，包括不具备独立否决权的辅助交互。
+            events = performance_review_projection(shot, sequence_events(shot))['action_events']
         by_id = {event['event_id']: event for event in events}
         for index, beat in enumerate(shot['action_beats'], 1):
+            from pipeline.action_timing import beat_timing_instruction
+            relation = beat_timing_instruction(beat, index)
+            if relation:
+                parts.append(relation)
             event = by_id.get(index)
             if event:
+                from pipeline.action_results import functional_outcomes
+                responses = (functional_outcomes(beat) if shot.get('completion_policy') else event.get('functional_responses'))
                 parts.append(f"event {index}: {_entity_label(event['actor'])} causes a readable "
                              f"{event['response_kind']} response by {_entity_label(event['target'])}; "
                              f"mode={event['interaction_geometry']['interaction_mode']}; "
                              f"scope={event['interaction_geometry']['outcome_scope']}; "
                              f"required visible states: {outcome_text(event['outcomes'])}; "
+                             + (("suggested response realization: " if shot.get('completion_policy') else
+                                 "complete functional response with flexible staging: ") + outcome_text(responses) + '; '
+                                if responses else '')
+                             +
                              f"unaffected: {event['interaction_geometry']['unaffected_behavior']}; "
-                             f"{event['flow_from_previous']}")
+                             f"{event['flow_from_previous']}"
+                             + (event_execution_instruction(event) if event['response_kind'] == 'state_change' else ''))
             else:
                 parts.append(f"Beat {index} {beat['activity']}: {_entity_label(beat['actor'])}; "
                              f"visible state: {beat['visible_result']}; no new physical effect")
@@ -163,7 +235,8 @@ def compile_policy_safe_prompt(
                     f"contracted visible state: {beat.get('visible_result', '')}; no new physical effect"
                 )
                 continue
-            child = compile_action_contract(event_shot(event))
+            child = compile_action_contract({**event_shot(event),
+                'action_semantics': shot.get('action_semantics')})
             parts.append(
                 (f"event {event['event_id']}: " if performance else
                  f"event {event['event_id']} ({event['start_seconds']:g}-{event['end_seconds']:g}s), "
@@ -171,19 +244,44 @@ def compile_policy_safe_prompt(
                 + _policy_action_clause(child, _entity_label(event['actor']), _entity_label(event['target']))
                 + ('; ' + event_execution_instruction(event) if event_execution_instruction(event) else '')
             )
+    elif (shot.get('production_slot') or {}).get('authoring_protocol') == 'scene-units-v1':
+        # 生成读取编译后的动作源；观察投影省去重复答案，不代表动作可以省略。
+        for index, beat in enumerate(shot['action_beats'], 1):
+            parts.append(f"Beat {index} {beat['activity']}: {_entity_label(beat['actor'])}; "
+                         f"{beat['start_seconds']:g}-{beat['end_seconds']:g}s; "
+                         f"visible state: {beat['visible_result']}; no new physical effect")
     else:
         parts.append(_policy_action_clause(action_contract, actor, target))
     # 保留合同时间窗和用户明确结局；不复制被拒绝的自由动作描述。
     for part in action_contract.prompt_parts:
         if part.startswith('Choreography is performance-guided:') and performance:
             parts.append(performance_instruction(performance, include_brief=False,
+                local_execution=(local_event_execution(shot)
+                                 and performance.get('result_authority') == 'reviewed-results-v1'),
                 interaction_target_seconds=allocated_interaction_target(shot)))
-        elif part.startswith(('Timed action schedule:', 'Required final visible outcome:')):
+        elif part.startswith(('Timed action schedule:', 'Timed scene schedule:', 'Required final visible outcome:', 'Motion timing v1:',
+                              'Creative direction v1:')):
             parts.append(part)
+    # 功能义务来自共享编译器，不以人类可读标题作为跨模块数据协议。
+    from pipeline.completion_intent import intent_instruction
+    from pipeline.observed_boundary import EXECUTION_VERSION, instruction as origin_instruction
+    from pipeline.generation_instructions import local_goal_instructions
+    from pipeline.result_observations import completion_contract
+    obligations = ('; '.join(local_goal_instructions(completion_contract(shot)))
+                   if shot.get('generation_execution') == EXECUTION_VERSION else intent_instruction(shot))
+    if shot.get('generation_execution') == EXECUTION_VERSION:
+        parts.append(origin_instruction(shot))
+    if obligations:
+        if scene_frame_execution(shot):
+            parts.insert(1, obligations)
+        else:
+            parts.append(obligations)
+    from pipeline.spatial_guidance import reference_kind
     parts.extend(_reference_clauses(
         has_state_reference=has_state_reference,
         image_role=image_role,
         reference_count=reference_count,
+        spatial_reference=reference_kind(shot),
     ))
     if action_contract.phase == "setup":
         parts.append(
@@ -280,7 +378,9 @@ def _normal_visual_parts(shot: dict, storyboard: dict) -> list[str]:
         parts.append("keep these subjects clearly visible: " + ", ".join(visible))
     props = [_entity_label(prop) for prop in shot.get("key_props", []) if _entity_label(prop)]
     if props:
-        parts.append("visible props: " + ", ".join(props))
+        label = ('scene inventory (not a demand to include every prop in frame): '
+                 if scene_frame_execution(shot) else 'visible props: ')
+        parts.append(label + ", ".join(props))
     parts.extend(_normal_identity_parts(shot, storyboard))
 
     return parts
@@ -295,7 +395,7 @@ def _normal_composition_parts(shot: dict, *, has_observed_start: bool) -> list[s
         parts.append(f"camera: {framing}")
     positions = [
         f"{entity}={position}"
-        for entity, position in safe_screen_positions(camera.get("screen_positions"))
+        for entity, position in initial_screen_positions(shot)
     ]
     if positions:
         parts.append("screen positions: " + ", ".join(positions))
@@ -347,7 +447,12 @@ def _reference_clauses(
     has_state_reference: bool,
     image_role: str | None,
     reference_count: int,
+    spatial_reference: bool | str = False,
 ) -> list[str]:
+    if spatial_reference:
+        from pipeline.spatial_guidance import reference_clauses
+        return reference_clauses(reference_count, image_role, has_state_reference,
+                                 observed_layout=spatial_reference == 'observed-layout-v1')
     clauses: list[str] = []
     if has_state_reference:
         clauses.append(

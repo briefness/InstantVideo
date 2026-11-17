@@ -141,7 +141,7 @@ def test_continuation_preserves_flow_and_response_kind(tmp_path):
 
 
 def test_formal_planner_preserves_fluid_exchange_without_extra_events(monkeypatch):
-    from authoring_cases import authoring_from_legacy
+    from authoring_cases import scene_authoring_from_legacy
     from pipeline.storyboard import generate_storyboard
     from test_director_intent import draft, intent_reply, Responses
     request = '15秒武侠交锋，招式密集但要借势连贯，不能机械地一人一下'
@@ -152,7 +152,11 @@ def test_formal_planner_preserves_fluid_exchange_without_extra_events(monkeypatc
                      visible_result='defender slips beneath the attack without being hit')
         first['interaction_geometry'].update(interaction_mode='directed_path', line_of_action_visible=True)
         second.update(start_seconds=2.5, flow_from_previous='Continues the same slipping turn into the counter without resetting.')
-    client = Responses(intent_reply(request), authoring_from_legacy(board))
+    authored = scene_authoring_from_legacy(board)
+    for shot, source in zip(authored['shots'], board['shots']):
+        # 新创作协议将运动细节写在动作中，时间关系使用独立枚举。
+        shot['action_plan'][2]['action'] += ' ' + source['action_beats'][2]['flow_from_previous']
+    client = Responses(intent_reply(request), authored)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     result = generate_storyboard(request, target_duration=15)
     assert len(client.calls) == 5
@@ -160,7 +164,10 @@ def test_formal_planner_preserves_fluid_exchange_without_extra_events(monkeypatc
     for shot in result['shots']:
         events = compile_action_contract(shot).review_projection['action_events']
         assert len(events) == 2 and events[0]['response_kind'] == 'evasion'
-        assert events[1]['flow_from_previous'].endswith('without resetting.')
+        first, second = shot['action_beats'][1:3]
+        assert second['action'].endswith('without resetting.')
+        assert second['flow_from_previous']
+        assert second['start_seconds'] < first['end_seconds']
     assert request in client.calls[1]['messages'][1]['content']
 
 

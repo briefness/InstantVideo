@@ -44,7 +44,7 @@ def test_client_uses_effective_video_key_and_url_without_network(monkeypatch, sh
     monkeypatch.setattr(config, "ARK_API_KEY_SEEDANCE", "video-test-key")
     monkeypatch.setattr(config, "ARK_BASE_URL_SEEDANCE", "https://ark.cn-beijing.volces.com/api/plan/v3")
     SeedanceAPI()
-    ark.assert_called_once_with(api_key="video-test-key", base_url=config.ARK_BASE_URL_SEEDANCE)
+    ark.assert_called_once_with(api_key="video-test-key", base_url=config.ARK_BASE_URL_SEEDANCE, max_retries=0)
 
 
 def test_missing_effective_key_never_initializes_sdk(monkeypatch):

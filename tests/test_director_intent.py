@@ -33,17 +33,28 @@ class Responses:
         from planning_protocol_cases import wire_verdict
         from authoring_cases import SyntheticAuthoredResponse, scheduled_shot_fixture
         value = next(self.values)
+        if (kwargs.get('response_format', {}).get('json_schema', {}).get('name') == 'director_intent'
+                and isinstance(value, dict) and 'completion_goals' not in value):
+            # 旧离线服务用整项请求作为一个严格目标；新语义分解有专门标注用例。
+            value = {**value, 'completion_goals': [{'goal': value.get('ending_requirement') or value['intent_evidence'],
+                'basis': 'user', 'evidence': value['intent_evidence']}]}
         if isinstance(value, SyntheticAuthoredResponse):
             context = json.loads(kwargs['messages'][-1]['content'])
-            if context.get('authoring_protocol') in {'story-context-v5-entity-results', 'story-context-v6-candidate-results'}:
-                value = {'shot': scheduled_shot_fixture(value['shot'], context['slot'])}
+            if context.get('authoring_protocol') in {'story-context-v5-entity-results', 'story-context-v6-candidate-results',
+                                                    'story-context-v7-execution-timing', 'story-context-v8-action-semantics',
+                                                    'story-context-v9-temporal-relations'}:
+                value = {'shot': scheduled_shot_fixture(value['shot'], context['slot'],
+                    execution_timing=context['authoring_protocol'] in {
+                        'story-context-v7-execution-timing', 'story-context-v8-action-semantics',
+                        'story-context-v9-temporal-relations'})}
         return SimpleNamespace(choices=[SimpleNamespace(finish_reason='stop', message=SimpleNamespace(
             content=json.dumps(wire_verdict(value, kwargs)), refusal=None))])
 
 
 def intent_reply(request, focus='action', pacing='dense'):
     return {'content_focus': focus, 'pacing': pacing, 'intent_evidence': request,
-            'ending_requirement': '', 'ending_evidence': ''}
+            'ending_requirement': '', 'ending_evidence': '',
+            'completion_goals': [{'goal': request, 'basis': 'user', 'evidence': request}]}
 
 
 @pytest.fixture(autouse=True)
@@ -70,7 +81,8 @@ def test_whole_request_reaches_semantic_boundary_without_keyword_override(brief,
     assert plan['content_focus'] == focus
     assert plan['director_intent']['pacing'] == pacing
     if pacing == 'dense':
-        assert sum(slot['min_interaction_seconds'] for slot in plan['slots']) == 10.5
+        assert plan['min_interaction_seconds'] == 10.5
+        assert sum(slot['min_interaction_seconds'] for slot in plan['slots']) == 0
         assert all(slot['allowed_effect_phases'] == ['active'] for slot in plan['slots'])
         assert plan['slots'][-1]['framing_family'] == 'wide'
 
@@ -120,7 +132,7 @@ def draft():
 
 
 def test_formal_planner_corrects_time_budget_without_manual_storyboard_patch(monkeypatch):
-    from authoring_cases import authoring_from_legacy
+    from authoring_cases import scene_authoring_from_legacy
     from pipeline.action_timing import action_timing_issues
     request = '15秒武侠动作短片，密集招式和攻防衔接'
     bad, corrected = draft(), draft()
@@ -130,7 +142,7 @@ def test_formal_planner_corrects_time_budget_without_manual_storyboard_patch(mon
         shot['action_beats'][1]['effect_at_seconds'] = 2.1
         shot['action_beats'][1]['reaction_at_seconds'] = 2.2
     # The new input has no absolute timestamps to repair; the compiler owns allocation.
-    client = Responses(intent_reply(request), authoring_from_legacy(bad))
+    client = Responses(intent_reply(request), scene_authoring_from_legacy(bad))
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **_: client)
     result = generate_storyboard(request, target_duration=15)
     assert len(client.calls) == 5  # 意图 → 全片身份 → 三个固定槽位；无重写
@@ -139,8 +151,7 @@ def test_formal_planner_corrects_time_budget_without_manual_storyboard_patch(mon
     assert all(not action_timing_issues(s) for s in result['shots'])
     assert not production_plan_issues(result)
     changed = deepcopy(result)
-    changed['production_plan']['slots'][0]['min_interaction_seconds'] = 0
-    changed['shots'][0]['production_slot']['min_interaction_seconds'] = 0
+    changed['production_plan']['min_interaction_seconds'] = 0
     assert production_plan_issues(changed)
 
 
@@ -180,7 +191,7 @@ async def test_official_pipeline_stops_unrepaired_timing_before_video_stage(tmp_
     monkeypatch.setattr('pipeline.orchestrator.VideoGenerator',
                         lambda *_a, **_k: pytest.fail('invalid timing reached video stage'))
     pipeline = VideoPipeline(paid_take_budget=0)
-    with pytest.raises(ValueError, match='创作稿未通过编译'):
+    with pytest.raises(ValueError, match='创作响应契约不满足'):
         await pipeline.run(brief)
     assert len(client.calls) == 2
     assert (pipeline.workspace / 'run_manifest.json').is_file()

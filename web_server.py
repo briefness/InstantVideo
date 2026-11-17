@@ -104,6 +104,19 @@ def _run_summary(
         if not isinstance(state, dict):
             continue
         detail = storyboard_shots.get(str(shot_id), {})
+        video_url = _media_url(run_id, workspace, state.get('local_path'))
+        errors = list(state.get('errors', []))
+        if video_url and detail.get('presentation_policy'):
+            from pipeline.presentation_media import resolve_presentation
+            raw_path = Path(state['local_path'])
+            raw_path = raw_path if raw_path.is_absolute() else workspace / raw_path
+            try:
+                presented = resolve_presentation(str(raw_path), detail, workspace)
+                video_url = _media_url(run_id, workspace, presented)
+            except (OSError, ValueError):
+                video_url = None
+                if state.get('semantic_accepted') is not None:
+                    errors.append('镜头呈现文件缺失或已变化，暂不可预览；原片保留。')
         shots.append(
             {
                 "shot_id": state.get("shot_id", shot_id),
@@ -117,9 +130,10 @@ def _run_summary(
                 "quality_score": state.get("quality_score", 0),
                 "technical_quality_score": state.get("technical_quality_score", 0),
                 "semantic_accepted": state.get("semantic_accepted"),
+                "review_warnings": state.get('review_warnings', []),
                 "attempts": state.get("attempts", 0),
-                "errors": state.get("errors", []),
-                "video_url": _media_url(run_id, workspace, state.get("local_path")),
+                "errors": errors,
+                "video_url": video_url,
                 "poster_url": _media_url(run_id, workspace, state.get("last_frame_url")),
             }
         )
@@ -138,6 +152,9 @@ def _run_summary(
     exports = {name: url for name, url in exports.items() if url}
     poster_url = next((shot["poster_url"] for shot in reversed(shots) if shot["poster_url"]), None)
     status = str(manifest.get("status", "created"))
+    delivery = _read_json(workspace / 'delivery_report.json') or {}
+    review_warnings = delivery.get('warnings', [f"Shot {s['shot_id']}: {w}"
+                                               for s in shots for w in s['review_warnings']])
 
     return {
         "run_id": run_id,
@@ -160,6 +177,7 @@ def _run_summary(
         "mood": (storyboard or {}).get("mood", "") if include_storyboard else "",
         "total_duration": (storyboard or {}).get("total_duration") if include_storyboard else None,
         "shots": shots if include_storyboard else [],
+        "review_warnings": review_warnings,
         "progress": {"completed": successful_shots, "total": len(shots)},
         "budget": {
             "used": used_takes,
@@ -233,7 +251,8 @@ def _parse_create_payload(payload: Any) -> RunOptions:
         platforms=[str(platform) for platform in platforms],
         paid_take_budget=budget,
         take_policy=take_policy,
-        delivery_mode=payload.get("delivery_mode", "reviewed"),
+        delivery_mode=('reviewed' if payload.get('delivery_mode') == 'strict'
+                       else payload.get("delivery_mode", "reviewed")),
         motion_control=payload.get("motion_control", "auto"),
     )
 

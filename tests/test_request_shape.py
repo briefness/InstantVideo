@@ -69,9 +69,10 @@ def test_intent_protocol_carries_explicit_shape():
 
 def test_formal_planner_uses_semantic_duration_not_fallback_and_preserves_count(monkeypatch):
     from pipeline.storyboard import generate_storyboard
+    from authoring_cases import scene_authoring_from_legacy
     value = intent(15, 3)
     brief = value.pop('source_request')
-    client = Responses(value, authoring_from_legacy(draft()))
+    client = Responses(value, scene_authoring_from_legacy(draft()))
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: client)
     story = generate_storyboard(brief, target_duration=30)
     assert len(story['shots']) == 3

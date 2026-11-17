@@ -60,9 +60,9 @@ def test_provider_request_cannot_use_story_as_a_user_source():
 
 @pytest.mark.parametrize('composition', ['mixed_categories', 'uncertain'])
 def test_known_mixed_or_uncertain_claim_never_becomes_approved(tmp_path, monkeypatch, composition):
-    from planning_protocol_cases import sourced_wire, annotated_outcome
+    from planning_protocol_cases import sourced_wire, annotated_outcome, strict_intent_wire
     story = record()['storyboard.json']['value']
-    wire = sourced_wire(annotated_outcome(synthetic_wire(story), story), story)
+    wire = strict_intent_wire(sourced_wire(annotated_outcome(synthetic_wire(story), story), story), story)
     decision = next(iter(first_claim_unit(wire)['result_admission']['decisions'].values()))
     decision['composition'] = composition
     sdk, calls = sdk_reviewer(monkeypatch, wire)
@@ -154,9 +154,9 @@ def test_sources_follow_data_boundaries_across_scenes(actions):
 
 
 def test_new_protocol_success_is_cached_and_changed_request_is_not_rejudged(tmp_path, monkeypatch):
-    from planning_protocol_cases import sourced_wire, annotated_outcome
+    from planning_protocol_cases import sourced_wire, annotated_outcome, strict_intent_wire
     story = record()['storyboard.json']['value']
-    wire = sourced_wire(annotated_outcome(synthetic_wire(story), story), story)
+    wire = strict_intent_wire(sourced_wire(annotated_outcome(synthetic_wire(story), story), story), story)
     sdk, calls = sdk_reviewer(monkeypatch, wire)
     with sdk:
         accepted = ensure_planning_semantics(story, tmp_path, save_to(tmp_path))

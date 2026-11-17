@@ -13,17 +13,24 @@ CANONICAL_FRAMING = {'wide': 'wide shot', 'medium': 'medium shot', 'close_detail
 
 
 def build_production_plan(content_focus: str, target_duration: int, *, intent: dict | None = None,
-                          contract_version: str = 'production-plan-v8-request-shape') -> dict:
+                          contract_version: str = 'production-plan-v8-request-shape',
+                          duration_allocation: list[int] | None = None,
+                          duration_limits: dict | None = None) -> dict:
     """Allocate executable slots without deciding story-specific content."""
     if intent is not None:
         from pipeline.models import DirectorIntentSpec
         intent = DirectorIntentSpec.model_validate(intent).model_dump(exclude_none=True)
+    if duration_limits is not None and (intent is None or contract_version != 'production-plan-v8-request-shape'):
+        raise ValueError('冻结执行容量仅用于具备原始意图的新时长计划')
     if contract_version == 'production-plan-v8-request-shape':
         from pipeline.production_shape import allocate_requested_shape
         duration = target_duration
-        durations = allocate_requested_shape(duration, intent)
+        durations = allocate_requested_shape(duration, intent, duration_allocation,
+                                             duration_limits=duration_limits)
         shot_count = len(durations)
     else:
+        if duration_allocation is not None:
+            raise ValueError('历史计划不能套用新的创作时长分配')
         duration = max(config.MIN_SHOT_DURATION, int(target_duration))
         shot_count = min(10, max(1, ceil(duration / 6)))
         durations = _allocate_durations(duration, shot_count)
@@ -41,6 +48,21 @@ def build_production_plan(content_focus: str, target_duration: int, *, intent: d
                 slot['choreography'] = ('exact' if intent['motion_control'] == 'reference_motion'
                                         else intent.get('choreography', 'exact'))
                 slot['creative_brief'] = intent['source_request']
+                if intent.get('authoring_protocol') == 'scene-units-v1':
+                    if slot['choreography'] != 'flexible':
+                        raise ValueError('场景动作协议仅用于自由创作，不能替换精确或参考复现合同')
+                    slot['authoring_protocol'] = intent['authoring_protocol']
+                    # 题材不决定物理事件：准备镜可以发生作用，收尾也可以只有表演。
+                    # 明确的密集交互任务在下方继续冻结其预算。
+                    slot.update(allowed_effect_phases=list(_ALL_EFFECT_PHASES),
+                                outcome_scope=None, requires_visible_result=False)
+                    slot['coverage_roles'] = list(dict.fromkeys([
+                        *slot['coverage_roles'], 'action_subject', 'interaction']))
+                if intent.get('motion_timing'):
+                    slot['motion_timing'] = deepcopy(intent['motion_timing'])
+        if intent.get('creative_direction'):
+            for slot in slots:
+                slot['creative_direction'] = deepcopy(intent['creative_direction'])
         if intent.get('ending_requirement'):
             slots[-1]['required_outcome'] = intent['ending_requirement']
         if intent['pacing'] == 'dense':
@@ -76,6 +98,10 @@ def build_production_plan(content_focus: str, target_duration: int, *, intent: d
             plan['min_interaction_seconds'] = round(sum(s['min_interaction_seconds'] for s in slots), 2)
             for slot in slots:
                 slot['min_interaction_seconds'] = 0.
+    if duration_allocation is not None:
+        plan['duration_allocation'] = list(duration_allocation)
+    if duration_limits is not None:
+        plan['duration_limits'] = deepcopy(duration_limits)
     return plan
 
 
@@ -141,12 +167,19 @@ def production_plan_issues(storyboard: dict) -> list[str]:
     plan = storyboard.get("production_plan")
     if not isinstance(plan, dict):
         return []
+    if any(s.get('completion_policy') in ('source-goals-v1', 'goal-allocation-v1') for s in storyboard.get('shots', [])):
+        from pipeline.completion_intent import validate_goal_coverage
+        try:
+            validate_goal_coverage(storyboard)
+        except ValueError as exc:
+            return [str(exc)]
     if plan.get('version') in {'production-plan-v3-intent-timing', 'production-plan-v4-events', 'production-plan-v5-payoff-events', 'production-plan-v6-performance', 'production-plan-v7-film-rhythm', 'production-plan-v8-request-shape'}:
         try:
             from pipeline.models import ProductionPlanSpec
             intent = plan['director_intent']
             expected = build_production_plan(plan['content_focus'], plan['target_duration'], intent=intent,
-                                             contract_version=plan['version'])
+                contract_version=plan['version'], duration_allocation=plan.get('duration_allocation'),
+                duration_limits=plan.get('duration_limits'))
             if ProductionPlanSpec.model_validate(expected) != ProductionPlanSpec.model_validate(plan):
                 return ['ProductionPlan 时间预算或槽位偏离冻结意图，不能降低动作要求']
         except (KeyError, TypeError, ValueError):
@@ -226,7 +259,15 @@ def format_production_plan(plan: dict) -> str:
         f"必须严格输出 {len(plan['slots'])} 个镜头；shot_id、duration、"
         "narrative function 和下列槽位约束不可增删或改写："
     ]
+    direction = (plan.get('director_intent') or {}).get('creative_direction')
+    if direction:
+        import json
+        from pipeline.creative_direction import creative_authoring_context, AUTHORING_DIRECTION
+        lines.append(AUTHORING_DIRECTION + json.dumps(creative_authoring_context(direction), ensure_ascii=False))
     for slot in plan["slots"]:
+        if slot.get('motion_timing'):
+            from pipeline.motion_timing import motion_timing_instruction
+            lines.append(motion_timing_instruction(slot['motion_timing']))
         lines.append(
             f"- Shot {slot['shot_id']}: {slot['duration']}s; "
             f"narrative={slot['narrative_function']}; "

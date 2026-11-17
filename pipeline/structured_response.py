@@ -5,6 +5,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from types import SimpleNamespace
+from pipeline.operation_failure import mark_failure_phase, add_secondary_failure
 
 
 class StructuredResponseError(ValueError):
@@ -96,6 +97,7 @@ def collect_structured_response(response, *, on_failure: Callable[[dict], None] 
     guard = ObjectKeyGuard()
     finish = None
     usage = None
+    primary = None
     try:
         if hasattr(response, 'choices'):
             if not response.choices:
@@ -125,13 +127,24 @@ def collect_structured_response(response, *, on_failure: Callable[[dict], None] 
         return SimpleNamespace(choices=[SimpleNamespace(
             message=SimpleNamespace(content=''.join(parts)), finish_reason=finish,
         )], usage=usage)
-    except Exception as error:
-        if on_failure:
-            on_failure({'content': ''.join(parts), 'finish_reason': (
-                'protocol_error' if isinstance(error, ValueError) else 'transport_error'
-            )})
+    except BaseException as error:
+        primary = error
+        mark_failure_phase(error, 'receive_response')
+        if on_failure and isinstance(error, Exception):
+            try:
+                on_failure({'content': ''.join(parts), 'finish_reason': (
+                    'protocol_error' if isinstance(error, ValueError) else 'transport_error'
+                )})
+            except Exception as secondary:
+                add_secondary_failure(error, secondary, 'save_diagnostic')
         raise
     finally:
         close = getattr(response, 'close', None)
         if callable(close):
-            close()
+            try:
+                close()
+            except Exception as secondary:
+                if primary is None:
+                    mark_failure_phase(secondary, 'close_response')
+                    raise
+                add_secondary_failure(primary, secondary, 'close_response')

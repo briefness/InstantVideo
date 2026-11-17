@@ -15,7 +15,7 @@ from test_action_results import annotated_story
 from test_director_intent import Responses, intent_reply
 from test_action_result_flow import annotated_verdict
 from test_continuation import scenario, Planner
-from test_full_production_flow import production_services
+from test_full_production_flow import production_services, original_task_response
 
 
 @pytest.fixture(autouse=True)
@@ -245,13 +245,30 @@ async def test_formal_fast_chain_reaches_real_sdk_payload_and_export(
         content = kwargs['messages'][-1]['content']
         value = json.loads(response.choices[0].message.content)
         if isinstance(content, list):
-            value['observed_end_state'] = {'location': 'workshop', 'subject': 'two workers',
+            state = {'location': 'workshop', 'subject': 'two workers',
                 'action_phase': f'transfer stage {len(services.submissions)} established',
                 'prop_state': f'{prop}: {result}', 'open_motion': f'{prop} continues toward the receiver'}
+            if 'terminal_observation' in value:
+                value['end_state_context'].update(location=state['location'], subject=state['subject'])
+                value['terminal_observation'].update({k: state[k] for k in ('action_phase', 'prop_state', 'open_motion')})
+            elif 'observations' in value:
+                value['end_state_context'].update(location=state['location'], subject=state['subject'])
+                value['end_state_sources'].update(prop_state=value['end_state_sources']['action_phase'],
+                                                  open_motion=value['end_state_sources']['action_phase'])
+                for key in value['end_state_sources']['action_phase']:
+                    value['observations'][key]['observation'] = '; '.join(state[k] for k in ('action_phase', 'prop_state', 'open_motion'))
+            else:
+                value['observed_end_state'] = state
         elif 'observed_state' in json.loads(content):
             value['entry_action'] = f'continues the observed {prop} movement through the shared workspace'
             if 'entry_visible_result' in value:
                 value['entry_visible_result'] = f'{prop} remains within reach of the receiver'
+            context = json.loads(content).get('spatial_context')
+            if context:
+                # 显式合成视觉定位，用于验证从正常续拍响应到真实SDK的图像通道。
+                # 不作为这些测试图中的实际人物/物体定位结论。
+                value['spatial_guidance'] = {name: [[.6, .4], [.8, .4], [.8, .6], [.6, .6]]
+                                            for name in context['entities']}
         if isinstance(content, str) and '"storyboard"' in content:
             for unit in value['units'].values():
                 for source, decision in (unit.get('result_admission') or {}).get('decisions', {}).items():
@@ -265,7 +282,7 @@ async def test_formal_fast_chain_reaches_real_sdk_payload_and_export(
         services.submissions.append(kwargs)
         return SimpleNamespace(id=f'offline-{len(services.submissions)}')
     def get_task(*, task_id):
-        return SimpleNamespace(status='succeeded', content=SimpleNamespace(video_url=task_id))
+        return original_task_response(task_id)
     api = object.__new__(SeedanceAPI)
     api.ark_client = SimpleNamespace(content_generation=SimpleNamespace(tasks=SimpleNamespace(
         create=create_task, get=get_task)))
@@ -282,16 +299,22 @@ async def test_formal_fast_chain_reaches_real_sdk_payload_and_export(
         text = request['content'][0]['text']
         assert visual in text and action in text and result in text
         references = request['content'][1:]
-        assert all(item['type'] != 'video_url' for item in references)
         if index:
-            assert references[0]['role'] == 'first_frame'
-            assert references[0]['image_url']['url'].startswith('data:image/')
+            videos = [item for item in references if item['type'] == 'video_url']
+            diagrams = [item for item in references if item['type'] == 'image_url']
+            assert videos and len(diagrams) == 1
+            assert all(item['role'] == 'reference_video' for item in videos)
+            assert all(item['video_url']['url'].startswith('https://example.com/offline-') for item in videos)
+            assert diagrams[0]['role'] == 'reference_image'
+            assert diagrams[0]['image_url']['url'].startswith('data:image/png;base64,')
+            assert 'SPATIAL GUIDE' in text
         else:
             assert not references
     for context in services.entries:
-        assert context['version'] == 'observed-entry-v7-path-guidance'
-        assert context['observed_state']['prop_state'] == f'{prop}: {result}'
-        assert context['observed_state']['open_motion'] == f'{prop} continues toward the receiver'
+        assert context['version'] == 'observed-entry-v14-spatial-observation'
+        assert len(context['temporal_evidence']['sources'][0]['frames']) == 9
+        assert f'{prop}: {result}' in context['observed_state']['prop_state']
+        assert f'{prop} continues toward the receiver' in context['observed_state']['open_motion']
         for beat in context['planned_shot']['action_beats']:
             assert all('OPTIONAL_POSTURE' not in item['state'] for item in beat.get('outcomes', []))
     assert [c['entry_result_bound'] for c in services.entries] == [True, False]

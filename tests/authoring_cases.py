@@ -21,7 +21,7 @@ def entity_resolution_fixture(unit):
     return {'states': states}
 
 
-def scheduled_shot_fixture(shot, slot):
+def scheduled_shot_fixture(shot, slot, *, execution_timing=False):
     """Represent the same synthetic performance in the slot-bound wire format."""
     result = deepcopy(shot)
     from pipeline.production_plan import CANONICAL_FRAMING
@@ -38,7 +38,12 @@ def scheduled_shot_fixture(shot, slot):
         unit = {k: v for k, v in unit.items() if k != 'id'}
         if unit['kind'] == 'interaction':
             unit['resolution'] = entity_resolution_fixture(unit)
-        if unit['kind'] == 'interaction' and count < slot['min_interaction_events']:
+            if (execution_timing and type(unit.get('link_previous')) is bool
+                    and 'carry' not in unit
+                    and not (unit.get('overlap') and not unit['link_previous'])):
+                unit['motion_source'] = 'previous' if unit.pop('link_previous') else 'none'
+                unit['timing'] = 'overlap_previous' if unit.pop('overlap', False) else 'sequential'
+        if unit['kind'] == 'interaction' and count < slot.get('min_interaction_events', 0):
             count += 1
             unit.pop('kind')
             unit['following'] = []
@@ -47,7 +52,10 @@ def scheduled_shot_fixture(shot, slot):
         else:
             following.append(unit)
     if opening:
-        schedule['opening'] = {'first': opening[0], 'following': opening[1:]}
+        if slot.get('min_interaction_events', 0):
+            schedule['opening'] = {'first': opening[0], 'following': opening[1:]}
+        else:
+            schedule.update(first=opening[0], following=opening[1:])
     result['action_plan'] = schedule
     return result
 
@@ -91,4 +99,20 @@ def authoring_from_legacy(story):
             'visual_description': shot['scene_description'],
             'story_change': shot['narrative_beat']['state_change'],
             'story_state_after': shot['narrative_beat']['state_after'], 'action_plan': units})
+    return result
+
+
+def scene_authoring_from_legacy(story):
+    """为合成用例标注当前创作协议；真实捕获记录不得通过此函数转换。"""
+    result = authoring_from_legacy(story)
+    result['locations'] = list({s['scene_id']: {'id': s['scene_id'], 'description': s['scene_description']}
+                                for s in result['shots']}.values())
+    result['scene_entities'] = list(dict.fromkeys(p for s in result['shots']
+        for p in [*s.get('key_props', []), *s.get('continuity_props', [])]))
+    for shot in result['shots']:
+        for unit in shot['action_plan']:
+            unit['weight'] = 3. if unit['kind'] == 'interaction' else 1.
+            if unit['kind'] == 'interaction':
+                unit['link_previous'] = bool(unit.pop('carry', ''))
+                unit['resolution'] = {'states': {unit['target']: [{'state': unit['result']}]}}
     return result

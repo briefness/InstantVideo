@@ -5,14 +5,34 @@ from pathlib import Path
 
 import config
 from pipeline.run_state import RunWorkspace
+from pipeline.planning_evidence import BATCH_REVIEW_UNITS
+
+
+def _source_units(shots: list[dict]) -> list[dict]:
+    from pipeline.goal_allocation import evidence_unit
+    ids = [s['shot_id'] for s in shots]
+    if len(set(ids)) != len(ids):
+        raise ValueError('分批审查镜头身份重复，不能覆盖原稿来源')
+    return [evidence_unit(s['shot_id'], i, b) for s in shots for i, b in enumerate(s['action_beats'])]
+
+
+def merge_review_batches(storyboard: dict, admitted_shots: list[dict]) -> dict:
+    """合并只搬运已审定证据，不按目标文字相同而合并不同发生次数。"""
+    from pipeline.completion_intent import validate_goal_coverage
+    if _source_units(storyboard['shots']) != _source_units(admitted_shots):
+        raise ValueError('分批合并与原稿动作目录不一致：存在遗漏、换序或来源改写')
+    result = {**storyboard, 'shots': admitted_shots}
+    validate_goal_coverage(result)
+    return result
 
 
 def ensure_batched_planning_review(storyboard: dict, workspace: Path, save_diagnostic) -> dict:
     from pipeline.planning_review import ensure_planning_semantics
 
     shots = storyboard['shots']
-    if len(shots) > 150 or any(not 1 <= len(s['action_beats']) <= 12 for s in shots):
+    if not 1 <= len(shots) <= 150 or any(not 1 <= len(s['action_beats']) <= 12 for s in shots):
         raise ValueError('分批审查需要有界镜头和每镜 1–12 个动作单元')
+    _source_units(shots)
     source = {'version': 'planning-batches-v1', 'model': config.LLM_MODEL, 'storyboard': storyboard}
     fingerprint = hashlib.sha256(json.dumps(source, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     root = Path(workspace)
@@ -22,7 +42,7 @@ def ensure_batched_planning_review(storyboard: dict, workspace: Path, save_diagn
     batches, current, count = [], [], 0
     for shot in shots:
         size = len(shot['action_beats'])
-        if current and count + size > 24:
+        if current and count + size > BATCH_REVIEW_UNITS:
             batches.append(current)
             current, count = [], 0
         current.append(shot)
@@ -44,11 +64,14 @@ def ensure_batched_planning_review(storyboard: dict, workspace: Path, save_diagn
         # this call cannot split recursively. Failed batches remain failed.
         admitted = ensure_planning_semantics(scoped, directory,
             lambda name, data, directory=directory: RunWorkspace._atomic_write_json(directory / name, data))
+        if _source_units(batch) != _source_units(admitted['shots']):
+            raise ValueError('分批审查结果与本批原稿动作目录不一致，停止后续批次')
         admitted_shots.extend(admitted['shots'])
         records.append({'shot_ids': [s['shot_id'] for s in batch],
                         'review': f'{relative}/planning_semantic_review.json',
                         'evidence': f'{relative}/planning_semantic_evidence.json'})
         previous = batch[-1]
+    result = merge_review_batches(storyboard, admitted_shots)
     save_diagnostic('planning_semantic_review.json', {
         'version': 'planning-batches-v1', 'fingerprint': fingerprint, 'status': 'passed', 'batches': records})
-    return {**storyboard, 'shots': admitted_shots}
+    return result

@@ -190,7 +190,10 @@ async def test_formal_natural_language_entry_freezes_performance_policy_and_resu
         policy = compile_action_contract(shot).review_projection['performance_policy']
         assert policy['creative_brief'] == brief
         assert policy['version'] == 'performance-v2-outcomes'
-        assert 'Choreography is performance-guided:' in compile_normal_provider_prompt(shot, storyboard, has_observed_start=False)
+        prompt = compile_normal_provider_prompt(shot, storyboard, has_observed_start=False)
+        assert 'Preserve the following event dependencies' in prompt
+        assert policy['time_basis'] == 'sample-bounds-v1'
+        assert all(beat['action'] in prompt for beat in shot['action_beats'])
     resumed = VideoPipeline.from_workspace(pipeline.workspace)
     resumed.plan_only = True
     assert await resumed.run() == result

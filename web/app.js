@@ -14,7 +14,7 @@ const elements = Object.fromEntries(
     "resume-button", "download-button", "video-player", "video-placeholder", "preview-kind",
     "meta-ratio", "meta-resolution", "meta-duration", "meta-style", "updated-time", "stage-label",
     "stage-percent", "progress-bar", "shot-progress", "take-progress", "platforms-value",
-    "review-value", "run-error", "export-list", "shot-count", "shot-list", "create-dialog",
+    "review-value", "run-error", "run-warnings", "export-list", "shot-count", "shot-list", "create-dialog",
     "create-form", "ratio-options", "resolution-options", "style-select", "music-select",
     "platform-options", "form-error", "submit-run", "toast",
   ].map((id) => [id, document.getElementById(id)]),
@@ -186,7 +186,7 @@ function renderShots(shots) {
       meta,
       createElement("strong", "", shot.scene_description || shot.primary_action || "等待分镜内容"),
       createElement("span", "", shot.status === "success" && shot.semantic_accepted !== true
-        ? `已生成·内容待验收 · 技术 ${shot.technical_quality_score || 0} 分`
+        ? `${shot.review_warnings?.length ? "已生成·有审查警告" : "已生成·内容待验收"} · 技术 ${shot.technical_quality_score || 0} 分`
         : `${statusLabels[shot.status] || shot.status} · ${shot.quality_score || 0} 分`),
     );
     button.append(thumb, copy);
@@ -208,11 +208,13 @@ function renderExports(exports) {
 
 function renderRun(run) {
   const preview = run.options.delivery_mode === "preview";
+  const normal = run.options.delivery_mode === "normal";
+  const warnings = run.review_warnings || [];
   state.currentRun = run;
   elements["empty-state"].hidden = true;
   elements["run-workspace"].hidden = false;
   elements["page-title"].textContent = run.title || "制作详情";
-  elements["run-status"].textContent = run.active ? "制作中" : preview && run.status === "succeeded" ? "预览完成·内容待验收" : statusLabels[run.status] || run.status;
+  elements["run-status"].textContent = run.active ? "制作中" : run.status === "succeeded" && warnings.length ? "成片完成·有审查警告" : preview && run.status === "succeeded" ? "预览完成·内容待验收" : statusLabels[run.status] || run.status;
   elements["run-status"].className = `status-badge ${run.active ? "running" : run.status}`;
   elements["run-id"].textContent = run.run_id;
   elements["run-title"].textContent = run.title || run.request || "未命名任务";
@@ -242,7 +244,9 @@ function renderRun(run) {
   elements["shot-progress"].textContent = `${run.progress.completed} / ${run.progress.total}`;
   elements["take-progress"].textContent = `${run.budget.used} / ${run.budget.limit ?? "-"}`;
   elements["platforms-value"].textContent = run.options.platforms.map((item) => platformLabels[item] || item).join(", ") || "-";
-  elements["review-value"].textContent = preview ? "内容待验收（预览模式）" : state.config?.semantic_review_enabled ? "已启用" : "仅技术验收";
+  elements["review-value"].textContent = preview ? "内容待验收（预览模式）" : normal ? "正常模式 · 一般问题带警告继续" : "严格模式 · 发现问题即停止";
+  elements["run-warnings"].hidden = !warnings.length;
+  elements["run-warnings"].querySelector("ul").replaceChildren(...warnings.map((w) => createElement("li", "", w)));
 
   elements["run-error"].hidden = !run.error;
   elements["run-error"].querySelector("p").textContent = run.error || "";

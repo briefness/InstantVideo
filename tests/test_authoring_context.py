@@ -122,7 +122,7 @@ def test_formal_author_uses_frozen_locations_and_single_prop_declaration(monkeyp
     for call, shot in zip(client.calls[2:], result['shots']):
         user = json.loads(call['messages'][1]['content'])
         assert user['locations'] == raw['locations']
-        assert user['authoring_protocol'] == 'story-context-v6-candidate-results'
+        assert user['authoring_protocol'] == 'story-context-v9-temporal-relations'
         schema = call['response_format']['json_schema']['schema']['properties']['shot']
         assert schema['properties']['scene_id']['enum'] == ['training_roof']
         assert 'prop_roles' in schema['required']
@@ -169,7 +169,7 @@ def test_context_protocol_in_actual_sdk_request_and_response(monkeypatch):
     replies = [{**intent_reply('continuous movement'), 'choreography': 'flexible'},
                {k: v for k, v in raw.items() if k != 'shots'}]
     plan = build_production_plan('action', 15, intent={**replies[0], 'source_request': 'continuous movement'})
-    replies += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(s), slot).items()
+    replies += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(s), slot, execution_timing=True).items()
                           if k != 'shot_id'}} for s, slot in zip(raw['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, replies)
     with sdk:
@@ -201,13 +201,17 @@ def test_role_capacity_matches_both_existing_projections(role):
 
 
 def test_exact_authoring_prompt_keeps_legacy_checkpoint_input(monkeypatch):
-    from pipeline.storyboard import generate_storyboard
+    from pipeline.storyboard_authoring import generate_event_storyboard
+    from pipeline.production_plan import build_production_plan
     from test_director_intent import Responses, intent_reply, draft
     from authoring_cases import authoring_from_legacy
-    client = Responses(intent_reply('continuous movement'), authoring_from_legacy(draft()))
-    monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **_: client)
-    generate_storyboard('continuous movement', target_duration=15)
-    shot_call = client.calls[2]
+    # 历史已冻结计划的作者输入保持兼容，不再让新入口重新选择旧协议。
+    plan = build_production_plan('action', 15, intent={**intent_reply('continuous movement'),
+        'source_request': 'continuous movement'})
+    client = Responses(authoring_from_legacy(draft()))
+    generate_event_storyboard(client, 'continuous movement', plan,
+        aspect_ratio='16:9', resolution='720p', style='cinematic')
+    shot_call = client.calls[1]
     system = shot_call['messages'][0]['content']
     assert '内容符合下方schema' in system and '"$defs"' in system
-    assert 'prop_roles' not in system and 'locations' not in json.loads(client.calls[1]['messages'][1]['content'])
+    assert 'prop_roles' not in system and 'locations' not in json.loads(client.calls[0]['messages'][1]['content'])

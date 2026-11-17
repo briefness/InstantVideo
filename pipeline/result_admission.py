@@ -62,11 +62,18 @@ def admission_issues(storyboard: dict, units: list[dict]) -> list[str]:
     actual = [(u.get('shot_id'), u.get('beat_index')) for u in units]
     if len(actual) != len(set(actual)) or set(actual) != expected:
         raise ValueError('结果必要性审查必须完整覆盖全部动作单元')
+    from pipeline.completion_intent import admitted_unit_intents, source_goals
+    admitted_unit_intents(storyboard, units)
+    goals = source_goals(storyboard)
     request = (storyboard.get('production_plan', {}).get('director_intent') or {}).get('source_request', '')
     issues = []
     for unit in units:
         shot = shots[unit['shot_id']]
         if shot.get('result_admission') != 'review-required-v1':
+            continue
+        if goals:
+            if unit.get('result_admission') is not None:
+                raise ValueError('创作前目标协议不接受作者状态的第二次必要性授权')
             continue
         beat = shot['action_beats'][unit['beat_index']]
         claims = review_claims(shot, beat)
@@ -131,6 +138,10 @@ def apply_result_admission(storyboard: dict, units: list[dict]) -> dict:
     if issues:
         raise ValueError('结果必要性审查未通过：' + '；'.join(issues))
     result = deepcopy(storyboard)
+    from pipeline.completion_intent import POLICY as INTENT_POLICY, SOURCE_POLICY, admitted_unit_intents, source_goals
+    from pipeline import goal_allocation as allocation
+    intents = admitted_unit_intents(storyboard, units)
+    goals = source_goals(storyboard)
     shots = {s['shot_id']: s for s in result['shots']}
     pending = {s['shot_id'] for s in storyboard['shots'] if s.get('result_admission') == 'review-required-v1'}
     for unit in units:
@@ -138,9 +149,28 @@ def apply_result_admission(storyboard: dict, units: list[dict]) -> dict:
         if shot['shot_id'] not in pending:
             continue
         beat = shot['action_beats'][unit['beat_index']]
+        if shot['shot_id'] in intents:
+            beat['completion_intent'] = intents[shot['shot_id']][unit['beat_index']]
+            allocated = all(i['kind'] == 'allocated' for i in intents[shot['shot_id']])
+            shot['completion_policy'] = allocation.POLICY if allocated else SOURCE_POLICY if goals else INTENT_POLICY
+            if goals:
+                refs = ({r['reference'] for i in intents[shot['shot_id']] for r in i['requirements']}
+                        if allocated else {i['reference'] for i in intents[shot['shot_id']] if i['kind'] == 'required'})
+                shot['completion_goals'] = {r: deepcopy(goals[r]) for r in goals if r in refs}
+            # 尚未审定的旧创作稿也可接受一次新协议审查；历史缓存没有 intents，保持原样。
+            shot['result_policy'] = 'functional-v1'
         if beat.get('activity') == 'interaction':
             # admission_issues 已确认：有候选结果时不能省略判断。
             beat['result_directions'] = [d['source'] for d in (unit.get('result_admission') or {}).get('decisions', [])
                                          if d['basis'] == 'direction']
+            if shot.get('result_policy') == 'functional-v1':
+                beat['result_functions'] = [d['source'] for d in (unit.get('result_admission') or {}).get('decisions', [])
+                                             if d['basis'] == 'response']
+            if goals:
+                # 全部作者结果仍用于生成；必要性只来自分镜之前冻结的目标。
+                beat['result_functions'] = list(result_claims(beat))
         shot['result_admission'] = POLICY
+    if not storyboard.get('review_scope'):
+        from pipeline.completion_intent import validate_goal_coverage
+        validate_goal_coverage(result)
     return result

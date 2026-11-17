@@ -49,8 +49,10 @@ class LocalCompletions:
 
     def create(self, **kwargs):
         self.calls.append(kwargs)
+        from functional_observation_cases import annotated_observation_response
+        response = annotated_observation_response(self.response, kwargs)
         return SimpleNamespace(choices=[SimpleNamespace(finish_reason="stop",
-            message=SimpleNamespace(content=json.dumps(self.response), refusal=None))])
+            message=SimpleNamespace(content=json.dumps(response), refusal=None))])
 
 
 def reviewer_for(tmp_path, response):

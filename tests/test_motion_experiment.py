@@ -375,8 +375,7 @@ async def test_unknown_creation_keeps_budget_and_disables_sdk_retry(experiment, 
         return {"status": "failed", "error_type": "submission_unknown", "error": "unknown submission"}
     monkeypatch.setattr(SeedanceAPI, "_init_clients", initialize)
     monkeypatch.setattr(SeedanceAPI, "generate", generate)
-    with pytest.raises(RuntimeError):
-        await execute_experiment(experiment)
+    assert (await execute_experiment(experiment))["status"] == "pending"
     assert len(calls) == 1 and clients[0].max_retries == 0
     assert (await execute_experiment(experiment))["status"] == "blocked"
     assert len(calls) == 1

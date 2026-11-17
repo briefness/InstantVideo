@@ -14,19 +14,29 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pipeline.models import CameraSpec, CharacterBlockingSpec, ContinuityStateSpec, VisibleOutcomeSpec
 from pipeline.action_results import AuthoredResolution, EntityResolution, CandidateResolution, lower_authored_resolution
 from pipeline.action_timing import MIN_INTERACTION_MS, MIN_PASSIVE_MS, passive_floor_ms
+from pipeline.action_vocabulary import IndependentActivity, ResponseKind
+from pipeline.participants import visible_character_names
 
 
 # Creative descriptions share a prose budget. IDs, lists and numeric execution
 # fields retain their own constraints; an aesthetic description is not an ID.
 Description = Annotated[str, Field(max_length=1600)]
-Text = Annotated[Description, Field(min_length=1)]
+Text = Annotated[Description, Field(min_length=1, pattern=r'\S')]
 NonBlank = Annotated[str, Field(min_length=1, pattern=r'\S')]
 
 
 def format_authoring_slots(plan: dict) -> str:
     fields = ('shot_id', 'duration', 'narrative_function', 'framing_family',
-              'min_interaction_events', 'min_interaction_seconds', 'result_hold_seconds', 'required_outcome')
-    return json.dumps([{k: slot[k] for k in fields if k in slot} for slot in plan['slots']], ensure_ascii=False)
+              'min_interaction_events', 'min_interaction_seconds', 'result_hold_seconds', 'required_outcome',
+              'motion_timing')
+    from pipeline.creative_direction import creative_authoring_context
+    slots = []
+    for slot in plan['slots']:
+        context = {k: slot[k] for k in fields if k in slot}
+        if slot.get('creative_direction'):
+            context['creative_direction'] = creative_authoring_context(slot['creative_direction'])
+        slots.append(context)
+    return json.dumps(slots, ensure_ascii=False)
 
 
 class AuthoredModel(BaseModel):
@@ -47,14 +57,16 @@ class ActionUnit(AuthoredModel):
     actor: Text
     action: Text
     result: Text
-    weight: Annotated[float, Field(gt=0, le=100, strict=True, allow_inf_nan=False)] = 1.
+    weight: Annotated[float, Field(gt=0, le=100, strict=True, allow_inf_nan=False,
+        json_schema_extra={'x-authoring-step': '0.1'})] = 1.
+    temporal_relation: Literal['sequential', 'overlap_previous'] | None = None
 
 
 class InteractionUnit(ActionUnit):
     kind: Literal['interaction']
     target: Text
     effect: Effect
-    response: Literal['impact', 'evasion', 'deflection'] = 'impact'
+    response: ResponseKind = 'impact'
     carry: str = Field(default='', max_length=800)
     link_previous: bool | None = Field(default=None, strict=True)
     overlap: bool = Field(default=False, strict=True)
@@ -72,7 +84,8 @@ class InteractionUnit(ActionUnit):
 
 
 class PassiveUnit(ActionUnit):
-    kind: Literal['transition', 'hold']
+    """不建立独立外部作用的单元；名称保留兼容旧创作 schema。"""
+    kind: IndependentActivity
     target: str = Field(default='', max_length=1600)
 
 
@@ -121,7 +134,8 @@ class CreationShot(AuthoredShot):
 
 def authored_shot_response_schema(names: list[str], *, require_outcomes: bool = False,
                                  scene_entities: list[str] | None = None,
-                                 bound_handoffs: bool = False) -> dict:
+                                 bound_handoffs: bool = False,
+                                 allow_scene_subjects: bool = False) -> dict:
     """Project the same response/mode contract into constrained authoring."""
     from pipeline.action_timing import RESPONSE_MODES
     schema = CreationShot.model_json_schema()
@@ -142,11 +156,14 @@ def authored_shot_response_schema(names: list[str], *, require_outcomes: bool = 
     else:
         interaction['properties'].pop('link_previous')
     for name in ('InteractionUnit', 'PassiveUnit'):
+        definitions[name]['properties'].pop('temporal_relation')
         definitions[name]['properties']['actor']['enum'] = names
     if scene_entities is not None:
         entities = [*names, *scene_entities]
         definitions['InteractionUnit']['properties']['target']['enum'] = entities
         definitions['PassiveUnit']['properties']['target']['enum'] = ['', *entities]
+        if allow_scene_subjects:
+            definitions['PassiveUnit']['properties']['actor']['enum'] = entities
         # 与执行端同一实体目录；动作描述属于 action/result，不是实体引用。
         definitions['CharacterBlockingSpec']['properties']['action_target']['enum'] = ['', *entities]
         definitions['SceneChangeSpec']['properties']['entity']['enum'] = entities
@@ -218,6 +235,8 @@ def compile_action_units(shot: AuthoredShot, slot: dict) -> list[dict]:
     hold = int(round(slot.get('result_hold_seconds', 0) * 1000))
     if hold and units[-1].kind != 'hold':
         raise ValueError(f'Shot {shot.shot_id}: 结局缺少持续可见的结果单元')
+    if hold and units[-1].temporal_relation == 'overlap_previous':
+        raise ValueError(f'Shot {shot.shot_id}: 结果展示必须在前项完成之后')
     widths = [MIN_INTERACTION_MS if i in events else MIN_PASSIVE_MS for i in range(len(units))]
     if hold:
         widths[-1] = max(widths[-1], hold)
@@ -238,8 +257,16 @@ def compile_action_units(shot: AuthoredShot, slot: dict) -> list[dict]:
     for i, (unit, width) in enumerate(zip(units, widths)):
         beat = {'actor': unit.actor, 'target': unit.target, 'action': unit.action,
                 'visible_result': unit.result, 'activity': unit.kind,
-                'phase': 'peak' if unit.kind == 'interaction' else ('trigger' if unit.kind == 'transition' else 'aftermath')}
+                'phase': 'peak' if unit.kind in ('interaction', 'performance') else ('trigger' if unit.kind == 'transition' else 'aftermath')}
         start, end = cursor, cursor + width
+        if unit.temporal_relation is not None:
+            if isinstance(unit, InteractionUnit) and unit.overlap:
+                raise ValueError('不能混用显式时间关系与历史 overlap')
+            beat['temporal_relation'] = unit.temporal_relation
+            if unit.temporal_relation == 'overlap_previous':
+                if not i:
+                    raise ValueError('首个动作没有可搭接的前项')
+                start -= min(widths[i - 1], width) // 5
         if isinstance(unit, InteractionUnit):
             if unit.resolution is not None:
                 lowered = lower_authored_resolution(unit.actor, unit.target, unit.resolution,
@@ -315,10 +342,12 @@ def compile_authored_storyboard(raw: dict, plan: dict) -> dict:
         if shot.shot_id != slot['shot_id']:
             raise ValueError('创作稿镜头 ID 与生产计划不一致')
         registry = known | set(shot.key_props) | set(shot.continuity_props)
+        scene_units = slot.get('authoring_protocol') == 'scene-units-v1'
         participants = []
         visible_entities = []
         for unit in shot.action_plan:
-            if unit.actor not in known or (unit.target and unit.target not in registry):
+            actors = registry if scene_units and isinstance(unit, PassiveUnit) else known
+            if unit.actor not in actors or (unit.target and unit.target not in registry):
                 raise ValueError(f'Shot {shot.shot_id}: 未注册的动作参与者')
             participants.extend(e for e in (unit.actor, unit.target) if e in known)
             # Identity references apply to characters; action visibility applies
@@ -337,24 +366,44 @@ def compile_authored_storyboard(raw: dict, plan: dict) -> dict:
                         participants.append(change['entity'])
         beats = compile_action_units(shot, slot)
         events = [b for b in beats if b['activity'] == 'interaction']
-        if not events:
+        if not events and not scene_units:
             raise ValueError('事件生产槽位缺少真实作用')
+        geometry = (deepcopy(events[-1]['interaction_geometry']) if events else
+                    {'effect_phase': 'none', 'interaction_mode': 'none', 'outcome_scope': 'none',
+                     'effect_motion': 'none'})
+        role = 'interaction'
+        if not events:
+            roles = slot['coverage_roles']
+            role = ('insert' if not participants and 'insert' in roles else
+                    'establish' if 'establish' in roles else
+                    'aftermath' if all(u.kind == 'hold' for u in shot.action_plan) and 'aftermath' in roles
+                    else 'action_subject')
         # Cause/reaction text is projected once; no independent action-bearing prompt to drift.
         prompt = shot.visual_description + ' ' + ' '.join(f'{u.action}. {u.result}.' for u in shot.action_plan)
         compiled = shot.model_dump(exclude={'action_plan', 'story_change', 'story_state_after', 'result_admission'})
+        compiled['action_semantics'] = 'authored-v1'
         if pending_results:
             compiled['result_admission'] = shot.result_admission
+            compiled['result_policy'] = 'functional-v1'
         if slot.get('choreography') == 'flexible':
+            compiled['execution_semantics'] = 'intent-bounded-v1'
             compiled['generation_direction'] = 'authored-staging-v1'
+            compiled['generation_execution'] = 'scene-instructions-v2'
             compiled['media_selection'] = 'planned-prefix-v1'
+            compiled['continuity_evidence'] = 'temporal-window-v1'
+            compiled['evidence_policy'] = 'grounded-requirements-v2'
+            compiled['spatial_control'] = 'observed-layout-v1'
+            compiled['presentation_policy'] = 'local-reframe-v1'
         compiled.update(duration=slot['duration'], prompt_en=prompt, characters=list(dict.fromkeys(participants)),
                         primary_action='; '.join(u.action for u in shot.action_plan), action_beats=beats,
-                        interaction_geometry=deepcopy(events[-1]['interaction_geometry']),
-                        required_visible_entities=list(dict.fromkeys([*participants, *visible_entities])), coverage_role='interaction',
+                        interaction_geometry=geometry,
+                        required_visible_entities=list(dict.fromkeys([*participants, *visible_entities])), coverage_role=role,
                         continuity_from_previous='none' if not result['shots'] else 'intentional_cut',
                         transition_to_next='cut', extract_character_ref=False,
                         narrative_beat={'function': slot['narrative_function'], 'state_before': prior_state,
                                         'state_change': shot.story_change, 'state_after': shot.story_state_after})
+        # 可见人物还可能只参与构图或调度；派生目录不能反向改写动作参与者。
+        compiled['characters'] = visible_character_names(compiled, [c['name'] for c in raw.get('characters', [])])
         first = shot.action_plan[0]
         if isinstance(first, InteractionUnit) and first.carry:
             compiled['start_state']['open_motion'] = first.carry

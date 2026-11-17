@@ -22,13 +22,17 @@ def test_real_cross_shot_overlap_remains_rejected_without_rewriting():
 
 
 def test_formal_request_distinguishes_cross_shot_carry_from_in_shot_overlap(monkeypatch):
+    from pipeline.storyboard_authoring import generate_event_storyboard
+    from test_action_authoring import plan_for
     raw = authoring_from_legacy(draft())
-    values = [intent_reply('continuous action'), {k: v for k, v in raw.items() if k != 'shots'}]
+    # carry 是历史合同字段，使用冻结计划验证旧作者接口的实际 HTTP 请求。
+    values = [{k: v for k, v in raw.items() if k != 'shots'}]
     values += [{'shot': {k: v for k, v in s.items() if k != 'shot_id'}} for s in raw['shots']]
     sdk, calls = http_client(monkeypatch, values)
     with sdk:
-        generate_storyboard('continuous action', target_duration=15)
-    for call in calls[2:]:
+        generate_event_storyboard(sdk, 'continuous action', plan_for(),
+            aspect_ratio='16:9', resolution='720p', style='cinematic')
+    for call in calls[1:]:
         schema = call['response_format']['json_schema']['schema']
         timeline = schema['properties']['shot']['properties']['action_plan']
         first = timeline['prefixItems'][0]['oneOf']

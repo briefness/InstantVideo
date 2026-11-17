@@ -199,7 +199,8 @@ def fake_api():
 
 
 @pytest.mark.asyncio
-async def test_api_checks_bytes_before_task_and_poll_resume_does_not_fetch(transport):
+async def test_api_checks_bytes_before_task_and_poll_resume_does_not_fetch(transport, use_test_model):
+    use_test_model(MODEL)
     _, _, connection, _ = transport
     api, create = fake_api()
     await api.generate("test", model=MODEL, reference_video=URL, reference_video_sha256=DIGEST)
@@ -212,7 +213,8 @@ async def test_api_checks_bytes_before_task_and_poll_resume_does_not_fetch(trans
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("digest", [None, "bad", "0" * 64])
-async def test_api_hash_failure_does_not_create_task(transport, digest):
+async def test_api_hash_failure_does_not_create_task(transport, digest, use_test_model):
+    use_test_model(MODEL)
     api, create = fake_api()
     result = await api.generate("test", model=MODEL, reference_video=URL, reference_video_sha256=digest)
     assert result["error_type"] == "reference_validation"

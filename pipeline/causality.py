@@ -8,11 +8,13 @@ import hashlib
 import json
 
 from pipeline.narrative import narrative_prompt_constraint
-from pipeline.action_results import required_outcomes, incidental_changes, directed_outcomes, scene_change_issues
-from pipeline.action_timing import action_timing_issues, timing_constraint, timing_projection, sequence_events, event_shot
+from pipeline.action_vocabulary import STATE_CHANGE_EXECUTION
+from pipeline.action_results import required_outcomes, incidental_changes, directed_outcomes, scene_change_issues, functional_outcomes
+from pipeline.action_timing import action_timing_issues, timing_constraint, timing_projection, sequence_events, event_shot, beat_timing_instruction
 from pipeline.performance import (OBSERVED_TIMES, performance_projection, performance_instruction,
                                   observed_timing_shape_issues, observed_performance_issues,
-                                  performance_review_projection, outcome_text, allocated_interaction_target)
+                                  performance_review_projection, outcome_text, allocated_interaction_target,
+                                  performance_event_staging, local_event_execution)
 
 
 CAUSAL_INTERACTION_MODES = frozenset({
@@ -65,6 +67,7 @@ def event_execution_instruction(event: dict) -> str:
     response = event.get('response_kind') or 'impact'
     result = {
         'impact': '',
+        'state_change': STATE_CHANGE_EXECUTION,
         'evasion': (
             'response_kind=evasion: show the readable incoming threat and the target moving out of its path; '
             'the attack misses the target, with no impact or injury from this event. '
@@ -109,9 +112,15 @@ class CompiledActionContract:
 
     def event_evidence_fields(self) -> tuple[str, ...]:
         events = self.review_projection.get('action_events') or []
-        return EVENT_EVIDENCE_FIELDS + (('flow_continuity_valid',) if any(e.get('flow_from_previous') for e in events) else ())
+        fields = EVENT_EVIDENCE_FIELDS
+        if self.review_projection.get('event_evidence_policy') == 'functional-integrity-v1':
+            # 出现/完成由同源功能观察负责；逐动作只检查观察到的执行是否自洽。
+            fields = tuple(f for f in fields if f not in ('effect_visible', 'target_reaction_visible'))
+        return fields + (('flow_continuity_valid',) if any(e.get('flow_from_previous') for e in events) else ())
 
     def event_review_instruction(self) -> str:
+        from pipeline.motion_timing import motion_timing_instruction
+        from pipeline.performance import requires_measured_timing
         policy = self.review_projection.get('performance_policy')
         scene_instruction = (
             ' Named incidental_changes are optional permitted details, never required outcomes. '
@@ -120,29 +129,59 @@ class CompiledActionContract:
             'be visibly caused by this event; scope_valid checks these explicit owners plus the '
             'primary actor/target, not a blanket exemption for other objects. '
             if any(e.get('incidental_changes') is not None for e in self.review_projection.get('action_events', [])) else '')
+        response_instruction = (' ' + STATE_CHANGE_EXECUTION if any(
+            e.get('response_kind') == 'state_change'
+            for e in self.review_projection.get('action_events', [])) else '')
         if policy:
+            time_evidence = (
+                ' plus actual timestamped evidence ' + ', '.join(OBSERVED_TIMES)
+                + '. Measure these from current samples, never copy the planned schedule. '
+                'observed_start_seconds begins actual external interaction, never entrance, preparation or posing. '
+                'observed_end_seconds is the completion of the response, excluding any held pose. '
+                'When active_intervals is required, list each separate uninterrupted external-interaction '
+                'interval with start_seconds/end_seconds inside this event. Exclude all preparation, '
+                'entrance, waits, resets, held poses and camera-only intervals, including pauses inside an event. '
+                if requires_measured_timing(policy) else
+                '. Judge the visible cause, response, ordered progression and required results from the '
+                'chronological samples. This contract has no interaction-duration or result-hold minimum; '
+                'do not invent exact timestamps. Missing actions, reversed causality and wrong results '
+                'remain violations, independently of their duration. '
+            )
+            if policy.get('time_basis') == 'sample-bounds-v1' and requires_measured_timing(policy):
+                time_evidence += (' Timestamps locate observations at the supplied samples; '
+                    'cause and response may share a sample. Do not invent sub-frame delays. '
+                    'The program evaluates order at that sampling resolution separately from visible causality. ')
+            ownership = (
+                ' Review action_events in event_id order as realization evidence, not independent completion obligations. '
+                'completion_contract owns whether the work, including the necessary cause and target response, actually finishes. '
+                'Do not require a separate effect or reaction for every preparatory maneuver. '
+                'causal_order_valid checks the actual causal progression: reject impossible or reversed causality. '
+                'scope_valid rejects unintended affected subjects; time_window_valid checks the shot boundary. '
+                'flow_continuity_valid checks actual momentum continuity, not reproduction of a suggested pose. '
+                'A coherent alternative realization is allowed; missing required work is a violated completion observation, '
+                'never a satisfied goal with an independent per-maneuver completion veto. '
+                'result_visible is derived from the linked completion observations. '
+                if self.review_projection.get('event_evidence_policy') == 'functional-integrity-v1' else
+                ' Review every action_events entry in event_id order. effect_visible and '
+                'target_reaction_visible refer to a readable cause/response by the same participants '
+                'with the declared response kind, not exact replication of the suggested path. '
+                'result_visible requires every outcomes entity/state when present; suggested maneuvers are not outcomes. '
+                'For legacy entries without outcomes use the declared visible_result. scope_valid forbids unintended '
+                'affected subjects. time_window_valid means within the shot, not the suggested beat window. '
+                'flow_continuity_valid requires visible momentum handoff, not the exact suggested pose. ')
             return (performance_instruction(policy)
                     + scene_instruction
-                    + ' Review every action_events entry in event_id order. effect_visible and '
-                    'target_reaction_visible refer to a readable cause/response by the same participants '
-                    'with the declared response kind, not exact replication of the suggested path. '
-                    'result_visible requires every outcomes entity/state when present; suggested maneuvers are not outcomes. '
-                    'For legacy entries without outcomes use the declared visible_result. scope_valid forbids unintended '
-                    'affected subjects. time_window_valid means within the shot, not the suggested beat window. '
-                    'flow_continuity_valid requires visible momentum handoff, not the exact suggested pose. '
-                    'Unknown evidence is false. Return strict booleans ' + ', '.join(self.event_evidence_fields())
-                    + ' plus actual timestamped evidence ' + ', '.join(OBSERVED_TIMES)
-                    + '. Measure these from current samples, never copy the planned schedule. '
-                    'observed_start_seconds begins actual external interaction, never entrance, preparation or posing. '
-                    'observed_end_seconds is the completion of the response, excluding any held pose. '
-                    'When active_intervals is required, list each separate uninterrupted external-interaction '
-                    'interval with start_seconds/end_seconds inside this event. Exclude all preparation, '
-                    'entrance, waits, resets, held poses and camera-only intervals, including pauses inside an event. '
-                    'Return creative_brief_valid=false if any explicit creative_brief requirement relevant '
+                    + response_instruction
+                    + ownership
+                    + 'Return evidence fields ' + ', '.join(self.event_evidence_fields())
+                    + time_evidence
+                    + 'Return creative_brief_valid=false if any explicit creative_brief requirement relevant '
                     'to this shot is absent, including entrance, style or requested named movements; '
                     'uncertain compliance is false. Never substitute the director\'s chosen action for the user goal.')
         return (
-            'Review every action_events entry with its OWN actor, target, response_kind, geometry and visible_result. '
+            motion_timing_instruction(self.review_projection.get('motion_timing') or {})
+            + response_instruction
+            + 'Review every action_events entry with its OWN actor, target, response_kind, geometry and visible_result. '
             'Return action_event_evidence in exact event_id order with strict booleans '
             + ', '.join(self.event_evidence_fields()) + '. '
             'Every effect, response and result must be evidenced in its time window. '
@@ -158,12 +197,14 @@ class CompiledActionContract:
         )
 
     def event_evidence_schema(self) -> dict:
+        from pipeline.performance import requires_measured_timing
         events = self.review_projection.get('action_events') or []
         properties = {'event_id': {'type': 'integer', 'enum': [e['event_id'] for e in events]},
                       **{key: {'type': 'boolean'} for key in self.event_evidence_fields()}}
-        if self.review_projection.get('performance_policy'):
+        measured = requires_measured_timing(self.review_projection.get('performance_policy'))
+        if measured:
             properties.update({key: {'type': 'number'} for key in OBSERVED_TIMES})
-        if (self.review_projection.get('performance_policy') or {}).get('version') == 'performance-v2-outcomes':
+        if measured and (self.review_projection.get('performance_policy') or {}).get('version') == 'performance-v2-outcomes':
             properties['active_intervals'] = {'type': 'array', 'maxItems': 24, 'items': {
                 'type': 'object', 'properties': {'start_seconds': {'type': 'number'}, 'end_seconds': {'type': 'number'}},
                 'required': ['start_seconds', 'end_seconds'], 'additionalProperties': False}}
@@ -172,6 +213,7 @@ class CompiledActionContract:
                           'required': list(properties), 'additionalProperties': False}}
 
     def event_evidence_shape_issues(self, value: object) -> list[str]:
+        from pipeline.performance import requires_measured_timing
         events = self.review_projection.get('action_events') or []
         if not isinstance(value, list) or len(value) != len(events):
             return ['action_event_evidence 必须逐一覆盖所有有序事件']
@@ -181,7 +223,7 @@ class CompiledActionContract:
                     or observed['event_id'] != event['event_id']
                     or any(type(observed.get(key)) is not bool for key in self.event_evidence_fields())):
                 issues.append(f"事件{event['event_id']}缺少对应的完整布尔证据；不能错配、重复或省略事件")
-            elif self.review_projection.get('performance_policy'):
+            elif requires_measured_timing(self.review_projection.get('performance_policy')):
                 issues.extend(observed_timing_shape_issues(observed))
                 if self.review_projection['performance_policy']['version'] == 'performance-v2-outcomes':
                     from pipeline.performance import active_interval_shape_issues
@@ -317,6 +359,9 @@ def interaction_mode(shot: dict) -> str:
 
 def compile_action_contract(shot: dict) -> CompiledActionContract:
     """Compile one shot into the only action semantics consumed downstream."""
+    from pipeline.motion_timing import motion_timing_projection, motion_timing_instruction
+    motion_timing = motion_timing_projection(shot)
+    scoped_execution = local_event_execution(shot)
     result_issues = scene_change_issues(shot)
     if result_issues:
         raise ValueError('；'.join(result_issues))
@@ -326,7 +371,7 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
     raw_phase = str(raw_geometry.get("effect_phase", "")).strip()
     geometry = (
         with_causal_mode_invariants(raw_geometry)
-        if raw_phase in EFFECT_PHASES
+        if raw_phase in EFFECT_PHASES and shot.get('action_semantics') != 'authored-v1'
         else deepcopy(raw_geometry)
     )
     phase = str(geometry.get("effect_phase", "none")).strip()
@@ -344,7 +389,8 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
     review_projection = _compile_phase_review_projection(shot, phase, geometry)
     if events:
         review_projection['action_events'] = [
-            {**event, 'contract': compile_action_contract(event_shot(event)).review_projection}
+            {**event, 'contract': compile_action_contract({**event_shot(event),
+                'action_semantics': shot.get('action_semantics')}).review_projection}
             for event in events]
         # 整镜终点属于末事件；中间作用与目标反应分别保留，不能压成一个主动作。
         prompt_constraint = 'Execute the following ordered events; each event owns its participants, physical effect and response.'
@@ -359,13 +405,57 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
     if performance:
         review_projection['performance_policy'] = performance
         timing = performance_instruction(performance)
-    generation_timing = (performance_instruction(performance,
+    # 完整需求仍留在独立审查中；审定后的逐镜执行不再要求视频模型重新拆全片。
+    local_execution = scoped_execution and performance.get('result_authority') == 'reviewed-results-v1'
+    generation_timing = (performance_instruction(performance, include_brief=not local_execution,
+        local_execution=local_execution,
         interaction_target_seconds=generation_target) if performance else timing)
     if timing:
         review_projection['action_timing'] = timing_projection(shot)
     required_outcome = (shot.get('production_slot') or {}).get('required_outcome')
     if required_outcome:
         review_projection['required_final_outcome'] = required_outcome
+    from pipeline.result_observations import completion_contract
+    completion = completion_contract(shot)
+    if completion:
+        review_projection['completion_contract'] = completion
+        if completion.get('intent_policy') == 'goal-allocation-v1':
+            # 进入指纹，旧审查缓存不能被新解释自动接纳。
+            review_projection['event_evidence_policy'] = 'functional-integrity-v1'
+        # 动态终态只有已审定的固定结果与实际观察两种来源，作者收势不再构成第三份答案。
+        review_projection['action_beats'] = []
+        review_projection['primary_action'] = 'Complete the ordered functional actions in completion_contract.'
+        if review_projection.get('end_state'):
+            review_projection['end_state'] = {k: v for k, v in review_projection['end_state'].items()
+                                               if k not in ('action_phase', 'pose_and_gaze', 'prop_state', 'open_motion')}
+        if completion.get('intent_policy'):
+            # 完成功能只有一个来源，不能从原结果文案或叙事终态重新索取附带姿态。
+            required_events = [event for event in review_projection.get('action_events', [])
+                if (completion['criteria'][f"beat:{event['event_id']}/completion"]['kind'] == 'completion'
+                    or (completion.get('intent_policy') == 'goal-allocation-v1'
+                        and completion['criteria'][f"beat:{event['event_id']}/completion"].get('supports')))]
+            review_projection['action_events'] = required_events
+            if 'event_order' in performance:
+                # 核对只观察必要事件；其依赖也必须限定在相同证据范围，不能索取已排除的附带动作。
+                ids = {event['event_id'] for event in required_events}
+                review_projection['performance_policy'] = {**performance, 'event_order': [
+                    {'event_id': row['event_id'],
+                     **{key: [i for i in row[key] if i in ids] for key in ('after_ends', 'after_effects')}}
+                    for row in performance['event_order'] if row['event_id'] in ids]}
+            review_projection['interaction_geometry'] = (required_events[-1]['interaction_geometry'] if required_events else
+                {'interaction_mode': 'none', 'outcome_scope': 'none', 'unaffected_behavior': ''})
+            for event in required_events:
+                event.pop('functional_responses', None)
+                if event['event_id'] - 1 not in {e['event_id'] for e in required_events}:
+                    event.pop('temporal_relation', None)
+            narrative = review_projection.get('narrative_beat') or {}
+            from pipeline.goal_allocation import criterion_instruction
+            goals = '; '.join(criterion_instruction(c) for c in completion['criteria'].values() if c['kind'] == 'completion')
+            review_projection['narrative_beat'] = {'function': narrative.get('function', 'progress'),
+                                                  'state_change': goals, 'state_after': goals}
+            if review_projection.get('start_state'):
+                review_projection['start_state'] = {k: v for k, v in review_projection['start_state'].items()
+                    if k not in ('action_phase', 'pose_and_gaze', 'prop_state', 'open_motion')}
     prompt_parts = _compile_phase_prompt_parts(
         shot, phase=phase, prompt_constraint=prompt_constraint,
         narrative_constraint=narrative_prompt_constraint(review_projection),
@@ -374,7 +464,8 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
         scheduled = [
             (event['start_seconds'], f"event {event['event_id']} ({event['start_seconds']:g}-{event['end_seconds']:g}s): "
             f"physical effect at {event['effect_at_seconds']:g}s, response at {event['reaction_at_seconds']:g}s; "
-            + '; '.join(compile_action_contract(event_shot(event)).prompt_parts)
+            + '; '.join(compile_action_contract({**event_shot(event),
+                'action_semantics': shot.get('action_semantics')}).prompt_parts)
             + ('; ' + event_execution_instruction(event) if event_execution_instruction(event) else ''))
             for event in events
         ]
@@ -393,18 +484,49 @@ def compile_action_contract(shot: dict) -> CompiledActionContract:
             events_by_id = {e['event_id']: e for e in events}
             prompt_parts = tuple(
                 f"Beat {index}: {beat['actor']} {beat['action']}; "
-                f"required visible state change: {outcome_text(required_outcomes(beat)) if outcome_contract and beat.get('outcomes') else beat.get('visible_result', '')}"
+                + (beat_timing_instruction(beat, index) + ' ' if beat.get('temporal_relation') else '')
+                + ((f"required visible state change: {outcome_text(required_outcomes(beat))}; "
+                    if required_outcomes(beat) or shot.get('generation_execution') not in ('local-events-v2', 'scene-instructions-v1', 'scene-instructions-v2') else '')
+                   +
+                   f"suggested visible realization: {beat.get('visible_result', '')}"
+                   if completion.get('intent_policy') == 'goal-allocation-v1' else
+                   f"required visible state change: {outcome_text(required_outcomes(beat)) if outcome_contract and beat.get('outcomes') else beat.get('visible_result', '')}")
                 + (f"; Optional scene details (not required): {outcome_text(incidental_changes(beat))}"
                    if incidental_changes(beat) else '')
                 + (f"; Suggested performance details (replaceable): {outcome_text(directed_outcomes(beat))}"
                    if directed_outcomes(beat) else '')
+                + (("; Suggested realization of the response: " if completion.get('intent_policy') else
+                    "; Complete the functional response (a coherent alternative pose is allowed): ")
+                   + outcome_text(functional_outcomes(beat))
+                   if functional_outcomes(beat) else '')
                 + (f"; target={beat['target']}; physical mode={beat['interaction_geometry']['interaction_mode']}; "
                    f"scope={beat['interaction_geometry']['outcome_scope']}; response={beat.get('response_kind') or 'impact'}; "
                    f"unaffected subjects: {beat['interaction_geometry']['unaffected_behavior']}; "
                    + event_execution_instruction(events_by_id[index])
+                   + (performance_event_staging(events_by_id[index])
+                      if scoped_execution else '')
                    if index in events_by_id else '')
                 for index, beat in enumerate(shot['action_beats'], 1)
             ) + (f"Finish in the contracted final state: {endpoint}",)
+    if motion_timing:
+        review_projection['motion_timing'] = motion_timing
+        if not performance:
+            motion_instruction = motion_timing_instruction(motion_timing)
+            prompt_parts += (motion_instruction,)
+            timing += ' ' + motion_instruction
+    from pipeline.creative_direction import creative_direction_projection, creative_direction_instruction
+    creative_direction = creative_direction_projection(shot)
+    if creative_direction:
+        instruction = creative_direction_instruction(creative_direction)
+        # 方向进入同一指纹；方法文字也参与，目录更新不能复用旧请求的审核结果。
+        review_projection['creative_direction'] = {**creative_direction, 'guidance': instruction}
+        prompt_parts += (instruction,)
+    from pipeline.completion_intent import intent_instruction
+    admitted_instruction = intent_instruction(shot)
+    if admitted_instruction:
+        prompt_parts += (admitted_instruction,)
+    if shot.get('action_semantics') == 'authored-v1':
+        review_projection['action_semantics'] = 'authored-v1'
     return CompiledActionContract(
         phase=phase,
         mode=mode,
@@ -527,7 +649,8 @@ def normalize_causal_scope(shots: list[dict]) -> list[str]:
             established[key] = max(established.get(key, 0), _SCOPE_RANK[scope])
             continue
         inherited = established.get(key, 0)
-        if phase == "aftermath" and inherited and _SCOPE_RANK[scope] > inherited:
+        if (phase == "aftermath" and inherited and _SCOPE_RANK[scope] > inherited
+                and shot.get('action_semantics') != 'authored-v1'):
             normalized = next(
                 name for name, rank in _SCOPE_RANK.items() if rank == inherited
             )
@@ -1282,7 +1405,7 @@ def _compile_phase_review_projection(
     # 新可选字段在旧模型序列化时可能为 None；不能改变旧合同的规范哈希。
     for beat in projection.get('action_beats') or []:
         if isinstance(beat, dict):
-            for key in ('start_seconds', 'end_seconds', 'activity', 'interaction_geometry', 'effect_at_seconds', 'reaction_at_seconds', 'outcomes', 'scene_changes', 'result_directions'):
+            for key in ('start_seconds', 'end_seconds', 'activity', 'interaction_geometry', 'effect_at_seconds', 'reaction_at_seconds', 'outcomes', 'scene_changes', 'result_directions', 'result_functions', 'completion_intent', 'temporal_relation'):
                 if beat.get(key) is None:
                     beat.pop(key, None)
     if phase == "setup":
@@ -1320,7 +1443,7 @@ def _compile_phase_review_projection(
                 key: deepcopy(value)
                 for key, value in beat.items()
                 if key != "visible_result"
-                and not (key in {'start_seconds', 'end_seconds', 'activity', 'interaction_geometry', 'effect_at_seconds', 'reaction_at_seconds', 'response_kind', 'flow_from_previous', 'outcomes', 'scene_changes', 'result_directions'} and value is None)
+                and not (key in {'start_seconds', 'end_seconds', 'activity', 'interaction_geometry', 'effect_at_seconds', 'reaction_at_seconds', 'response_kind', 'flow_from_previous', 'outcomes', 'scene_changes', 'result_directions', 'result_functions', 'completion_intent', 'temporal_relation'} and value is None)
             }
             if contracted_result:
                 canonical_beat["visible_result"] = (

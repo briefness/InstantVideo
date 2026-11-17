@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import struct
 import subprocess
@@ -255,6 +256,22 @@ def get_tts_engine(storyboard: dict | None = None) -> TTSEngine:
 
 # ─── 批量合成 ───
 
+def _voiceover_profile(engine: TTSEngine | None = None, *, storyboard: dict | None = None) -> dict:
+    """只保存实际合成配置，密钥和会话请求 ID 不属于可复用输入。"""
+    output = {'codec': 'aac', 'bitrate': '128k', 'sample_rate': 48000, 'channels': 1}
+    if isinstance(engine, MacOSSayEngine) or (engine is None and config.TTS_ENGINE == 'macos'):
+        return {'engine': 'macos', 'voice': engine.voice if engine is not None else config.TTS_VOICE,
+                'output': output}
+    if isinstance(engine, VolcanoTTSEngine) or (engine is None and config.TTS_ENGINE == 'volcano'):
+        speaker = engine.speaker if engine is not None else select_voice_for_storyboard(storyboard or {}).speaker
+        request = json.loads(_build_tts_request('', speaker)[8:])['req_params']
+        request.pop('text')
+        return {'engine': 'volcano', 'request': request, 'output': output,
+                'resource': config.VOLCANO_TTS_RESOURCE_ID,
+                'endpoint_sha256': hashlib.sha256(config.VOLCANO_TTS_ENDPOINT.encode()).hexdigest()}
+    raise ValueError('口播引擎缺少可持久化的公开合成配置')
+
+
 async def synthesize_voiceover(
     storyboard: dict,
     output_dir: str,
@@ -268,8 +285,21 @@ async def synthesize_voiceover(
     if not voiced_shots:
         return []
 
-    engine = get_tts_engine(storyboard)
-    print(f"  TTS 音色: {engine.voice_name}")
+    from tools.voiceover_state import VoiceoverStateError, synthesize_segment
+    try:
+        profile = _voiceover_profile(storyboard=storyboard)
+    except ValueError as exc:
+        raise VoiceoverStateError('口播合成配置不可确认；未提交或复用音频') from exc
+    engine = None
+
+    def engine_for_request():
+        nonlocal engine
+        if engine is None:
+            engine = get_tts_engine(storyboard)
+        if _voiceover_profile(engine) != profile:
+            raise VoiceoverStateError('实际口播引擎与已记录的公开参数不一致；未开始合成')
+        return engine
+
     out_path = Path(output_dir) / "voiceover"
     out_path.mkdir(parents=True, exist_ok=True)
 
@@ -281,7 +311,8 @@ async def synthesize_voiceover(
         audio_file = str(out_path / f"vo_shot_{shot['shot_id']:03d}.m4a")
         print(f"  🎙️ TTS Shot {shot['shot_id']}: \"{text[:30]}...\"")
 
-        duration = await engine.synthesize(text, audio_file)
+        duration = await synthesize_segment(engine_for_request, text, Path(audio_file),
+                                            profile=profile, probe=_get_audio_duration)
 
         segments.append(TTSSegment(
             shot_id=shot["shot_id"],

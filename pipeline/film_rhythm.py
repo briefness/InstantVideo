@@ -59,7 +59,8 @@ def planned_film_timing_issues(storyboard: dict) -> list[str]:
     return []
 
 
-def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path) -> None:
+def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path,
+                                *, review_mode: str = 'strict') -> list[str] | None:
     """Recompute from original accepted observations, not saved aggregate scores.
 
     Evidence is bound to media bytes and the actual accepted contract (which can
@@ -68,7 +69,11 @@ def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path
     from pipeline.causality import CompiledActionContract
     from pipeline.performance import measured_performance
     from pipeline.run_state import RunWorkspace
-    from pipeline.semantic_review import SemanticReviewUnavailableError
+    from pipeline.semantic_review import SemanticReviewUnavailableError, SemanticReview
+    from pipeline.review_policy import decide_review, WARNING_POLICY
+
+    if review_mode not in {'strict', 'normal'}:
+        raise ValueError('无效审查模式')
 
     minimum = (storyboard.get('production_plan') or {}).get('min_interaction_seconds')
     if minimum is None:
@@ -83,9 +88,12 @@ def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path
         low, high = 0., 0.
         seen_media = set()
         for shot, result in zip(storyboard['shots'], results):
-            if result.status != 'success' or result.semantic_accepted is not True or not result.local_path:
+            tolerated = review_mode == 'normal' and result.acceptance_policy == WARNING_POLICY
+            if (result.status != 'success' or not result.local_path
+                    or (result.semantic_accepted is not True and not tolerated)):
                 raise ValueError('全片节奏只能使用已接受原片')
-            video = Path(result.local_path).resolve()
+            from pipeline.presentation_media import resolve_presentation
+            video = Path(resolve_presentation(result.local_path, shot, workspace)).resolve()
             if not video.is_relative_to(workspace):
                 raise ValueError('原片不在当前工作区')
             with video.open('rb') as handle:
@@ -98,10 +106,13 @@ def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path
                 raise ValueError('节奏证据文件无效')
             saved = json.loads(cache.read_text())
             contract = CompiledActionContract(**saved['action_contract'])
-            if (saved['video_hash'] != digest or saved['review']['accepted'] is not True
+            if (saved['video_hash'] != digest
+                    or (saved['review']['accepted'] is not True and not tolerated)
                     or not result.accepted_contract_fingerprint
                     or contract.fingerprint() != result.accepted_contract_fingerprint):
                 raise ValueError('节奏证据与已接受的原片或合同不一致')
+            if review_mode == 'normal' and not decide_review(SemanticReview.from_dict(saved['review']), 'normal').allowed:
+                raise ValueError('整片包含不能由正常模式容忍的审查问题')
             events = saved['action_event_evidence']
             if contract.event_evidence_issues(events):
                 raise ValueError('节奏证据中的动作未通过逐事件检查')
@@ -110,7 +121,7 @@ def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path
                 raise ValueError('缺少可比较的连续交互时间证据')
             measurement = measured_performance(events, {**policy, 'duration': saved['media_duration']},
                                                saved['sample_timestamps'], edit_duration=shot['duration'])
-            if measurement['status'] != 'passed':
+            if measurement['status'] != 'passed' and policy.get('time_basis') != 'sample-bounds-v1':
                 raise ValueError('剪辑范围内的动作或结果停留时间不能确认通过')
             a, b = measurement['interaction_seconds']
             low += a
@@ -118,15 +129,29 @@ def ensure_observed_film_rhythm(storyboard: dict, results: list, workspace: Path
             report['clips'].append({'shot_id': result.shot_id, 'video_sha256': digest,
                                     'accepted_contract_fingerprint': result.accepted_contract_fingerprint,
                                     'edit_duration': shot['duration'],
+                                    **({'measurement': measurement}
+                                       if policy.get('time_basis') == 'sample-bounds-v1' else {}),
                                     'interaction_seconds': [a, b]})
+        states = {clip['measurement']['status'] for clip in report['clips'] if 'measurement' in clip}
         report.update(interaction_seconds=[low, high],
-                      status='passed' if low >= minimum else 'failed' if high < minimum else 'uncertain')
+                      status=('failed' if 'failed' in states or high < minimum else
+                              'uncertain' if 'uncertain' in states or low < minimum else 'passed'))
     except (OSError, KeyError, TypeError, ValueError) as exc:
         report['reason'] = '已接受素材缺少可核对的全片时间证据'
         RunWorkspace._atomic_write_json(workspace / 'film_rhythm_review.json', report)
         raise SemanticReviewUnavailableError('全片时间证据缺失或不一致；保留已生成素材，不自动重拍') from exc
-    RunWorkspace._atomic_write_json(workspace / 'film_rhythm_review.json', report)
+    if review_mode == 'normal':
+        reversed_order = any(c.get('measurement', {}).get('causal_order', {}).get('status') == 'failed'
+                             for c in report['clips'])
+        warnings = (['整片交互时长、结果停留或采样时序未达到严格标准，正常模式保留问题完成交付']
+                    if report['status'] != 'passed' and not reversed_order else [])
+        report.update(review_mode='normal', delivery_allowed=not reversed_order, warnings=warnings)
+        RunWorkspace._atomic_write_json(workspace / 'film_rhythm_review.json', report)
+        if not reversed_order:
+            return warnings
+    else:
+        RunWorkspace._atomic_write_json(workspace / 'film_rhythm_review.json', report)
     if report['status'] == 'uncertain':
-        raise SemanticReviewUnavailableError('全片时间证据跨越节奏阈值；保留原片，停止导出，不自动重拍')
+        raise SemanticReviewUnavailableError('全片时间证据语义不确定：采样无法确认时序或节奏阈值；保留原片，停止导出，不自动重拍')
     if report['status'] == 'failed':
-        raise RuntimeError('各镜头动作可读，但全片交互时长不足；保留原片，停止导出，不自动重拍')
+        raise RuntimeError('整片的因果时序、实际交互时长或结果保持不足；保留原片，停止导出，不自动重拍')

@@ -1,0 +1,87 @@
+{
+  "source_text": "{\n  \"shot\": {\n    \"scene_id\": \"ResidentialDiningRoom\",\n    \"scene_description\": \"普通城市居民住宅内的日常餐厅，雨夜，陈设简单家常，设有木质餐桌、布艺餐椅、连通入户的入口门框与布满雨痕的临街玻璃窗。\",\n    \"visual_description\": \"16:9宽幅构图，左侧纳入餐厅入口木质门框，右侧呈现靠墙摆放的长方形木质餐桌与布艺餐椅，餐桌后方是附着雨痕的临街玻璃窗。暖光壁灯在桌面投下柔和黄光，与窗外雨夜透入的冷调微光形成克制对比，浅米色地砖干净平实，整体保留两人之间的空间距离。\",\n    \"camera\": {\n      \"primary_movement\": \"fixed\",\n      \"composition\": \"宽幅镜头同时容纳左侧入口与右侧餐桌，小安位于左侧门框内，林阿姨位于右侧餐桌旁，两人横向相对，桌面与空椅作为中间过渡区域。\",\n      \"start_framing\": \"wide shot\",\n      \"end_framing\": \"wide shot\",\n      \"speed\": \"natural real-time\",\n      \"screen_positions\": {\n        \"XiaoAn\": \"画面左侧门框内\",\n        \"LinAyi\": \"画面右侧餐桌旁\",\n        \"餐厅入口木质门框\": \"画面左边缘\",\n        \"黑色硬壳滚轮行李箱\": \"小安脚边\",\n        \"长方形木质家用餐桌\": \"画面右中部\",\n        \"布艺软包餐椅\": \"餐桌两侧，空椅在靠近入口一侧\",\n        \"盛有温水的透明玻璃杯\": \"空椅旁桌面\",\n        \"餐厅暖光壁灯\": \"右侧墙面餐桌上方\",\n        \"附着雨痕的临街玻璃窗\": \"餐桌后方背景\"\n      },\n      \"axis_change\": \"establish\"\n    },\n    \"blocking\": {\n      \"XiaoAn\": {\n        \"frame_position\": \"画面左侧餐厅入口内侧，紧邻木质门框\",\n        \"body_orientation\": \"面朝右侧餐桌，身体略侧，肩膀微收\",\n        \"facing_target\": \"长方形木质家用餐桌\",\n        \"eyeline_target\": \"盛有温水的透明玻璃杯\",\n        \"travel_direction\": \"从入口向餐桌方向移动后停住\",\n        \"action_target\": \"黑色硬壳滚轮行李箱\"\n      },\n      \"LinAyi\": {\n        \"frame_position\": \"画面右侧餐桌旁的布艺餐椅上\",\n        \"body_orientation\": \"面朝左侧餐厅入口，腰背放松\",\n        \"facing_target\": \"餐厅入口木质门框\",\n        \"eyeline_target\": \"XiaoAn\",\n        \"travel_direction\": \"无\",\n        \"action_target\": \"盛有温水的透明玻璃杯\"\n      }\n    },\n    \"start_state\": {\n      \"location\": \"ResidentialDiningRoom\",\n      \"subject\": \"小安刚拖行李箱进入餐厅入口，林阿姨已坐在餐桌旁\",\n      \"action_phase\": \"setup：雨夜归家，门口犹豫与母亲放杯示意\",\n      \"camera\": \"固定宽幅镜头，同时容纳入口与餐桌\",\n      \"screen_direction\": \"入口在左，餐桌在右，两人横向相对\",\n      \"pose_and_gaze\": \"小安站在门框内攥着拉杆，目光局促地望向餐桌；林阿姨坐在餐椅上抬眼看向门口\",\n      \"prop_state\": \"黑色硬壳行李箱停在小安脚边，盛有温水的玻璃杯原本在林阿姨手边\",\n      \"open_motion\": \"小安拖行李箱停步后未继续向前，林阿姨正抬眼望向她并准备拿杯\",\n      \"lighting\": \"暖黄壁灯与雨夜冷窗光混合\"\n    },\n    \"end_state\": {\n      \"location\": \"ResidentialDiningRoom\",\n      \"subject\": \"小安仍在门口，林阿姨已将玻璃杯放到空椅旁\",\n      \"action_phase\": \"setup完成，等待小安走近落座\",\n      \"camera\": \"固定宽幅镜头\",\n      \"screen_direction\": \"入口在左，餐桌在右\",\n      \"pose_and_gaze\": \"小安站在原地，视线落向空椅旁的玻璃杯；林阿姨坐姿平和，目光停在小安身上\",\n      \"prop_state\": \"黑色硬壳行李箱仍在小安脚边，盛有温水的玻璃杯稳放在空椅旁桌面\",\n      \"open_motion\": \"小安尚未迈步，下一镜将放下行李走向桌边\",\n      \"lighting\": \"暖黄壁灯与雨夜冷窗光混合\"\n    },\n    \"story_change\": \"小安雨夜归家在餐厅门口犹豫，林阿姨看见她后没有起身迎上，而是将一杯温水轻轻放到空椅旁的桌面，用熟悉的日常动作消解久别生疏。\",\n    \"story_state_after\": \"两人尚未同桌落座，小安仍站在门口，玻璃杯已在空椅旁等待，下一镜小安将放下行李走向桌边。\",\n    \"action_plan\": {\n      \"first\": {\n        \"actor\": \"XiaoAn\",\n        \"action\": \"拖着黑色硬壳滚轮行李箱从餐厅入口木质门框走入，在门槛内一步处停住，手指攥住行李箱拉杆，目光望向餐桌方向又短暂垂下，显露出久别归家的局促与犹豫。\",\n        \"result\": \"小安站在餐厅入口内侧，行李箱停在脚边，身体朝向餐桌却未再向前迈步。\",\n        \"kind\": \"transition\",\n        \"target\": \"黑色硬壳滚轮行李箱\",\n        \"weight\": 2.5\n      },\n      \"following\": [\n        {\n          \"actor\": \"LinAyi\",\n          \"action\": \"坐在餐椅上的林阿姨抬眼看见门口的小安，没有起身，只伸手拿起桌边盛有温水的透明玻璃杯，轻轻放到靠近空椅的桌面边缘。\",\n          \"result\": \"玻璃杯稳放在空椅旁的桌面，林阿姨收回手，目光仍停在小安身上，没有催促。\",\n          \"kind\": \"interaction\",\n          \"target\": \"盛有温水的透明玻璃杯\",\n          \"effect\": {\n            \"mode\": \"direct_contact\",\n            \"motion\": \"static\",\n            \"source\": \"LinAyi\",\n            \"region\": \"长方形木质餐桌靠近空椅一侧的桌面\",\n            \"unaffected\": \"餐厅入口、小安脚边的行李箱与临街玻璃窗\"\n          },\n          \"response\": \"impact\",\n          \"link_previous\": true,\n          \"resolution\": {\n            \"states\": {\n              \"LinAyi\": [\n                {\n                  \"state\": \"坐在餐椅上，目光温和望向门口的小安，手已从玻璃杯收回\"\n                }\n              ],\n              \"XiaoAn\": [\n                {\n                  \"state\": \"站在餐厅入口内侧，行李箱停在脚边，神色局促犹豫\"\n                }\n              ],\n              \"盛有温水的透明玻璃杯\": [\n                {\n                  \"state\": \"稳放在靠近空椅的桌面边缘，杯内温水未洒\"\n                }\n              ]\n            }\n          },\n          \"overlap\": false,\n          \"weight\": 2.5\n        },\n        {\n          \"actor\": \"LinAyi\",\n          \"action\": \"保持坐姿与温和目光，不迎上去也不说话，等待小安自己走近。\",\n          \"result\": \"两人隔着餐桌与入口的距离安静对视，小安的视线落向空椅旁的玻璃杯，脚步仍停在原地。\",\n          \"kind\": \"hold\",\n          \"target\": \"\",\n          \"weight\": 1.0\n        }\n      ]\n    },\n    \"prop_roles\": [\n      {\n        \"entity\": \"餐厅入口木质门框\",\n        \"role\": \"visible\"\n      },\n      {\n        \"entity\": \"黑色硬壳滚轮行李箱\",\n        \"role\": \"visible_and_persistent\"\n      },\n      {\n        \"entity\": \"长方形木质家用餐桌\",\n        \"role\": \"visible\"\n      },\n      {\n        \"entity\": \"布艺软包餐椅\",\n        \"role\": \"visible\"\n      },\n      {\n        \"entity\": \"盛有温水的透明玻璃杯\",\n        \"role\": \"visible_and_persistent\"\n      },\n      {\n        \"entity\": \"餐厅暖光壁灯\",\n        \"role\": \"visible\"\n      },\n      {\n        \"entity\": \"附着雨痕的临街玻璃窗\",\n        \"role\": \"visible\"\n      }\n    ],\n    \"lighting\": \"暖黄壁灯主光照亮餐桌区域，临街玻璃窗透入雨夜冷调微光，阴影柔和，整体亮度克制。\",\n    \"mood\": \"沉静克制，久别归家的局促与被温柔接住的温软暖意交织。\"\n  }\n}",
+  "identity": {
+    "title": "雨夜桌边",
+    "theme_elements": [
+      "雨夜归家的日常真实质感",
+      "母女间无需言说的克制默契",
+      "温水作为情感连接的具象载体",
+      "普通家庭餐厅的生活化空间",
+      "以视线、距离和小动作传递的亲近感"
+    ],
+    "story_arc": {
+      "goal": "离家许久的成年女儿小安在雨夜回到家中，希望消解久别带来的生疏感，和母亲重新回到同一张餐桌旁的日常相处状态",
+      "stakes": "久别形成的心理距离横在餐厅门口，若这份犹豫没有被温柔接住，两人就会隔着空间的距离，无法自然回到熟悉的日常相处节奏中",
+      "turning_point": "坐在餐桌旁的林阿姨看见站在门口犹豫的小安，没有起身快步迎上前，只是将提前倒好的一杯温水轻轻放到桌边空着的椅子旁，用这个熟悉的日常动作消解了小安的局促，让她愿意放下行李走向桌边",
+      "resolution": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。"
+    },
+    "characters": [
+      {
+        "name": "XiaoAn",
+        "description": "20余岁的成年女性，留自然齐肩黑发，穿被雨打湿边角的卡其色风衣，内搭米白色圆领针织衫，下身是深色直筒牛仔裤，脚穿沾有雨痕的白色休闲鞋，随身携带有一只带滚轮的黑色硬壳行李箱，神色带着归家时的局促与犹豫，无夸张妆容。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      },
+      {
+        "name": "LinAyi",
+        "description": "50余岁的中年女性，头发在脑后挽成整洁低发髻，穿洗得柔软的藏青色棉质长袖家居服，脚穿浅灰色布面居家拖鞋，手部带有常年做家务留下的薄茧，神色平和，无外露的激动神态。",
+        "mobility": "bipedal",
+        "reference_mode": "identity"
+      }
+    ],
+    "scene_entities": [
+      "餐厅入口木质门框",
+      "黑色硬壳滚轮行李箱",
+      "长方形木质家用餐桌",
+      "布艺软包餐椅",
+      "盛有温水的透明玻璃杯",
+      "餐厅暖光壁灯",
+      "附着雨痕的临街玻璃窗"
+    ],
+    "locations": [
+      {
+        "id": "ResidentialDiningRoom",
+        "description": "普通城市居民住宅内的日常餐厅空间，铺设浅米色防滑地砖，靠墙摆放长方形木质餐桌，搭配两把布艺软包餐椅，墙面安装暖光壁灯，一侧设有连通入户区域的木质门框，另一侧为临街玻璃窗，玻璃表面附着雨夜的雨痕，整体陈设简单家常，无多余装饰。"
+      }
+    ],
+    "mood": "沉静克制，带着久别归家的温软暖意，情绪内敛不外露，没有激烈的情绪宣泄",
+    "music_style": "无原创配乐，仅收录场景原生现场声，包括窗外微弱雨声、行李箱滚轮摩擦地面声、玻璃杯触碰桌面的轻响、衣物摩擦的细碎声响"
+  },
+  "intent": {
+    "source_request": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+    "content_focus": "balanced",
+    "pacing": "balanced",
+    "intent_evidence": "情绪与关系为主，不要密集肢体交互。",
+    "ending_requirement": "两人安静地坐在同一张桌旁。",
+    "ending_evidence": "故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。",
+    "motion_control": "text_guided",
+    "motion_control_evidence": "",
+    "choreography": "flexible",
+    "requested_duration_seconds": 24,
+    "duration_evidence": "制作24秒短片，分为4段。",
+    "requested_shot_count": 4,
+    "shot_count_evidence": "制作24秒短片，分为4段。",
+    "motion_timing": {
+      "performer_tempo": "natural",
+      "playback": "real_time",
+      "evidence": "正常时间播放，不用慢镜头。"
+    },
+    "style_input": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+    "creative_direction": {
+      "version": "creative-direction-v1",
+      "references": [
+        "domestic_restraint",
+        "ang_lee"
+      ],
+      "methods": [
+        "restrained_reaction",
+        "ensemble_space"
+      ],
+      "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+      "rationale": "用户明确要求以情绪与关系为主、不增加冲突或反转，并指定李安式克制反应；因此用视线、距离和小动作表达靠近，不使用夸张哭喊或密集肢体交互。同一餐厅内的两人关系通过空间位置和桌面动作呈现，硬切与现场声保持日常克制。",
+      "editing": "cut",
+      "sound": "native_only"
+    },
+    "authoring_protocol": "scene-units-v1"
+  }
+}

@@ -73,6 +73,8 @@ def normalize_narrative_handoffs(storyboard: dict) -> list[tuple[object, object]
     corrections: list[tuple[object, object]] = []
     shots = [shot for shot in storyboard.get("shots", []) if isinstance(shot, dict)]
     for previous, current in zip(shots, shots[1:]):
+        if current.get('action_semantics') == 'authored-v1':
+            continue
         previous_beat = previous.get("narrative_beat")
         current_beat = current.get("narrative_beat")
         if not isinstance(previous_beat, dict) or not isinstance(current_beat, dict):

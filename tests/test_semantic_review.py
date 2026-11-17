@@ -303,8 +303,9 @@ def test_state_handoff_evidence_rejects_progress_reset_despite_aggregate_accepta
     assert "state_progress_not_reversed" in review.failure_reason
 
 
+@pytest.mark.parametrize('reframed,expected_frame', [(False, b'frame-2.5'), (True, b'frame-0.1')])
 def test_first_frame_handoff_checks_reframing_at_midpoint(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, reframed, expected_frame
 ):
     video = tmp_path / "shot.mp4"
     previous = tmp_path / "previous.jpg"
@@ -370,11 +371,12 @@ def test_first_frame_handoff_checks_reframing_at_midpoint(
         boundary_context={
             "same_scene": True,
             "state_reference_role": "first_frame",
+            **({'reference_view_version': 'observed-camera-view-v1'} if reframed else {}),
         },
     )
 
     assert review.accepted is True
-    assert observed_comparison["frame"] == b"frame-2.5"
+    assert observed_comparison["frame"] == expected_frame
 
 
 def test_causal_review_uses_dense_temporal_sampling(

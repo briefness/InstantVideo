@@ -23,10 +23,16 @@ def test_released_unsubmitted_reservation_does_not_consume_opportunity(tmp_path,
     token = w.reserve_paid_take(1)
     w.release_unsubmitted_paid_take(token)
     w = RunWorkspace.resume(w.path)
-    submit(w, 1)
+    if policy == 'single_pass':
+        # 金额预留可释放，单次提交许可不可由释放操作重新授权。
+        with pytest.raises(PaidTakeBudgetExhaustedError):
+            submit(w, 1)
+    else:
+        submit(w, 1)
     submit(w, 2)
     submit(w, 3)
-    assert sum(r.status != 'released' for r in w.manifest.paid_take_budget.reservations) == 3
+    assert sum(r.status != 'released' for r in w.manifest.paid_take_budget.reservations) == (
+        2 if policy == 'single_pass' else 3)
 
 
 @pytest.mark.parametrize('policy', ['completion_first', 'single_pass'])

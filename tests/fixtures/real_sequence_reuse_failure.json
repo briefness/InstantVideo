@@ -1,0 +1,175 @@
+{
+  "run": "20261117_133857_156942",
+  "source_sha256": {
+    "run_manifest.json": "2b04e5075819b5d2b2c02332d1781acb7f389e70457da106165c56168afcd9cb",
+    "final.mp4": "f516c57b47573dc09ff84cb97fa4e6a9116d6ae87240bd4591cbaa0bffb43501",
+    "result_admission.json": "7c7cf5749943d681c6b59b416d9539ad049569cb70e70015aa9f22f54465f1d4",
+    "shots/shot_001.mp4": "db122c1e8082ca883cc78dda56dcbce28385d7ca78a3e9c2a1be053eeef292ab",
+    "submission_requests/shot_001_attempt_001.json": "556a6e87ea0ffa1e3328c130ab320e89f55b87cd56a70265353bc41a81c74841",
+    "semantic_reviews/db122c1e8082ca883cc78dda56dcbce28385d7ca78a3e9c2a1be053eeef292ab.json": "4bcfae63a3f958db559917499c3e0e71ff59a3389267e0366fc49596724f3149",
+    "shots/shot_002.mp4": "53cb91eb8dddb835a2ea273f98e98196983beab2c399c69291e633f18988fbea",
+    "submission_requests/shot_002_attempt_001.json": "2a691530a02463e65783ebdc04f553072a0e61940a43c2c37bd672cd3720af74",
+    "semantic_reviews/53cb91eb8dddb835a2ea273f98e98196983beab2c399c69291e633f18988fbea.json": "18f192ef8ea7802273c54545970b1b65c0b254caff3f2a15d6e279ae42c36087",
+    "shots/shot_003.mp4": "0e4ba751252f3d0f32c512a72b4be6806cadc599d4ef77a5759aca1eeba561e5",
+    "submission_requests/shot_003_attempt_001.json": "eb94ce99484b9dc6df251196932f1fa9d4f824dfcac8178770138ba8bd9e5237",
+    "semantic_reviews/0e4ba751252f3d0f32c512a72b4be6806cadc599d4ef77a5759aca1eeba561e5.json": "dc99e27c435b662a43e6e39c5274cb81cdf3d244b2c357afebaefc5e1ba9b1b2",
+    "shots/shot_004.mp4": "0193e17b113b9a697e707ccd6a6c6ea622edbee00284323dad8f1175d949285f",
+    "submission_requests/shot_004_attempt_001.json": "62866808948d23586c8d665d6ed1a87da569393dca47aced9b1743cb90445fe4",
+    "semantic_reviews/0193e17b113b9a697e707ccd6a6c6ea622edbee00284323dad8f1175d949285f.json": "2349c2f7cb0ca9d98f3ea70852421a1dc70e779551b9770deb80c25f3a9da6ac"
+  },
+  "shots": [
+    {
+      "shot_id": 1,
+      "video_sha256": "db122c1e8082ca883cc78dda56dcbce28385d7ca78a3e9c2a1be053eeef292ab",
+      "operation": null,
+      "review_flags": {
+        "accepted": false,
+        "action_geometry_valid": true,
+        "primary_action_completed": true,
+        "effect_path_valid": true,
+        "reaction_causality_valid": true,
+        "narrative_state_change_valid": true,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": false,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": true,
+        "creative_brief_valid": true
+      },
+      "previous_temporal_evidence": null
+    },
+    {
+      "shot_id": 2,
+      "video_sha256": "53cb91eb8dddb835a2ea273f98e98196983beab2c399c69291e633f18988fbea",
+      "operation": {
+        "version": "provider-operation-v1",
+        "task": "extend_after",
+        "source": {
+          "logical_index": 1,
+          "media_label": "视频1",
+          "source_task_id": "cgt-20261117134422-f2rq5",
+          "source_sha256": "db122c1e8082ca883cc78dda56dcbce28385d7ca78a3e9c2a1be053eeef292ab",
+          "timestamp": 5.95,
+          "source_duration": 6.041667,
+          "selected_end_seconds": 6
+        },
+        "camera_boundary": "cut_to_current_shot",
+        "output_scope": "new_segment",
+        "transport_control": "prompt_dispatch"
+      },
+      "review_flags": {
+        "accepted": false,
+        "action_geometry_valid": true,
+        "primary_action_completed": true,
+        "effect_path_valid": true,
+        "reaction_causality_valid": true,
+        "narrative_state_change_valid": true,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": false,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": true,
+        "creative_brief_valid": true
+      },
+      "previous_temporal_evidence": null
+    },
+    {
+      "shot_id": 3,
+      "video_sha256": "0e4ba751252f3d0f32c512a72b4be6806cadc599d4ef77a5759aca1eeba561e5",
+      "operation": {
+        "version": "provider-operation-v1",
+        "task": "extend_after",
+        "source": {
+          "logical_index": 1,
+          "media_label": "视频1",
+          "source_task_id": "cgt-20261117134821-wmth5",
+          "source_sha256": "53cb91eb8dddb835a2ea273f98e98196983beab2c399c69291e633f18988fbea",
+          "timestamp": 5.95,
+          "source_duration": 6.041667,
+          "selected_end_seconds": 6
+        },
+        "camera_boundary": "cut_to_current_shot",
+        "output_scope": "new_segment",
+        "transport_control": "prompt_dispatch"
+      },
+      "review_flags": {
+        "accepted": true,
+        "action_geometry_valid": true,
+        "primary_action_completed": true,
+        "effect_path_valid": true,
+        "reaction_causality_valid": true,
+        "narrative_state_change_valid": true,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": true,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": true,
+        "creative_brief_valid": true
+      },
+      "previous_temporal_evidence": null
+    },
+    {
+      "shot_id": 4,
+      "video_sha256": "0193e17b113b9a697e707ccd6a6c6ea622edbee00284323dad8f1175d949285f",
+      "operation": {
+        "version": "provider-operation-v1",
+        "task": "extend_after",
+        "source": {
+          "logical_index": 1,
+          "media_label": "视频1",
+          "source_task_id": "cgt-20261117135313-kwr2s",
+          "source_sha256": "0e4ba751252f3d0f32c512a72b4be6806cadc599d4ef77a5759aca1eeba561e5",
+          "timestamp": 5.95,
+          "source_duration": 6.041667,
+          "selected_end_seconds": 6
+        },
+        "camera_boundary": "cut_to_current_shot",
+        "output_scope": "new_segment",
+        "transport_control": "prompt_dispatch"
+      },
+      "review_flags": {
+        "accepted": true,
+        "action_geometry_valid": true,
+        "primary_action_completed": true,
+        "effect_path_valid": true,
+        "reaction_causality_valid": true,
+        "narrative_state_change_valid": true,
+        "blocking_valid": true,
+        "composition_change_valid": true,
+        "boundary_continuity_valid": true,
+        "identity_continuity_valid": true,
+        "environment_continuity_valid": true,
+        "action_handoff_valid": true,
+        "screen_direction_valid": true,
+        "prop_continuity_valid": true,
+        "visual_invariants_valid": true,
+        "action_timing_valid": true,
+        "requested_outcome_valid": true,
+        "action_sequence_valid": true,
+        "creative_brief_valid": true
+      },
+      "previous_temporal_evidence": null
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "source_path": "output/20261109_122918_598128",
+  "response_sha256": "889231e5b80f1140d10a28d603e98b5cb78eb2c796f3d91ce918274df894575d",
+  "response_text": "{\n  \"model\": \"doubao-seed-2.1-lite\",\n  \"finish_reason\": \"stop\",\n  \"content\": \"{\\\"shot\\\": {\\\"scene_id\\\": \\\"residential_dining_room\\\", \\\"scene_description\\\": \\\"普通城市住宅内的家用餐厅空间，连通入户玄关与厨房，临窗位置可看到雨夜的室外街景，摆放原木方形餐桌与配套木质餐椅，墙面为米白色，顶部安装暖黄色吸顶灯，整体陈设简单日常，无多余装饰。\\\", \\\"visual_description\\\": \\\"16:9宽幅固定特写构图，画面核心是原木色餐桌靠近空椅的桌面区域，暖黄色吸顶灯的柔光落在浅木纹理上，形成柔和的暖调阴影；透明玻璃马克杯初始位于画面中景偏左的桌面位置，杯内温水泛着细碎的反光；画面左侧边缘露出小安深灰色防水外套的袖口与沾着浅淡雨痕的白色休闲鞋尖，画面右侧边缘露出林阿姨洗得发软的藏青色家居服袖口；桌面边缘隐约映出窗玻璃上蜿蜒雨痕的冷色细碎反光，无多余装饰，突出手部移动、推杯与接杯的细微动作。\\\", \\\"camera\\\": {\\\"primary_movement\\\": \\\"fixed\\\", \\\"composition\\\": \\\"特写细节构图，聚焦原木桌面区域，通过手部动作与杯子位置的变化传递情绪，保持两人左右相对的空间轴线\\\", \\\"start_framing\\\": \\\"close-up detail shot\\\", \\\"end_framing\\\": \\\"close-up detail shot\\\", \\\"speed\\\": \\\"normal\\\", \\\"axis_change\\\": \\\"hold\\\", \\\"screen_positions\\\": {\\\"Xiao An\\\": \\\"画面左侧边缘，仅露出深灰色外套袖口与沾雨痕的白色休闲鞋尖，后续手部从左侧入画\\\", \\\"Lin Ayi\\\": \\\"画面右侧边缘，仅露出藏青色家居服袖口，后续手部从右侧入画\\\", \\\"黑色20寸硬壳登机箱\\\": \\\"画面最左侧边缘，靠在入口门边墙根处\\\", \\\"盛有温水的透明玻璃马克杯\\\": \\\"初始位于画面中景偏左的原木桌面，后续被推至画面中景偏右的小安手边\\\", \\\"原木色方形家用餐桌\\\": \\\"整个画面的核心承载区域，浅木纹理清晰可见\\\", \\\"餐桌旁的木质空餐椅\\\": \\\"画面左侧边缘，仅露出浅木椅边的一小部分\\\", \\\"餐厅入口的半开玻璃门\\\": \\\"画面最左侧边缘外，仅透入冷湿的雨夜微光\\\", \\\"窗玻璃上的雨夜雨痕\\\": \\\"桌面边缘的冷色细碎反光区域\\\", \\\"餐桌上方的暖黄色吸顶灯\\\": \\\"画面顶部的柔光来源，无直接入镜\\\"}}, \\\"blocking\\\": {\\\"Xiao An\\\": {\\\"frame_position\\\": \\\"画面左侧入口处，仅露出袖口、鞋尖与后续入画的手\\\", \\\"body_orientation\\\": \\\"身体朝向餐桌，侧对镜头\\\", \\\"facing_target\\\": \\\"餐桌上的马克杯\\\", \\\"eyeline_target\\\": \\\"桌面上的马克杯\\\", \\\"travel_direction\\\": \\\"从门口位置移动到餐桌旁的空餐椅上\\\", \\\"action_target\\\": \\\"黑色20寸硬壳登机箱\\\"}, \\\"Lin Ayi\\\": {\\\"frame_position\\\": \\\"画面右侧的餐桌旁座位，仅露出袖口与后续入画的手\\\", \\\"body_orientation\\\": \\\"身体朝向餐桌左侧的空椅方向\\\", \\\"facing_target\\\": \\\"走到桌边的小安\\\", \\\"eyeline_target\\\": \\\"小安的动作与桌面上的马克杯\\\", \\\"travel_direction\\\": \\\"保持坐姿，未移动\\\", \\\"action_target\\\": \\\"盛有温水的透明玻璃马克杯\\\"}}, \\\"start_state\\\": {\\\"location\\\": \\\"residential_dining_room\\\", \\\"subject\\\": \\\"小安被桌上的温水杯吸引，准备放下行李走近桌边\\\", \\\"action_phase\\\": \\\"小安即将松开扶门的手，放下身侧的登机箱\\\", \\\"camera\\\": \\\"固定特写机位，聚焦原木餐桌靠近空椅的桌面区域\\\", \\\"screen_direction\\\": \\\"小安从画面左侧入画，林阿姨的手从画面右侧入画，轴线保持一致\\\", \\\"pose_and_gaze\\\": \\\"小安站在餐厅入口门槛处，视线落在桌面上的马克杯上，脚微微向前挪动；林阿姨坐在餐桌旁的座位上，右手放在膝头，视线落在小安身上\\\", \\\"prop_state\\\": \\\"盛有温水的透明玻璃马克杯平稳放在空椅旁的原木桌面上，黑色20寸硬壳登机箱立在小安身侧，木质空餐椅摆在餐桌靠近入口的位置，暖黄色吸顶灯处于点亮状态，窗玻璃上的雨痕持续蜿蜒\\\", \\\"open_motion\\\": \\\"小安的视线停留在马克杯上，身体即将向餐桌方向移动\\\", \\\"lighting\\\": \\\"室内暖黄色吸顶灯的柔和漫射光与窗外雨夜的冷蓝色弱光形成稳定的冷暖对比，光比柔和\\\"}, \\\"end_state\\\": {\\\"location\\\": \\\"residential_dining_room\\\", \\\"subject\\\": \\\"小安已经落座，接住林阿姨推过来的温水杯\\\", \\\"action_phase\\\": \\\"两人完成接杯动作，即将进入安静同坐的状态\\\", \\\"camera\\\": \\\"固定特写机位，保持原有桌面构图\\\", \\\"screen_direction\\\": \\\"小安的手在画面中景偏右握住马克杯，林阿姨的手收回在画面右侧边缘\\\", \\\"pose_and_gaze\\\": \\\"小安坐在空餐椅上，右手握住马克杯，视线落在杯中的水面上；林阿姨坐在对面的座位上，右手放在膝头，视线落在小安的手上\\\", \\\"prop_state\\\": \\\"盛有温水的透明玻璃马克杯被小安握在手中，黑色登机箱靠在入口门边的墙根处，空餐椅上坐着小安，暖黄色吸顶灯保持点亮，窗玻璃上的雨痕持续蜿蜒\\\", \\\"open_motion\\\": \\\"两人的动作暂时停止，等待后续的安静共处\\\", \\\"lighting\\\": \\\"室内暖光与窗外冷色雨夜光的对比保持稳定\\\"}, \\\"story_change\\\": \\\"小安松开扶着玻璃门的手，将身侧的登机箱轻轻靠在门边墙根，迈步走到空餐椅边坐下；林阿姨没有开口说话，只是伸出右手将桌上的温水杯慢慢推向小安的手边，小安伸手握住杯身接住杯子，两人之间的距离从门口的门槛缩短到同一张桌旁，久别后的生疏感被这一系列无声的动作进一步消解。\\\", \\\"story_state_after\\\": \\\"小安已经坐在餐桌旁的空椅上，右手握住盛着温水的马克杯，林阿姨收回手放在膝头，两人隔着同一张原木餐桌相对而坐，没有多余的寒暄，为最终的安静重聚共处做好了准备。\\\", \\\"action_plan\\\": {\\\"first\\\": {\\\"actor\\\": \\\"Xiao An\\\", \\\"action\\\": \\\"松开扶着半开玻璃门的手，握住身侧黑色登机箱的伸缩把手，轻轻将登机箱放倒靠在门边的墙根，没有发出磕碰的声响\\\", \\\"result\\\": \\\"登机箱稳稳靠在门边墙根，小安不再需要扶着行李，身体完全朝向餐桌方向\\\", \\\"kind\\\": \\\"interaction\\\", \\\"target\\\": \\\"黑色20寸硬壳登机箱\\\", \\\"effect\\\": {\\\"mode\\\": \\\"direct_contact\\\", \\\"motion\\\": \\\"static\\\", \\\"source\\\": \\\"小安的右手\\\", \\\"region\\\": \\\"餐厅入口门边的墙根地板区域\\\", \\\"unaffected\\\": \\\"餐厅内其他陈设、餐桌上的马克杯、坐在原位的林阿姨\\\"}, \\\"response\\\": \\\"state_change\\\", \\\"resolution\\\": {\\\"states\\\": {\\\"黑色20寸硬壳登机箱\\\": [{\\\"state\\\": \\\"从立在小安身侧变为稳稳靠在餐厅入口门边的墙根处，箱体无磕碰痕迹\\\"}], \\\"Xiao An\\\": [{\\\"state\\\": \\\"松开扶着玻璃门的手，身体完全朝向餐桌方向，视线仍落在桌面上的马克杯上\\\"}], \\\"Lin Ayi\\\": [{\\\"state\\\": \\\"保持坐姿，视线落在小安的动作上，没有开口\\\"}]}}, \\\"timing\\\": \\\"sequential\\\", \\\"weight\\\": 2.0}, \\\"following\\\": [{\\\"actor\\\": \\\"Xiao An\\\", \\\"action\\\": \\\"迈步走到餐桌旁的空餐椅边，侧身轻轻拉开椅边一点，缓慢坐下，动作没有发出多余声响\\\", \\\"result\\\": \\\"小安从餐厅入口的门槛位置移动到餐桌旁的空餐椅上，与林阿姨隔着同一张原木餐桌相对而坐\\\", \\\"kind\\\": \\\"transition\\\", \\\"target\\\": \\\"餐桌旁的木质空餐椅\\\", \\\"weight\\\": 1.8}, {\\\"actor\\\": \\\"Lin Ayi\\\", \\\"action\\\": \\\"保持坐姿，伸出右手，指尖轻轻碰到马克杯的杯壁，沿着原木桌面将杯子慢慢推向小安的手边，动作平缓没有晃动\\\", \\\"result\\\": \\\"马克杯从空椅旁的桌面位置移动到小安的手边，杯内温水没有洒出\\\", \\\"kind\\\": \\\"interaction\\\", \\\"target\\\": \\\"盛有温水的透明玻璃马克杯\\\", \\\"effect\\\": {\\\"mode\\\": \\\"direct_contact\\\", \\\"motion\\\": \\\"sweep\\\", \\\"source\\\": \\\"林阿姨的右手\\\", \\\"region\\\": \\\"原木桌面从空椅旁到小安手边的区域\\\", \\\"unaffected\\\": \\\"餐厅内其他陈设、已经落座的小安、窗外的雨景\\\"}, \\\"response\\\": \\\"state_change\\\", \\\"resolution\\\": {\\\"states\\\": {\\\"盛有温水的透明玻璃马克杯\\\": [{\\\"state\\\": \\\"从空椅旁的桌面位置被推到小安的手边，杯内温水无洒出，杯壁仍带着余温\\\"}], \\\"Lin Ayi\\\": [{\\\"state\\\": \\\"右手仍轻搭在杯壁上，视线落在小安的手上\\\"}]}}, \\\"timing\\\": \\\"overlap_previous\\\", \\\"weight\\\": 1.5}, {\\\"actor\\\": \\\"Xiao An\\\", \\\"action\\\": \\\"伸出右手，握住马克杯的杯身，轻轻将杯子往自己的方向带了一点，指尖感受到杯壁的余温\\\", \\\"result\\\": \\\"马克杯被小安稳稳握在手中，两人的手都轻触过杯壁，无声的接纳完成传递\\\", \\\"kind\\\": \\\"interaction\\\", \\\"target\\\": \\\"盛有温水的透明玻璃马克杯\\\", \\\"effect\\\": {\\\"mode\\\": \\\"direct_contact\\\", \\\"motion\\\": \\\"static\\\", \\\"source\\\": \\\"小安的右手\\\", \\\"region\\\": \\\"小安手边的原木桌面区域\\\", \\\"unaffected\\\": \\\"餐厅内其他陈设、坐在对面的林阿姨\\\"}, \\\"response\\\": \\\"state_change\\\", \\\"resolution\\\": {\\\"states\\\": {\\\"盛有温水的透明玻璃马克杯\\\": [{\\\"state\\\": \\\"被小安的右手稳稳握住，位置在小安的手边，杯内温水无洒出\\\"}], \\\"Xiao An\\\": [{\\\"state\\\": \\\"右手握住杯身，视线落在杯中的水面上，神态放松了些许\\\"}], \\\"Lin Ayi\\\": [{\\\"state\\\": \\\"将右手轻轻收回，放回自己的膝头，视线落在小安的手上\\\"}]}}, \\\"timing\\\": \\\"sequential\\\", \\\"weight\\\": 0.7}]}, \\\"prop_roles\\\": [{\\\"entity\\\": \\\"黑色20寸硬壳登机箱\\\", \\\"role\\\": \\\"visible_and_persistent\\\"}, {\\\"entity\\\": \\\"盛有温水的透明玻璃马克杯\\\", \\\"role\\\": \\\"visible_and_persistent\\\"}, {\\\"entity\\\": \\\"原木色方形家用餐桌\\\", \\\"role\\\": \\\"visible\\\"}, {\\\"entity\\\": \\\"餐桌旁的木质空餐椅\\\", \\\"role\\\": \\\"visible_and_persistent\\\"}, {\\\"entity\\\": \\\"餐厅入口的半开玻璃门\\\", \\\"role\\\": \\\"visible\\\"}, {\\\"entity\\\": \\\"窗玻璃上的雨夜雨痕\\\", \\\"role\\\": \\\"visible\\\"}, {\\\"entity\\\": \\\"餐桌上方的暖黄色吸顶灯\\\", \\\"role\\\": \\\"visible\\\"}], \\\"lighting\\\": \\\"室内由餐桌上方的暖黄色吸顶灯提供柔和漫射光，光线均匀落在原木桌面与人物袖口上，形成边缘柔和的暖调阴影；临窗位置透入室外雨夜的冷蓝色弱光，在桌面边缘形成细碎反光，整体光比柔和，无生硬明暗边界。\\\", \\\"mood\\\": \\\"克制内敛，没有刻意的寒暄与夸张的情绪外露，只有手部的细微动作传递无声的接纳，久别后的生疏距离随着小安落座、杯子被推到手边而进一步消解，安静的张力中带着柔软的归属感。\\\"}}\"\n}",
+  "context": {
+    "authoring_protocol": "story-context-v8-action-semantics",
+    "slot": {
+      "shot_id": 3,
+      "duration": 6,
+      "narrative_function": "turn",
+      "framing_family": "close_detail",
+      "motion_timing": {
+        "performer_tempo": "natural",
+        "playback": "real_time",
+        "evidence": "正常时间播放，不用慢镜头。"
+      },
+      "creative_direction": {
+        "version": "creative-direction-v1",
+        "references": [
+          "domestic_restraint",
+          "ang_lee"
+        ],
+        "methods": [
+          "restrained_reaction",
+          "ensemble_space"
+        ],
+        "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+        "rationale": "用户明确要求以情绪与关系为主、不增加冲突或反转，并指定李安式克制反应；因此用视线、距离和递水等小动作承载靠近，不使用夸张表演、密集肢体交互或配乐。",
+        "editing": "cut",
+        "sound": "native_only",
+        "guidance": "Creative direction v1: Express emotional changes through small shifts in gaze, distance, posture and handling of established objects; leave room for a reaction without forcing exaggerated gestures. Use depth, thresholds and relative placement to reveal the established relationships within a group; keep the current dramatic focus readable without giving every person an isolated close-up. Compose shot boundaries for direct cuts; do not bake fades or dissolves into the footage. Use only scene-native sound, with no musical score or added background music. Apply relevant methods to this authored shot, not every method to every beat. Explicit subject tempo, playback treatment, camera blocking, exact choreography, reference motion, ordered outcomes and allocated duration take precedence. Do not add story events, change the ending or infer slow motion from a cinematic reference."
+      }
+    },
+    "locations": [
+      {
+        "id": "residential_dining_room",
+        "description": "普通城市住宅内的家用餐厅空间，连通入户玄关与厨房，临窗位置可看到雨夜的室外街景，摆放原木方形餐桌与配套木质餐椅，墙面为米白色，顶部安装暖黄色吸顶灯，整体陈设简单日常，无多余装饰，全片所有动作均发生在该空间内。"
+      }
+    ],
+    "scene_entities": [
+      "黑色20寸硬壳登机箱",
+      "盛有温水的透明玻璃马克杯",
+      "原木色方形家用餐桌",
+      "餐桌旁的木质空餐椅",
+      "餐厅入口的半开玻璃门",
+      "窗玻璃上的雨夜雨痕",
+      "餐桌上方的暖黄色吸顶灯"
+    ]
+  }
+}

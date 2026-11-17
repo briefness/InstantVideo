@@ -15,6 +15,7 @@ from pipeline.storyboard_authoring import StoryIdentity, _bind_scene_entities
 from test_creation_schedule_flow import scenario_story
 from authoring_cases import scheduled_shot_fixture, contextual_shot_fixture
 from test_scheduled_production_flow import scheduled_services
+from test_full_production_flow import original_task_response
 
 
 @pytest.fixture(autouse=True)
@@ -60,14 +61,14 @@ def test_story_facts_are_required_nonblank_without_changing_stored_story_model(f
         ['goal', 'stakes', 'turning_point', 'resolution'], '')
 
 
-def case(topic):
+def case(topic, *, execution_timing=False):
     brief, intent, raw, plan = scenario_story(topic)
     names = [c['name'] for c in raw['characters']]
     locations = [SceneLocation.model_validate(s) for s in raw['locations']]
     catalog = raw['scene_entities']
     base = contextual_shot_schema(authored_shot_response_schema(names, require_outcomes=True,
         scene_entities=catalog, bound_handoffs=True), locations, catalog)
-    wires = [scheduled_shot_fixture(contextual_shot_fixture(s), slot)
+    wires = [scheduled_shot_fixture(contextual_shot_fixture(s), slot, execution_timing=execution_timing)
              for s, slot in zip(raw['shots'], plan['slots'])]
     for shot in wires:
         shot.pop('shot_id', None)
@@ -89,13 +90,16 @@ def test_shot_schema_declares_existing_required_continuity_fields(boundary, fiel
 def test_formal_sdk_rejects_original_identity_before_any_shot(monkeypatch):
     from test_authoring_transport import http_client
     from pipeline.storyboard import generate_storyboard
+    from pipeline.authoring_contract import AuthoringContractError
     data = capture()
+    before = deepcopy(data)
     intent = json.loads(data['planning_intent_response.json']['content'])
-    sdk, calls = http_client(monkeypatch, [intent, data['planning_identity.json']])
+    sdk, calls = http_client(monkeypatch, [intent, data['planning_identity.json']], annotate_legacy_intent=True)
     request = '制作约15秒的紫禁之巅决战，分三段独立视频再拼接。两大高手在紫禁城屋脊决战，武侠电影风格和电影级质感。轻功入场要帅；武打动作要多、节奏快，有借势、变招和连续的攻防流动，不要机械地一来一回或每招停顿复位。最后一方被另一方帅气击杀，以克制、非血腥的画面清楚呈现死亡结果。重点保持三段人物身份、服饰和兵器一致，前后动作与空间连续，运镜服务于动作可读性。项目自行规划脚本、分镜与时间分配。'
-    with sdk, pytest.raises(ValueError, match='story_arc.goal'):
+    with sdk, pytest.raises(AuthoringContractError) as caught:
         generate_storyboard(request, target_duration=15)
-    assert len(calls) == 2
+    assert caught.value.issues == [{'path': '/story_arc', 'constraint': 'required'}]
+    assert len(calls) == 2 and data == before
     schema = calls[1]['response_format']['json_schema']['schema']
     ref = schema['properties']['story_arc']['$ref'].split('/')[-1]
     assert set(schema['$defs'][ref]['required']) == {'goal', 'stakes', 'turning_point', 'resolution'}
@@ -150,7 +154,8 @@ def test_schema_valid_omissions_survive_whole_film_compilation(topic):
 def test_provider_ignoring_required_states_stops_before_next_shot(monkeypatch, boundary, field, value):
     from test_authoring_transport import http_client
     from pipeline.storyboard import generate_storyboard
-    brief, intent, raw, _, _, _, _, _, wires = case('货物交接')
+    from pipeline.authoring_contract import AuthoringContractError
+    brief, intent, raw, _, _, _, _, _, wires = case('货物交接', execution_timing=True)
     if value is None:
         wires[0][boundary].pop(field)
     else:
@@ -159,8 +164,12 @@ def test_provider_ignoring_required_states_stops_before_next_shot(monkeypatch, b
     values = [{k: v for k, v in intent.items() if k != 'source_request'},
               {k: v for k, v in raw.items() if k != 'shots'}, {'shot': wires[0]}]
     sdk, calls = http_client(monkeypatch, values)
-    with sdk, pytest.raises(ValueError, match=boundary + '.' + field):
+    with sdk, pytest.raises(AuthoringContractError) as caught:
         generate_storyboard(brief, target_duration=15)
+    expected = ([{'path': f'/shot/{boundary}', 'constraint': 'required'}] if value is None else
+                [{'path': f'/shot/{boundary}/{field}', 'constraint': constraint}
+                 for constraint in (['minLength', 'pattern'] if value == '' else ['pattern'])])
+    assert caught.value.issues == expected
     assert len(calls) == 3 and wires[0] == before
 
 
@@ -231,7 +240,7 @@ async def test_minimal_creation_reaches_sdk_and_export_with_independent_expectat
 
     def poll(*, task_id):
         polls.append(task_id)
-        return SimpleNamespace(status='succeeded', content=SimpleNamespace(video_url=task_id))
+        return original_task_response(task_id)
 
     api = object.__new__(SeedanceAPI)
     api.ark_client = SimpleNamespace(content_generation=SimpleNamespace(
@@ -285,8 +294,8 @@ async def test_minimal_creation_reaches_sdk_and_export_with_independent_expectat
         if source['shot_id'] == 1:
             assert not references
         else:
-            assert references[0]['role'] == 'first_frame'
-            assert references[0]['image_url']['url'].startswith('data:image/')
+            assert references[0]['role'] == 'reference_video'
+            assert references[0]['video_url']['url'].startswith('https://example.com/offline-')
     assert total_interaction >= 10.5 - 1e-6
     assert SCENARIOS[topic][-1][1] in services.submissions[-1]['content'][0]['text']
     video = next(s for s in get_video_info(output)['streams'] if s['codec_type'] == 'video')

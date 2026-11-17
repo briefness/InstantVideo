@@ -76,14 +76,14 @@ async def test_captured_omission_stops_actual_sdk_flow_without_retries_or_paymen
     record, identity, response = captured_failure()
     original = deepcopy(response)
     intent = {k: v for k, v in record['intent'].items() if k != 'source_request'}
-    sdk, calls = http_client(monkeypatch, [intent, identity, response])
+    sdk, calls = http_client(monkeypatch, [intent, identity, response], annotate_legacy_intent=True)
     monkeypatch.setattr(config, 'OUTPUT_DIR', tmp_path)
     monkeypatch.setattr('pipeline.orchestrator.VideoGenerator', lambda **_: pytest.fail('video stage reached'))
     pipeline = VideoPipeline(plan_only=True, paid_take_budget=0, take_policy='single_pass')
     with sdk:
-        with pytest.raises(ValueError, match='槽位绑定的必需作用'):
+        with pytest.raises(ValueError, match=r'创作响应契约.*action_plan \(type\)'):
             await pipeline.run(record['intent']['source_request'])
-        with pytest.raises(ValueError, match='槽位绑定的必需作用'):
+        with pytest.raises(ValueError, match='失败或请求结果不明'):
             await VideoPipeline.from_workspace(pipeline.workspace).run()
     assert len(calls) == 3
     schema = calls[-1]['response_format']['json_schema']['schema']
@@ -189,7 +189,7 @@ def test_distinct_performances_survive_actual_sdk_and_global_time_allocation(mon
     brief, reply, source, plan = scenario_story(topic)
     original = deepcopy(source)
     responses = [reply, {k: v for k, v in source.items() if k != 'shots'}]
-    responses += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(s), slot).items()
+    responses += [{'shot': {k: v for k, v in scheduled_shot_fixture(contextual_shot_fixture(s), slot, execution_timing=True).items()
                             if k != 'shot_id'}} for s, slot in zip(source['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, responses)
     with sdk:

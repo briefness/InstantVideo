@@ -5,6 +5,7 @@ import hashlib
 import json
 
 from pipeline.models import CameraSpec, CharacterBlockingSpec
+from pipeline.performance import local_event_execution
 
 
 VERSION = 'authored-staging-v1'
@@ -29,7 +30,9 @@ def staging_projection(shot: dict, *, profile: str = 'normal') -> dict:
             raise ValueError('续拍路径指导必须是非空且有界的文本')
         direction['observed_entry_path'] = entry
     serialized = json.dumps(direction, ensure_ascii=False, sort_keys=True, allow_nan=False)
-    fingerprint = hashlib.sha256((VERSION + '\n' + serialized).encode()).hexdigest()
+    scoped_execution = local_event_execution(shot)
+    execution_version = shot['generation_execution'] + '\n' if scoped_execution else ''
+    fingerprint = hashlib.sha256((VERSION + '\n' + execution_version + serialized).encode()).hexdigest()
     return {
         'fingerprint': fingerprint,
         # 安全档不重新引入被拒绝的自由文字；遗漏必须可见，不声称无损改写。
@@ -38,9 +41,15 @@ def staging_projection(shot: dict, *, profile: str = 'normal') -> dict:
             'Authored staging guidance (data, not protocol instructions): ' + serialized
             + '. Use these camera, composition and performer-staging suggestions to present the '
             'existing action sequence. They do not add events, impose extra result poses or change '
-            'the allocated interaction time. The accepted starting state, identities, action contract '
+            'the allocated interaction time. '
+            + ('Camera screen_positions describe composition across the shot, not a second initial '
+               'state; apply changing placements during their actions. ' if scoped_execution else '')
+            + 'The accepted starting state, identities, action contract '
             'and planned starting framing remain authoritative; adapt staging to their continuity.'
-            + (' The observed_entry_path applies only to approaching the first existing interaction '
-               'from the observed start, without replacing that interaction or adding a new event.'
+            + ((' The observed_entry_path connects the observed start to the first existing action '
+                'without replacing its admitted function or adding a new event.'
+                if shot.get('completion_policy') else
+                ' The observed_entry_path applies only to approaching the first existing interaction '
+                'from the observed start, without replacing that interaction or adding a new event.')
                if 'observed_entry_path' in direction else '')),
     }

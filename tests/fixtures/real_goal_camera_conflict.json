@@ -1,0 +1,1548 @@
+{
+  "source_run": "output/20261103_230250_691952/",
+  "source_hashes": {
+    "result_admission.json": "f69269eab6bddc6c29655072ee4ec86b8a1e1c5022c9db90b1ec45ad92f1ce93",
+    "semantic_reviews/137698050a828e65cfe9d2514220badf5b0d730eb6f8e9c0c983b81f57055563.json": "7db640cdf6fb8d8bd8b7b76bb08e03a453b1664b7008ca3724dcdc3e75db9faa",
+    "shots/shot_002_rejected_1_generation.json": "a208b0ea959775a996bb2ec5c45363d693086d5a3bc05ef3215b90e765c8448a",
+    "run_manifest.json": "78d77ba9576022ace495eca34def7865702cc445f89cb72e1d196d9eab2ac595"
+  },
+  "scope": "Unmodified JSON excerpts from original records; not a replacement review or a new model response.",
+  "shots": [
+    {
+      "shot_id": 1,
+      "duration": 6,
+      "scene_id": "RESIDENTIAL_DINING_ROOM",
+      "scene_description": "普通城市家庭的紧凑餐厅，暖黄顶灯柔和照亮日常木质餐桌与布艺餐椅，临窗可见雨夜街景，入口连通玄关，空间充满长期居住的生活化痕迹。",
+      "prompt_en": "固定全景纵深构图，左侧餐厅入口木质门框作为前景，中景是长方形木桌与两把餐椅，右侧窗面布满雨夜水痕；暖光顶灯把桌面照得柔和，门口站着带行李箱的小安，右侧桌边坐着林阿姨，两人之间留出空椅与未被走近的距离。 拖着行李箱从玄关进入餐厅，在木质门框边收住脚步，因久别归家的迟疑没有继续向餐桌走。. 小安站在餐厅入口，发梢和外套边角带雨，行李箱直立在脚边，视线落在餐桌方向，双脚停在门槛内侧未挪动。. 从桌面抬眼望向门口，认出停住的小安，没有起身或扬手招呼。. 林阿姨保持坐姿，目光落在小安身上，手部仍放在桌面，神情平和。. 维持坐姿与视线，让门口的停顿被安静接住。. 两人隔着暖光餐桌相望，小安仍站在门框边，空椅旁的桌面空着，没有多余动作。.",
+      "visual_description": "固定全景纵深构图，左侧餐厅入口木质门框作为前景，中景是长方形木桌与两把餐椅，右侧窗面布满雨夜水痕；暖光顶灯把桌面照得柔和，门口站着带行李箱的小安，右侧桌边坐着林阿姨，两人之间留出空椅与未被走近的距离。",
+      "continuity_from_previous": "none",
+      "composition_change": "large",
+      "result_admission": "reviewed-results-v1",
+      "result_policy": "functional-v1",
+      "generation_direction": "authored-staging-v1",
+      "generation_execution": "local-events-v1",
+      "media_selection": "planned-prefix-v1",
+      "coverage_role": "establish",
+      "required_visible_entities": [
+        "AN",
+        "AUNT_LIN"
+      ],
+      "interaction_geometry": {
+        "actor": "",
+        "target": "",
+        "interaction_mode": "none",
+        "effect_phase": "none",
+        "outcome_scope": "none",
+        "effect_motion": "none",
+        "source": "",
+        "effect_region": "",
+        "reaction_scope": "",
+        "unaffected_behavior": "",
+        "must_share_frame": false,
+        "line_of_action_visible": false,
+        "actor_screen_position": "",
+        "target_screen_position": "",
+        "occlusion_policy": "none"
+      },
+      "narrative_beat": {
+        "function": "setup",
+        "state_before": "在外生活多年的成年女儿小安冒雨夜归，回到久别的家中，与母亲完成没有刻意寒暄的自然重聚",
+        "state_change": "小安拖着行李箱进入餐厅门口，在门框边收住脚步犹豫；林阿姨在桌旁抬眼看见她，没有起身招呼。",
+        "state_after": "小安站在餐厅入口未走近，林阿姨坐在桌边望向她，两人之间隔着餐桌与空椅，温水杯尚未被挪动。"
+      },
+      "production_slot": {
+        "shot_id": 1,
+        "duration": 6,
+        "narrative_function": "setup",
+        "allowed_effect_phases": [
+          "none",
+          "setup",
+          "active",
+          "aftermath"
+        ],
+        "requires_visible_result": false,
+        "min_interaction_seconds": 0,
+        "min_interaction_events": 0,
+        "result_hold_seconds": 0,
+        "choreography": "flexible",
+        "creative_brief": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+        "authoring_protocol": "scene-units-v1",
+        "motion_timing": {
+          "performer_tempo": "natural",
+          "playback": "real_time",
+          "evidence": "正常时间播放，不用慢镜头。"
+        },
+        "creative_direction": {
+          "version": "creative-direction-v1",
+          "references": [
+            "domestic_restraint",
+            "ang_lee"
+          ],
+          "methods": [
+            "restrained_reaction",
+            "ensemble_space"
+          ],
+          "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+          "rationale": "用户明确要求以情绪与关系为主、不增加密集肢体交互或戏剧冲突，并指定李安式克制反应与家庭日常观看；因此用视线、距离和水杯等小动作承载靠近，不使用夸张表演、配乐或额外事件。",
+          "editing": "cut",
+          "sound": "native_only"
+        },
+        "coverage_roles": [
+          "establish",
+          "action_subject",
+          "interaction"
+        ],
+        "framing_family": "wide",
+        "reference_policy": "independent"
+      },
+      "primary_action": "拖着行李箱从玄关进入餐厅，在木质门框边收住脚步，因久别归家的迟疑没有继续向餐桌走。; 从桌面抬眼望向门口，认出停住的小安，没有起身或扬手招呼。; 维持坐姿与视线，让门口的停顿被安静接住。",
+      "action_beats": [
+        {
+          "phase": "trigger",
+          "actor": "AN",
+          "action": "拖着行李箱从玄关进入餐厅，在木质门框边收住脚步，因久别归家的迟疑没有继续向餐桌走。",
+          "target": "",
+          "visible_result": "小安站在餐厅入口，发梢和外套边角带雨，行李箱直立在脚边，视线落在餐桌方向，双脚停在门槛内侧未挪动。",
+          "start_seconds": 0,
+          "end_seconds": 3,
+          "activity": "transition",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/0",
+                "start": 0,
+                "end": 33
+              }
+            ]
+          }
+        },
+        {
+          "phase": "trigger",
+          "actor": "AUNT_LIN",
+          "action": "从桌面抬眼望向门口，认出停住的小安，没有起身或扬手招呼。",
+          "target": "",
+          "visible_result": "林阿姨保持坐姿，目光落在小安身上，手部仍放在桌面，神情平和。",
+          "start_seconds": 3,
+          "end_seconds": 5,
+          "activity": "transition",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/0",
+                "start": 0,
+                "end": 33
+              }
+            ]
+          }
+        },
+        {
+          "phase": "aftermath",
+          "actor": "AUNT_LIN",
+          "action": "维持坐姿与视线，让门口的停顿被安静接住。",
+          "target": "",
+          "visible_result": "两人隔着暖光餐桌相望，小安仍站在门框边，空椅旁的桌面空着，没有多余动作。",
+          "start_seconds": 5,
+          "end_seconds": 6,
+          "activity": "hold",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/0",
+                "start": 0,
+                "end": 33
+              }
+            ]
+          }
+        }
+      ],
+      "start_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "AN拖行李箱进入餐厅，AUNT_LIN坐在餐桌旁",
+        "action_phase": "setup：雨夜归家，门口犹豫",
+        "camera": "fixed wide shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "pose_and_gaze": "AN面向餐桌方向，AUNT_LIN原本视线落在桌面",
+        "prop_state": "行李箱随AN在门口，温水杯放在林阿姨手边桌面",
+        "open_motion": "AN拖行李箱向餐厅内移动",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "end_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "AN停在餐厅门口，AUNT_LIN坐在桌边望向AN",
+        "action_phase": "setup完成：两人隔桌相望，尚未靠近",
+        "camera": "fixed wide shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "pose_and_gaze": "AN站在门框边望向餐桌，AUNT_LIN保持坐姿望向门口",
+        "prop_state": "行李箱直立在AN脚边；温水杯仍在AUNT_LIN手边桌面；空椅空置",
+        "open_motion": "无明显肢体移动，仅视线停留",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "camera": {
+        "primary_movement": "fixed",
+        "composition": "全景纵深构图，左侧门框为前景，餐桌位于中景，右侧雨夜窗面为背景；小安在左、林阿姨在右，中间以空椅和桌面形成克制的距离。",
+        "start_framing": "wide shot",
+        "end_framing": "wide shot",
+        "speed": "normal",
+        "screen_positions": {
+          "AN": "左侧餐厅入口门框处",
+          "AUNT_LIN": "右侧餐桌旁餐椅上",
+          "20寸黑色硬壳拉杆行李箱": "AN脚边",
+          "盛有半杯温白开的透明直身玻璃杯": "林阿姨手边桌面",
+          "家用长方形木质餐桌": "画面中下部",
+          "两把布艺软包餐椅": "餐桌两侧",
+          "餐厅入口木质门框": "画面左边缘",
+          "窗面附着的雨夜水痕": "背景右侧窗面",
+          "暖光餐厅顶灯": "画面上方"
+        },
+        "axis_change": "establish"
+      },
+      "blocking": {
+        "AN": {
+          "frame_position": "餐厅入口木质门框内侧偏左",
+          "body_orientation": "面向餐厅内餐桌",
+          "facing_target": "家用长方形木质餐桌",
+          "eyeline_target": "AUNT_LIN",
+          "travel_direction": "从玄关进入餐厅后停住",
+          "action_target": ""
+        },
+        "AUNT_LIN": {
+          "frame_position": "家用长方形木质餐桌右侧餐椅上",
+          "body_orientation": "面向餐厅入口",
+          "facing_target": "餐厅入口木质门框",
+          "eyeline_target": "AN",
+          "travel_direction": "",
+          "action_target": ""
+        }
+      },
+      "lighting": "暖黄顶灯提供柔和漫射光，窗外雨夜冷光从窗面渗入，人物边缘形成微弱冷暖对比，无硬阴影。",
+      "mood": "克制、生疏又带着等待的暖意，空间安静，情绪通过视线与距离自然流露。",
+      "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+      "subtitle_text": "",
+      "transition_to_next": "cut",
+      "generate_audio": true,
+      "characters": [
+        "AN",
+        "AUNT_LIN"
+      ],
+      "extract_character_ref": false,
+      "key_props": [
+        "20寸黑色硬壳拉杆行李箱",
+        "盛有半杯温白开的透明直身玻璃杯",
+        "家用长方形木质餐桌",
+        "两把布艺软包餐椅",
+        "餐厅入口木质门框",
+        "窗面附着的雨夜水痕",
+        "暖光餐厅顶灯"
+      ],
+      "continuity_props": [
+        "20寸黑色硬壳拉杆行李箱",
+        "盛有半杯温白开的透明直身玻璃杯"
+      ],
+      "completion_policy": "goal-allocation-v1",
+      "completion_goals": {
+        "/intent/completion_goals/0": {
+          "goal": "雨夜中，成年女儿小安带着行李回到家中，在餐厅门口停下并表现出犹豫。",
+          "basis": "user",
+          "evidence": "成年女儿小安带行李回到家，在餐厅门口犹豫"
+        }
+      }
+    },
+    {
+      "shot_id": 2,
+      "duration": 6,
+      "scene_id": "RESIDENTIAL_DINING_ROOM",
+      "scene_description": "普通城市家庭的紧凑餐厅，暖黄顶灯柔和照亮日常木质餐桌与布艺餐椅，临窗可见雨夜街景，入口连通玄关，空间充满长期居住的生活化痕迹。",
+      "prompt_en": "固定中景构图，画面右侧呈现坐在餐椅上的林阿姨的上半身，左侧边缘露出站在餐厅入口的小安的部分身影与脚边的黑色行李箱，中下部为木质餐桌的桌面，空椅位于林阿姨左侧的桌边，背景右侧是附着雨夜水痕的窗面，暖黄顶灯柔和打在桌面区域，玻璃杯的轮廓清晰，景深适中，焦点落在桌面的杯子移动路径上，整体呈现长期居住的生活化质感。 保持坐姿，视线仍落在门口的小安身上，右手缓慢伸向自己手边的桌面，握住玻璃杯的杯身。. 林阿姨的手稳稳握住杯身，全程没有起身，杯中的温水没有晃动洒出。. 手臂平稳移动，将玻璃杯从自己手边的桌面移到左侧空椅旁的桌面位置，轻轻放下。. 玻璃杯稳稳落在空椅旁的木质桌面上，杯底接触桌面发出极轻的声响，林阿姨的手松开杯身，收回放在自己腿上。. 看到林阿姨将杯子放在空椅旁的动作，原本绷紧的肩线微微下沉，视线从林阿姨的脸上移到空椅旁的玻璃杯上。. 小安站在门口的姿态放松了一点，手指不再攥着外套衣角，行李箱仍直立在脚边。. 保持坐姿，安静望向门口的小安，没有多余的招呼动作。. 两人隔着暖光餐桌安静对视，小安的视线落在空椅旁的杯子上，空间里只有窗外的雨声。.",
+      "visual_description": "固定中景构图，画面右侧呈现坐在餐椅上的林阿姨的上半身，左侧边缘露出站在餐厅入口的小安的部分身影与脚边的黑色行李箱，中下部为木质餐桌的桌面，空椅位于林阿姨左侧的桌边，背景右侧是附着雨夜水痕的窗面，暖黄顶灯柔和打在桌面区域，玻璃杯的轮廓清晰，景深适中，焦点落在桌面的杯子移动路径上，整体呈现长期居住的生活化质感。",
+      "continuity_from_previous": "intentional_cut",
+      "composition_change": "medium",
+      "result_admission": "reviewed-results-v1",
+      "result_policy": "functional-v1",
+      "generation_direction": "authored-staging-v1",
+      "generation_execution": "local-events-v1",
+      "media_selection": "planned-prefix-v1",
+      "coverage_role": "interaction",
+      "required_visible_entities": [
+        "AUNT_LIN",
+        "AN",
+        "盛有半杯温白开的透明直身玻璃杯"
+      ],
+      "interaction_geometry": {
+        "actor": "AUNT_LIN",
+        "target": "盛有半杯温白开的透明直身玻璃杯",
+        "interaction_mode": "directed_path",
+        "effect_phase": "active",
+        "outcome_scope": "single",
+        "effect_motion": "static",
+        "source": "AUNT_LIN的右手",
+        "effect_region": "从林阿姨手边到空椅旁的桌面路径",
+        "reaction_scope": "one clearly isolated intended target within the visible effect region",
+        "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+        "must_share_frame": false,
+        "line_of_action_visible": true,
+        "actor_screen_position": "家用长方形木质餐桌右侧餐椅上",
+        "target_screen_position": "从林阿姨手边桌面移至空椅旁桌面",
+        "occlusion_policy": "none"
+      },
+      "narrative_beat": {
+        "function": "progress",
+        "state_before": "小安站在餐厅入口未走近，林阿姨坐在桌边望向她，两人之间隔着餐桌与空椅，温水杯尚未被挪动。",
+        "state_change": "林阿姨保持坐姿没有起身招呼，伸手拿起手边的温水杯，平稳放到小安常坐的空椅旁的桌面；小安看到这个熟悉的动作，肩线微微放松，视线从林阿姨脸上移到杯子上。",
+        "state_after": "温水杯已放置在空椅旁的桌边，小安站在门口望向杯子，尚未迈步走近，两人之间的物理距离仍在，但久别带来的生疏感被这个日常动作初步打破。"
+      },
+      "production_slot": {
+        "shot_id": 2,
+        "duration": 6,
+        "narrative_function": "progress",
+        "allowed_effect_phases": [
+          "none",
+          "setup",
+          "active",
+          "aftermath"
+        ],
+        "requires_visible_result": false,
+        "min_interaction_seconds": 0,
+        "min_interaction_events": 0,
+        "result_hold_seconds": 0,
+        "choreography": "flexible",
+        "creative_brief": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+        "authoring_protocol": "scene-units-v1",
+        "motion_timing": {
+          "performer_tempo": "natural",
+          "playback": "real_time",
+          "evidence": "正常时间播放，不用慢镜头。"
+        },
+        "creative_direction": {
+          "version": "creative-direction-v1",
+          "references": [
+            "domestic_restraint",
+            "ang_lee"
+          ],
+          "methods": [
+            "restrained_reaction",
+            "ensemble_space"
+          ],
+          "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+          "rationale": "用户明确要求以情绪与关系为主、不增加密集肢体交互或戏剧冲突，并指定李安式克制反应与家庭日常观看；因此用视线、距离和水杯等小动作承载靠近，不使用夸张表演、配乐或额外事件。",
+          "editing": "cut",
+          "sound": "native_only"
+        },
+        "coverage_roles": [
+          "action_subject",
+          "interaction",
+          "insert",
+          "target_reaction"
+        ],
+        "framing_family": "medium",
+        "reference_policy": "state_and_identity"
+      },
+      "primary_action": "保持坐姿，视线仍落在门口的小安身上，右手缓慢伸向自己手边的桌面，握住玻璃杯的杯身。; 手臂平稳移动，将玻璃杯从自己手边的桌面移到左侧空椅旁的桌面位置，轻轻放下。; 看到林阿姨将杯子放在空椅旁的动作，原本绷紧的肩线微微下沉，视线从林阿姨的脸上移到空椅旁的玻璃杯上。; 保持坐姿，安静望向门口的小安，没有多余的招呼动作。",
+      "action_beats": [
+        {
+          "phase": "peak",
+          "actor": "AUNT_LIN",
+          "action": "保持坐姿，视线仍落在门口的小安身上，右手缓慢伸向自己手边的桌面，握住玻璃杯的杯身。",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "visible_result": "林阿姨的手稳稳握住杯身，全程没有起身，杯中的温水没有晃动洒出。",
+          "outcomes": [
+            {
+              "entity": "AUNT_LIN",
+              "state": "保持坐姿未起身，右手握住玻璃杯杯身"
+            },
+            {
+              "entity": "盛有半杯温白开的透明直身玻璃杯",
+              "state": "被林阿姨的手握住，位置仍在林阿姨手边桌面"
+            }
+          ],
+          "scene_changes": [],
+          "start_seconds": 0,
+          "end_seconds": 2,
+          "activity": "interaction",
+          "interaction_geometry": {
+            "actor": "AUNT_LIN",
+            "target": "盛有半杯温白开的透明直身玻璃杯",
+            "interaction_mode": "direct_contact",
+            "effect_phase": "active",
+            "outcome_scope": "single",
+            "effect_motion": "static",
+            "source": "AUNT_LIN的右手",
+            "effect_region": "林阿姨手边的桌面区域",
+            "reaction_scope": "林阿姨的手稳稳握住杯身，全程没有起身，杯中的温水没有晃动洒出。",
+            "unaffected_behavior": "餐桌其他区域、小安的站位与行李",
+            "must_share_frame": true,
+            "line_of_action_visible": false,
+            "actor_screen_position": "家用长方形木质餐桌右侧餐椅上",
+            "target_screen_position": "从林阿姨手边桌面移至空椅旁桌面",
+            "occlusion_policy": "none"
+          },
+          "effect_at_seconds": 0.8,
+          "reaction_at_seconds": 1.4,
+          "response_kind": "impact",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/1",
+                "start": 0,
+                "end": 28
+              }
+            ]
+          },
+          "result_directions": [],
+          "result_functions": [
+            "outcomes/0",
+            "outcomes/1"
+          ]
+        },
+        {
+          "phase": "peak",
+          "actor": "AUNT_LIN",
+          "action": "手臂平稳移动，将玻璃杯从自己手边的桌面移到左侧空椅旁的桌面位置，轻轻放下。",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "visible_result": "玻璃杯稳稳落在空椅旁的木质桌面上，杯底接触桌面发出极轻的声响，林阿姨的手松开杯身，收回放在自己腿上。",
+          "outcomes": [
+            {
+              "entity": "AUNT_LIN",
+              "state": "右手收回放在腿上，视线落回门口的小安身上"
+            },
+            {
+              "entity": "盛有半杯温白开的透明直身玻璃杯",
+              "state": "直立放置在空椅旁的桌面，温水未洒出"
+            }
+          ],
+          "scene_changes": [],
+          "start_seconds": 2,
+          "end_seconds": 4,
+          "activity": "interaction",
+          "interaction_geometry": {
+            "actor": "AUNT_LIN",
+            "target": "盛有半杯温白开的透明直身玻璃杯",
+            "interaction_mode": "directed_path",
+            "effect_phase": "active",
+            "outcome_scope": "single",
+            "effect_motion": "sweep",
+            "source": "AUNT_LIN的右手",
+            "effect_region": "从林阿姨手边到空椅旁的桌面路径",
+            "reaction_scope": "玻璃杯稳稳落在空椅旁的木质桌面上，杯底接触桌面发出极轻的声响，林阿姨的手松开杯身，收回放在自己腿上。",
+            "unaffected_behavior": "餐桌其他区域、小安的站位与行李",
+            "must_share_frame": false,
+            "line_of_action_visible": true,
+            "actor_screen_position": "家用长方形木质餐桌右侧餐椅上",
+            "target_screen_position": "从林阿姨手边桌面移至空椅旁桌面",
+            "occlusion_policy": "none"
+          },
+          "effect_at_seconds": 2.8,
+          "reaction_at_seconds": 3.4,
+          "response_kind": "impact",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/1",
+                "start": 0,
+                "end": 28
+              }
+            ]
+          },
+          "result_directions": [],
+          "result_functions": [
+            "outcomes/0",
+            "outcomes/1"
+          ]
+        },
+        {
+          "phase": "trigger",
+          "actor": "AN",
+          "action": "看到林阿姨将杯子放在空椅旁的动作，原本绷紧的肩线微微下沉，视线从林阿姨的脸上移到空椅旁的玻璃杯上。",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "visible_result": "小安站在门口的姿态放松了一点，手指不再攥着外套衣角，行李箱仍直立在脚边。",
+          "start_seconds": 4,
+          "end_seconds": 5,
+          "activity": "transition",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/1",
+                "start": 0,
+                "end": 28
+              }
+            ]
+          }
+        },
+        {
+          "phase": "aftermath",
+          "actor": "AUNT_LIN",
+          "action": "保持坐姿，安静望向门口的小安，没有多余的招呼动作。",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "visible_result": "两人隔着暖光餐桌安静对视，小安的视线落在空椅旁的杯子上，空间里只有窗外的雨声。",
+          "start_seconds": 5,
+          "end_seconds": 6,
+          "activity": "hold",
+          "completion_intent": {
+            "kind": "allocated",
+            "requirements": [
+              {
+                "reference": "/intent/completion_goals/1",
+                "start": 0,
+                "end": 28
+              }
+            ]
+          }
+        }
+      ],
+      "start_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "AN停在餐厅门口，AUNT_LIN坐在桌边望向AN",
+        "action_phase": "progress：林阿姨以日常动作打破久别生疏",
+        "camera": "fixed medium shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "pose_and_gaze": "AN站在门框边望向餐桌方向的AUNT_LIN，AUNT_LIN保持坐姿望向门口的AN",
+        "prop_state": "行李箱直立在AN脚边，温水杯在AUNT_LIN手边桌面，空椅空置",
+        "open_motion": "两人视线停留，无肢体移动",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "end_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "温水杯被放置在空椅旁，AN望向杯子，AUNT_LIN望向AN",
+        "action_phase": "progress完成：林阿姨完成放杯动作，初步打破生疏边界",
+        "camera": "fixed medium shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "pose_and_gaze": "AN站在门框边望向空椅旁的玻璃杯，AUNT_LIN坐在桌边望向门口的AN",
+        "prop_state": "行李箱直立在AN脚边，温水杯直立在空椅旁的桌面，空椅仍空置",
+        "open_motion": "无明显肢体移动，仅视线停留",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "camera": {
+        "primary_movement": "fixed",
+        "composition": "中景构图，右侧为林阿姨的上半身，左侧边缘为小安的部分身影，餐桌桌面位于画面中下部，空椅在林阿姨左侧，背景为雨夜窗面",
+        "start_framing": "medium shot",
+        "end_framing": "medium shot",
+        "speed": "normal",
+        "screen_positions": {
+          "AN": "画面左侧边缘餐厅入口处",
+          "AUNT_LIN": "画面右侧餐桌旁餐椅上",
+          "20寸黑色硬壳拉杆行李箱": "画面左下角AN脚边",
+          "盛有半杯温白开的透明直身玻璃杯": "从林阿姨手边桌面移至空椅旁桌面",
+          "家用长方形木质餐桌": "画面中下部",
+          "两把布艺软包餐椅": "分别位于林阿姨身下与空椅位置",
+          "餐厅入口木质门框": "画面左边缘",
+          "窗面附着的雨夜水痕": "背景右侧窗面",
+          "暖光餐厅顶灯": "画面上方"
+        },
+        "axis_change": "reestablish"
+      },
+      "blocking": {
+        "AN": {
+          "frame_position": "餐厅入口木质门框内侧偏左",
+          "body_orientation": "面向餐厅内餐桌",
+          "facing_target": "家用长方形木质餐桌",
+          "eyeline_target": "AUNT_LIN",
+          "travel_direction": "无",
+          "action_target": ""
+        },
+        "AUNT_LIN": {
+          "frame_position": "家用长方形木质餐桌右侧餐椅上",
+          "body_orientation": "面向餐厅入口",
+          "facing_target": "餐厅入口木质门框",
+          "eyeline_target": "AN",
+          "travel_direction": "无",
+          "action_target": "盛有半杯温白开的透明直身玻璃杯"
+        }
+      },
+      "lighting": "",
+      "mood": "cinematic",
+      "negative_prompt": "avoid jitter, stable motion, no text artifacts",
+      "subtitle_text": "",
+      "transition_to_next": "cut",
+      "generate_audio": true,
+      "characters": [
+        "AUNT_LIN",
+        "AN"
+      ],
+      "extract_character_ref": false,
+      "key_props": [
+        "20寸黑色硬壳拉杆行李箱",
+        "盛有半杯温白开的透明直身玻璃杯",
+        "家用长方形木质餐桌",
+        "两把布艺软包餐椅",
+        "餐厅入口木质门框",
+        "窗面附着的雨夜水痕",
+        "暖光餐厅顶灯"
+      ],
+      "continuity_props": [
+        "20寸黑色硬壳拉杆行李箱",
+        "盛有半杯温白开的透明直身玻璃杯"
+      ],
+      "completion_policy": "goal-allocation-v1",
+      "completion_goals": {
+        "/intent/completion_goals/1": {
+          "goal": "母亲林阿姨在餐厅内看见小安，将一杯温水放到桌边的空椅旁。",
+          "basis": "user",
+          "evidence": "母亲林阿姨看见她，将一杯温水放到桌边空椅旁"
+        }
+      }
+    }
+  ],
+  "observation_response": {
+    "required_entities_visible": [
+      true,
+      true,
+      true
+    ],
+    "action_geometry_valid": true,
+    "identity_continuity_valid": true,
+    "identity_crop_boxes": [],
+    "action_timing_valid": true,
+    "creative_brief_valid": true,
+    "action_event_evidence": [
+      {
+        "event_id": 1,
+        "effect_visible": true,
+        "target_reaction_visible": false,
+        "causal_order_valid": true,
+        "scope_valid": true,
+        "time_window_valid": true
+      },
+      {
+        "event_id": 2,
+        "effect_visible": true,
+        "target_reaction_visible": true,
+        "causal_order_valid": true,
+        "scope_valid": true,
+        "time_window_valid": true
+      }
+    ],
+    "effect_path_valid": true,
+    "reaction_causality_valid": true,
+    "blocking_valid": true,
+    "composition_change_valid": false,
+    "visual_invariants_valid": true,
+    "boundary_continuity_valid": true,
+    "environment_continuity_valid": true,
+    "action_handoff_valid": true,
+    "screen_direction_valid": true,
+    "prop_continuity_valid": true,
+    "boundary_state_evidence": {
+      "prior_state_preserved": true,
+      "state_progress_not_reversed": true,
+      "open_motion_handoff_valid": true,
+      "persistent_entities_preserved": true,
+      "scene_identity_preserved": true
+    },
+    "end_state_context": {
+      "location": "普通住宅餐厅",
+      "subject": "AN站在餐厅入口旁，AUNT_LIN坐在餐桌右侧的布艺餐椅上",
+      "camera": "固定中景镜头",
+      "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+      "lighting": "暖黄顶灯混合窗外雨夜冷光"
+    },
+    "observations": {
+      "/intent/completion_goals/1@0:28": {
+        "status": "satisfied",
+        "observation": "AUNT_LIN坐在餐桌右侧，伸手握住盛有半杯温白开的透明直身玻璃杯，将杯子沿木质桌面平稳向左侧空椅方向滑动，最终杯子停在空椅旁的桌面位置；AN站在餐厅门口，视线从AUNT_LIN身上转向玻璃杯，AUNT_LIN全程望向AN，动作完成后两人保持安静对视，符合将温水放到桌边空椅旁的叙事要求。",
+        "sample_indices": [
+          1,
+          5,
+          12,
+          19,
+          25
+        ]
+      },
+      "beat:1/completion": {
+        "status": "satisfied",
+        "observation": "AUNT_LIN伸出右手握住桌面上的透明直身玻璃杯，完成对杯子的直接接触动作。",
+        "sample_indices": [
+          5,
+          6,
+          7
+        ]
+      },
+      "beat:2/completion": {
+        "status": "satisfied",
+        "observation": "AUNT_LIN扶着玻璃杯沿木质桌面平稳向左侧空椅方向滑动，杯子最终停在空椅旁的桌面位置。",
+        "sample_indices": [
+          7,
+          12,
+          19
+        ]
+      },
+      "beat:3/completion": {
+        "status": "satisfied",
+        "observation": "AN站在餐厅门口，视线从AUNT_LIN身上转向被移动的玻璃杯，完成对杯子的注视反应。",
+        "sample_indices": [
+          12,
+          19,
+          25
+        ]
+      },
+      "beat:4/completion": {
+        "status": "satisfied",
+        "observation": "AUNT_LIN将杯子放置到位后收回右手，全程保持望向AN的姿态，没有额外动作。",
+        "sample_indices": [
+          19,
+          22,
+          25
+        ]
+      }
+    },
+    "terminal_observation": {
+      "sample_index": 25,
+      "status": "observed",
+      "action_phase": "AUNT_LIN完成推杯动作后收回双手放在桌面，两人保持安静对视，处于动作完成后的停顿状态。",
+      "pose_and_gaze": "AN站在餐厅入口旁，右手握住行李箱拉杆，面向右侧餐桌方向，视线落在玻璃杯上；AUNT_LIN坐在餐桌右侧的布艺餐椅上，双手交叠放在桌面，面向左侧门口的AN。",
+      "prop_state": "盛有半杯温白开的透明直身玻璃杯静置在木质餐桌靠近空椅的桌面位置，黑色20寸硬壳拉杆行李箱立在AN脚边的地板上。",
+      "open_motion": "无明显肢体动作，两人保持安静对视的状态。"
+    }
+  },
+  "observation_schema": {
+    "type": "object",
+    "properties": {
+      "required_entities_visible": {
+        "type": "array",
+        "items": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "minItems": 3,
+        "maxItems": 3
+      },
+      "action_geometry_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "identity_continuity_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "identity_crop_boxes": {
+        "type": "array",
+        "items": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "minItems": 4,
+              "maxItems": 4
+            }
+          ]
+        },
+        "minItems": 0,
+        "maxItems": 0
+      },
+      "action_timing_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "creative_brief_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "action_event_evidence": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "object",
+          "properties": {
+            "event_id": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ]
+            },
+            "effect_visible": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "target_reaction_visible": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "causal_order_valid": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "scope_valid": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "time_window_valid": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "event_id",
+            "effect_visible",
+            "target_reaction_visible",
+            "causal_order_valid",
+            "scope_valid",
+            "time_window_valid"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "effect_path_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "reaction_causality_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "blocking_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "composition_change_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "visual_invariants_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "boundary_continuity_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "environment_continuity_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "action_handoff_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "screen_direction_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "prop_continuity_valid": {
+        "type": [
+          "boolean",
+          "null"
+        ]
+      },
+      "boundary_state_evidence": {
+        "type": "object",
+        "properties": {
+          "prior_state_preserved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "state_progress_not_reversed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "open_motion_handoff_valid": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "persistent_entities_preserved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "scene_identity_preserved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "prior_state_preserved",
+          "state_progress_not_reversed",
+          "open_motion_handoff_valid",
+          "persistent_entities_preserved",
+          "scene_identity_preserved"
+        ],
+        "additionalProperties": false
+      },
+      "end_state_context": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "camera": {
+            "type": "string"
+          },
+          "screen_direction": {
+            "type": "string"
+          },
+          "lighting": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "subject",
+          "camera",
+          "screen_direction",
+          "lighting"
+        ],
+        "additionalProperties": false
+      },
+      "observations": {
+        "type": "object",
+        "properties": {
+          "/intent/completion_goals/1@0:28": {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "satisfied",
+                  "violated",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "observation": {
+                "maxLength": 1600,
+                "minLength": 1,
+                "title": "Observation",
+                "type": "string"
+              },
+              "sample_indices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Sample Indices",
+                "type": "array"
+              }
+            },
+            "required": [
+              "status",
+              "observation",
+              "sample_indices"
+            ],
+            "title": "ResultObservation",
+            "type": "object"
+          },
+          "beat:1/completion": {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "satisfied",
+                  "violated",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "observation": {
+                "maxLength": 1600,
+                "minLength": 1,
+                "title": "Observation",
+                "type": "string"
+              },
+              "sample_indices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Sample Indices",
+                "type": "array"
+              }
+            },
+            "required": [
+              "status",
+              "observation",
+              "sample_indices"
+            ],
+            "title": "ResultObservation",
+            "type": "object"
+          },
+          "beat:2/completion": {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "satisfied",
+                  "violated",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "observation": {
+                "maxLength": 1600,
+                "minLength": 1,
+                "title": "Observation",
+                "type": "string"
+              },
+              "sample_indices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Sample Indices",
+                "type": "array"
+              }
+            },
+            "required": [
+              "status",
+              "observation",
+              "sample_indices"
+            ],
+            "title": "ResultObservation",
+            "type": "object"
+          },
+          "beat:3/completion": {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "satisfied",
+                  "violated",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "observation": {
+                "maxLength": 1600,
+                "minLength": 1,
+                "title": "Observation",
+                "type": "string"
+              },
+              "sample_indices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Sample Indices",
+                "type": "array"
+              }
+            },
+            "required": [
+              "status",
+              "observation",
+              "sample_indices"
+            ],
+            "title": "ResultObservation",
+            "type": "object"
+          },
+          "beat:4/completion": {
+            "additionalProperties": false,
+            "properties": {
+              "status": {
+                "enum": [
+                  "satisfied",
+                  "violated",
+                  "unknown"
+                ],
+                "title": "Status",
+                "type": "string"
+              },
+              "observation": {
+                "maxLength": 1600,
+                "minLength": 1,
+                "title": "Observation",
+                "type": "string"
+              },
+              "sample_indices": {
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 25
+                },
+                "maxItems": 64,
+                "minItems": 1,
+                "title": "Sample Indices",
+                "type": "array"
+              }
+            },
+            "required": [
+              "status",
+              "observation",
+              "sample_indices"
+            ],
+            "title": "ResultObservation",
+            "type": "object"
+          }
+        },
+        "required": [
+          "/intent/completion_goals/1@0:28",
+          "beat:1/completion",
+          "beat:2/completion",
+          "beat:3/completion",
+          "beat:4/completion"
+        ],
+        "additionalProperties": false
+      },
+      "terminal_observation": {
+        "type": "object",
+        "properties": {
+          "sample_index": {
+            "type": "integer",
+            "const": 25
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "unknown"
+            ]
+          },
+          "action_phase": {
+            "type": "string",
+            "maxLength": 1600,
+            "minLength": 1
+          },
+          "pose_and_gaze": {
+            "type": "string",
+            "maxLength": 1600,
+            "minLength": 0
+          },
+          "prop_state": {
+            "type": "string",
+            "maxLength": 1600,
+            "minLength": 0
+          },
+          "open_motion": {
+            "type": "string",
+            "maxLength": 1600,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "sample_index",
+          "status",
+          "action_phase",
+          "pose_and_gaze",
+          "prop_state",
+          "open_motion"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "required_entities_visible",
+      "action_geometry_valid",
+      "identity_continuity_valid",
+      "identity_crop_boxes",
+      "action_timing_valid",
+      "creative_brief_valid",
+      "action_event_evidence",
+      "effect_path_valid",
+      "reaction_causality_valid",
+      "blocking_valid",
+      "composition_change_valid",
+      "visual_invariants_valid",
+      "boundary_continuity_valid",
+      "environment_continuity_valid",
+      "action_handoff_valid",
+      "screen_direction_valid",
+      "prop_continuity_valid",
+      "boundary_state_evidence",
+      "end_state_context",
+      "observations",
+      "terminal_observation"
+    ],
+    "additionalProperties": false
+  },
+  "action_event_evidence": [
+    {
+      "event_id": 1,
+      "effect_visible": true,
+      "target_reaction_visible": false,
+      "causal_order_valid": true,
+      "scope_valid": true,
+      "time_window_valid": true,
+      "result_visible": true
+    },
+    {
+      "event_id": 2,
+      "effect_visible": true,
+      "target_reaction_visible": true,
+      "causal_order_valid": true,
+      "scope_valid": true,
+      "time_window_valid": true,
+      "result_visible": true
+    }
+  ],
+  "review": {
+    "accepted": false,
+    "required_entities_visible": {
+      "AUNT_LIN": true,
+      "AN": true,
+      "盛有半杯温白开的透明直身玻璃杯": true
+    },
+    "action_geometry_valid": true,
+    "primary_action_completed": true,
+    "observed_end_state": {
+      "location": "普通住宅餐厅",
+      "subject": "AN站在餐厅入口旁，AUNT_LIN坐在餐桌右侧的布艺餐椅上",
+      "action_phase": "AUNT_LIN完成推杯动作后收回双手放在桌面，两人保持安静对视，处于动作完成后的停顿状态。",
+      "camera": "固定中景镜头",
+      "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+      "pose_and_gaze": "AN站在餐厅入口旁，右手握住行李箱拉杆，面向右侧餐桌方向，视线落在玻璃杯上；AUNT_LIN坐在餐桌右侧的布艺餐椅上，双手交叠放在桌面，面向左侧门口的AN。",
+      "prop_state": "盛有半杯温白开的透明直身玻璃杯静置在木质餐桌靠近空椅的桌面位置，黑色20寸硬壳拉杆行李箱立在AN脚边的地板上。",
+      "open_motion": "无明显肢体动作，两人保持安静对视的状态。",
+      "lighting": "暖黄顶灯混合窗外雨夜冷光"
+    },
+    "effect_path_valid": true,
+    "reaction_causality_valid": true,
+    "narrative_state_change_valid": true,
+    "blocking_valid": true,
+    "composition_change_valid": false,
+    "boundary_continuity_valid": true,
+    "identity_continuity_valid": true,
+    "environment_continuity_valid": true,
+    "action_handoff_valid": true,
+    "screen_direction_valid": true,
+    "prop_continuity_valid": true,
+    "visual_invariants_valid": true,
+    "action_timing_valid": true,
+    "requested_outcome_valid": true,
+    "action_sequence_valid": false,
+    "creative_brief_valid": true,
+    "identity_crop_boxes": {},
+    "failure_reason": "事件1未满足 target_reaction_visible"
+  },
+  "generation": {
+    "version": "generation-provenance-v3",
+    "motion_reference": null,
+    "compiled_contract_version": "action-contract-v2",
+    "compiled_contract_fingerprint": "c73895a7d92ff299cb633a27ebf5d6e7b1d98f845eb3d5bc4092e584bbab02f0",
+    "image_role": "first_frame",
+    "reference_fingerprints": [
+      "02c536b6f2fd5650e61833298bf0f79b0d9d377df26578b270a5bc7305972511"
+    ],
+    "identity_bindings": [],
+    "visual_direction_fingerprint": "6225134addb26640a9add5cab4d68068f7f6c9335d8702c48944b7893f9f8ca5",
+    "staging_direction_fingerprint": "975fd0d321246f1b0ae8f9f55ece7e950905c3bcc3c9ea1d9594e87368fbb190",
+    "omitted_staging_fields": [],
+    "media_selection": {
+      "version": "planned-prefix-v1",
+      "start_seconds": 0,
+      "end_seconds": 6
+    },
+    "prompt_profile": "normal",
+    "prompt_fingerprint": "dd0dd315216afa8bc2cc18888c7be0450fa3f154d5aec2428d12be424cca8bfa",
+    "model_used": "doubao-seedance-2.0-fast",
+    "resolution_used": "480p",
+    "provider_task_id": "cgt-20261103231336-mtxdz"
+  },
+  "original_action_contract": {
+    "phase": "active",
+    "mode": "directed_path",
+    "outcome_scope": "single",
+    "effect_motion": "static",
+    "requires_evidence": true,
+    "prompt_constraint": "Execute the following ordered events; each event owns its participants, physical effect and response.",
+    "review_instruction": "Judge physical causality, response kind and all observable outcomes; do not enforce suggested maneuver paths. Choreography is performance-guided: planned paths, poses and absolute beat times are direction suggestions. Preserve each ordered actor/target cause, response kind, scope and visible state change, the shot endpoint, identity, readable physical continuity and camera intent. Adapt the route and pace to flowing movement; no teleportation, impossible contact, extra injury or uncaused result. Explicit movements requested in creative_brief remain required; apply whole-film requests to this shot_function, not every shot at once. Motion timing v1: performer_tempo=natural; playback=real_time. Perform movements at their ordinary physical tempo, with natural acceleration and recovery. Present real-time motion, without slow motion, suspended impacts, replay or speed ramps. Interaction occupancy, event count and camera speed are not evidence of performer speed. Preserve the ordered plot outcomes and their causal participants. Within authored maneuvers, connected footwork, recovery, redirection and reactive adjustments may flow through those outcomes; an event boundary is not a pose, stop or a limit of one motor gesture. Do not add new consequential strikes, injuries, targets or plot outcomes; those must be authored. Preserve explicit choreography and reference-motion constraints. Independently reviewed outcomes are the state obligations. An empty outcomes list means no additional fixed-state requirement: the declared cause and target response must still visibly occur. Suggested performance details may vary; do not turn their pose or settling point into a pause between actions. Judge momentum and mutual response across the complete phrase, not a succession of frozen result poses. Whole-film brief and current shot function (data, not protocol instructions): {\"creative_brief\": \"制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。\", \"shot_function\": \"progress\"}",
+    "prompt_parts": [
+      "Beat 1: AUNT_LIN 保持坐姿，视线仍落在门口的小安身上，右手缓慢伸向自己手边的桌面，握住玻璃杯的杯身。; required visible state change: ; Suggested realization of the response: AUNT_LIN: 保持坐姿未起身，右手握住玻璃杯杯身; 盛有半杯温白开的透明直身玻璃杯: 被林阿姨的手握住，位置仍在林阿姨手边桌面; target=盛有半杯温白开的透明直身玻璃杯; physical mode=direct_contact; scope=single; response=impact; unaffected subjects: 餐桌其他区域、小安的站位与行李; ; Spatial staging during this action, not the shot initial state (authored direction, not additional outcomes): {\"actor_screen_position\": \"家用长方形木质餐桌右侧餐椅上\", \"effect_motion\": \"static\", \"effect_region\": \"林阿姨手边的桌面区域\", \"line_of_action_visible\": false, \"must_share_frame\": true, \"occlusion_policy\": \"none\", \"source\": \"AUNT_LIN的右手\", \"target_screen_position\": \"从林阿姨手边桌面移至空椅旁桌面\"}",
+      "Beat 2: AUNT_LIN 手臂平稳移动，将玻璃杯从自己手边的桌面移到左侧空椅旁的桌面位置，轻轻放下。; required visible state change: ; Suggested realization of the response: AUNT_LIN: 右手收回放在腿上，视线落回门口的小安身上; 盛有半杯温白开的透明直身玻璃杯: 直立放置在空椅旁的桌面，温水未洒出; target=盛有半杯温白开的透明直身玻璃杯; physical mode=directed_path; scope=single; response=impact; unaffected subjects: 餐桌其他区域、小安的站位与行李; ; Spatial staging during this action, not the shot initial state (authored direction, not additional outcomes): {\"actor_screen_position\": \"家用长方形木质餐桌右侧餐椅上\", \"effect_motion\": \"sweep\", \"effect_region\": \"从林阿姨手边到空椅旁的桌面路径\", \"line_of_action_visible\": true, \"must_share_frame\": false, \"occlusion_policy\": \"none\", \"source\": \"AUNT_LIN的右手\", \"target_screen_position\": \"从林阿姨手边桌面移至空椅旁桌面\"}",
+      "Beat 3: AN 看到林阿姨将杯子放在空椅旁的动作，原本绷紧的肩线微微下沉，视线从林阿姨的脸上移到空椅旁的玻璃杯上。; required visible state change: 小安站在门口的姿态放松了一点，手指不再攥着外套衣角，行李箱仍直立在脚边。",
+      "Beat 4: AUNT_LIN 保持坐姿，安静望向门口的小安，没有多余的招呼动作。; required visible state change: 两人隔着暖光餐桌安静对视，小安的视线落在空椅旁的杯子上，空间里只有窗外的雨声。",
+      "Finish in the contracted final state: a readable cause and target response, preserving ongoing movement without a prescribed finishing pose",
+      "Creative direction v1: Express emotional changes through small shifts in gaze, distance, posture and handling of established objects; leave room for a reaction without forcing exaggerated gestures. Use depth, thresholds and relative placement to reveal the established relationships within a group; keep the current dramatic focus readable without giving every person an isolated close-up. Compose shot boundaries for direct cuts; do not bake fades or dissolves into the footage. Use only scene-native sound, with no musical score or added background music. Apply relevant methods to this authored shot, not every method to every beat. Explicit subject tempo, playback treatment, camera blocking, exact choreography, reference motion, ordered outcomes and allocated duration take precedence. Do not add story events, change the ending or infer slow motion from a cinematic reference.",
+      "Required observable functions: 母亲林阿姨在餐厅内看见小安，将一杯温水放到桌边的空椅旁。. For this shot, complete each function once across its contributing actions. Preserve authored performance, causal responses, timing and explicit user methods. Performance details do not introduce additional completion obligations.",
+      "Choreography is performance-guided: planned paths, poses and absolute beat times are direction suggestions. Preserve each ordered actor/target cause, response kind, scope and visible state change, the shot endpoint, identity, readable physical continuity and camera intent. Adapt the route and pace to flowing movement; no teleportation, impossible contact, extra injury or uncaused result. Perform the ordered actions and admitted states of this shot. The plan already allocates the other story events to their own shots; do not replay or anticipate them. Current narrative function: \"progress\". Motion timing v1: performer_tempo=natural; playback=real_time. Perform movements at their ordinary physical tempo, with natural acceleration and recovery. Present real-time motion, without slow motion, suspended impacts, replay or speed ramps. Interaction occupancy, event count and camera speed are not evidence of performer speed. Preserve the ordered plot outcomes and their causal participants. Within authored maneuvers, connected footwork, recovery, redirection and reactive adjustments may flow through those outcomes; an event boundary is not a pose, stop or a limit of one motor gesture. Do not add new consequential strikes, injuries, targets or plot outcomes; those must be authored. Preserve explicit choreography and reference-motion constraints. Independently reviewed outcomes are the state obligations. An empty outcomes list means no additional fixed-state requirement: the declared cause and target response must still visibly occur. Suggested performance details may vary; do not turn their pose or settling point into a pause between actions. Judge momentum and mutual response across the complete phrase, not a succession of frozen result poses. "
+    ],
+    "review_projection": {
+      "primary_action": "Complete the ordered functional actions in completion_contract.",
+      "action_events": [
+        {
+          "event_id": 1,
+          "actor": "AUNT_LIN",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "start_seconds": 0,
+          "end_seconds": 2,
+          "effect_at_seconds": 0.8,
+          "reaction_at_seconds": 1.4,
+          "outcomes": [],
+          "response_kind": "impact",
+          "flow_from_previous": "",
+          "interaction_geometry": {
+            "interaction_mode": "direct_contact",
+            "outcome_scope": "single",
+            "unaffected_behavior": "餐桌其他区域、小安的站位与行李"
+          }
+        },
+        {
+          "event_id": 2,
+          "actor": "AUNT_LIN",
+          "target": "盛有半杯温白开的透明直身玻璃杯",
+          "start_seconds": 2,
+          "end_seconds": 4,
+          "effect_at_seconds": 2.8,
+          "reaction_at_seconds": 3.4,
+          "outcomes": [],
+          "response_kind": "impact",
+          "flow_from_previous": "",
+          "interaction_geometry": {
+            "interaction_mode": "directed_path",
+            "outcome_scope": "single",
+            "unaffected_behavior": "餐桌其他区域、小安的站位与行李"
+          }
+        }
+      ],
+      "action_beats": [],
+      "interaction_geometry": {
+        "interaction_mode": "directed_path",
+        "outcome_scope": "single",
+        "unaffected_behavior": "餐桌其他区域、小安的站位与行李"
+      },
+      "start_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "AN停在餐厅门口，AUNT_LIN坐在桌边望向AN",
+        "camera": "fixed wide shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "end_state": {
+        "location": "RESIDENTIAL_DINING_ROOM",
+        "subject": "温水杯被放置在空椅旁，AN望向杯子，AUNT_LIN望向AN",
+        "camera": "fixed medium shot",
+        "screen_direction": "AN在画面左侧，AUNT_LIN在画面右侧",
+        "lighting": "暖黄顶灯混合窗外雨夜冷光"
+      },
+      "narrative_beat": {
+        "function": "progress",
+        "state_change": "母亲林阿姨在餐厅内看见小安，将一杯温水放到桌边的空椅旁。",
+        "state_after": "母亲林阿姨在餐厅内看见小安，将一杯温水放到桌边的空椅旁。"
+      },
+      "performance_policy": {
+        "version": "performance-v2-outcomes",
+        "duration": 6,
+        "creative_brief": "制作24秒短片，分为4段。故事固定为雨夜母女重聚：成年女儿小安带行李回到家，在餐厅门口犹豫；母亲林阿姨看见她，将一杯温水放到桌边空椅旁；小安放下行李坐下，母亲将杯子推到她手边，小安接住杯子，最终两人安静地坐在同一张桌旁。只出现这两位人物，同一间普通住宅餐厅，人物身份和衣着前后一致。保留这些核心事件及顺序，不增加危险、争吵、第三人或其他反转。情绪与关系为主，不要密集肢体交互。正常时间播放，不用慢镜头。具体分镜、表演细节、运镜和声音由项目按所选表达方向自行规划。",
+        "shot_function": "progress",
+        "min_interaction_seconds": 0,
+        "result_hold_seconds": 0,
+        "motion_timing": {
+          "performer_tempo": "natural",
+          "playback": "real_time",
+          "evidence": "正常时间播放，不用慢镜头。"
+        },
+        "result_authority": "reviewed-results-v1",
+        "temporal_evidence": "causal-order-v1"
+      },
+      "action_timing": {
+        "version": "action-timing-v1",
+        "duration": 6,
+        "intervals": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 2,
+            "activity": "interaction",
+            "phase": "peak"
+          },
+          {
+            "start_seconds": 2,
+            "end_seconds": 4,
+            "activity": "interaction",
+            "phase": "peak"
+          },
+          {
+            "start_seconds": 4,
+            "end_seconds": 5,
+            "activity": "transition",
+            "phase": "trigger"
+          },
+          {
+            "start_seconds": 5,
+            "end_seconds": 6,
+            "activity": "hold",
+            "phase": "aftermath"
+          }
+        ],
+        "min_interaction_seconds": 0,
+        "result_hold_seconds": 0
+      },
+      "completion_contract": {
+        "version": "functional-v1",
+        "criteria": {
+          "/intent/completion_goals/1@0:28": {
+            "kind": "completion",
+            "beat_id": 1,
+            "beat_ids": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "actors": [
+              "AUNT_LIN",
+              "AN"
+            ],
+            "targets": [
+              "盛有半杯温白开的透明直身玻璃杯"
+            ],
+            "action": "母亲林阿姨在餐厅内看见小安，将一杯温水放到桌边的空椅旁。",
+            "source": {
+              "reference": "/intent/completion_goals/1",
+              "start": 0,
+              "end": 28
+            }
+          },
+          "beat:1/completion": {
+            "kind": "realization",
+            "beat_id": 1,
+            "actor": "AUNT_LIN",
+            "supports": [
+              "/intent/completion_goals/1@0:28"
+            ]
+          },
+          "beat:2/completion": {
+            "kind": "realization",
+            "beat_id": 2,
+            "actor": "AUNT_LIN",
+            "supports": [
+              "/intent/completion_goals/1@0:28"
+            ]
+          },
+          "beat:3/completion": {
+            "kind": "realization",
+            "beat_id": 3,
+            "actor": "AN",
+            "supports": [
+              "/intent/completion_goals/1@0:28"
+            ]
+          },
+          "beat:4/completion": {
+            "kind": "realization",
+            "beat_id": 4,
+            "actor": "AUNT_LIN",
+            "supports": [
+              "/intent/completion_goals/1@0:28"
+            ]
+          }
+        },
+        "intent_policy": "goal-allocation-v1"
+      },
+      "motion_timing": {
+        "performer_tempo": "natural",
+        "playback": "real_time",
+        "evidence": "正常时间播放，不用慢镜头。"
+      },
+      "creative_direction": {
+        "version": "creative-direction-v1",
+        "references": [
+          "domestic_restraint",
+          "ang_lee"
+        ],
+        "methods": [
+          "restrained_reaction",
+          "ensemble_space"
+        ],
+        "evidence": "家庭日常与克制观看，参考李安对关系压力与克制反应的处理。借助视线、人物距离和小动作表达靠近，不用夸张哭喊。只用现场声音，不加配乐；镜头之间采用硬切。",
+        "rationale": "用户明确要求以情绪与关系为主、不增加密集肢体交互或戏剧冲突，并指定李安式克制反应与家庭日常观看；因此用视线、距离和水杯等小动作承载靠近，不使用夸张表演、配乐或额外事件。",
+        "editing": "cut",
+        "sound": "native_only",
+        "guidance": "Creative direction v1: Express emotional changes through small shifts in gaze, distance, posture and handling of established objects; leave room for a reaction without forcing exaggerated gestures. Use depth, thresholds and relative placement to reveal the established relationships within a group; keep the current dramatic focus readable without giving every person an isolated close-up. Compose shot boundaries for direct cuts; do not bake fades or dissolves into the footage. Use only scene-native sound, with no musical score or added background music. Apply relevant methods to this authored shot, not every method to every beat. Explicit subject tempo, playback treatment, camera blocking, exact choreography, reference motion, ordered outcomes and allocated duration take precedence. Do not add story events, change the ending or infer slow motion from a cinematic reference."
+      }
+    },
+    "canonical_geometry": {
+      "actor": "AUNT_LIN",
+      "target": "盛有半杯温白开的透明直身玻璃杯",
+      "interaction_mode": "directed_path",
+      "effect_phase": "active",
+      "outcome_scope": "single",
+      "effect_motion": "static",
+      "source": "AUNT_LIN的右手",
+      "effect_region": "从林阿姨手边到空椅旁的桌面路径",
+      "reaction_scope": "one clearly isolated intended target within the visible effect region",
+      "unaffected_behavior": "all entities outside that one intended target continue their prior motion",
+      "must_share_frame": false,
+      "line_of_action_visible": true,
+      "actor_screen_position": "家用长方形木质餐桌右侧餐椅上",
+      "target_screen_position": "从林阿姨手边桌面移至空椅旁桌面",
+      "occlusion_policy": "none"
+    },
+    "prompt_start_state": "RESIDENTIAL_DINING_ROOM, AN停在餐厅门口，AUNT_LIN坐在桌边望向AN, 两人在餐厅门口与餐桌旁保持静止对视，处于归家后的初始停顿状态, fixed wide shot, AN在画面左侧，AUNT_LIN在画面右侧, AN站在餐厅入口旁，右手握住行李箱拉杆，面向右侧餐桌方向，神情迟疑；AUNT_LIN坐在餐桌右侧的布艺餐椅上，双手交叠放在桌面，面向左侧门口的AN，两人视线相对。, 黑色20寸硬壳拉杆行李箱立在AN脚边的地板上，盛有半杯温白开的透明直身玻璃杯静置在木质餐桌的桌面，未发生位移。, 无明显肢体动作，两人保持静止对视的状态。",
+    "contracted_visible_result": "a readable cause and target response, preserving ongoing movement without a prescribed finishing pose",
+    "evidence_fields": [
+      "preparation_state_visible",
+      "non_physical_cue_visible",
+      "physical_effect_visible",
+      "effect_reaches_target",
+      "target_reaction_visible",
+      "out_of_scope_reaction_visible",
+      "phase_endpoint_visible",
+      "narrative_outcome_visible",
+      "outcome_causally_connected"
+    ]
+  },
+  "video_sha256": "137698050a828e65cfe9d2514220badf5b0d730eb6f8e9c0c983b81f57055563"
+}

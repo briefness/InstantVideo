@@ -148,7 +148,7 @@
 
 ## 枚举与边界
 
-- `duration` 必须是 4-15 的整数。快速复杂动作不超过 5 秒；超过 10 秒只能用简单动作和稳定机位。
+- `duration` 使用程序给定的整数秒槽位；接口硬约束读取执行能力目录，不从运镜或风格标签推导额外时长上限。`camera.speed` 只描述摄影机运动，人物节奏和播放速度分别表达。复杂动作需保证可读性，不得擅自截短镜头或降低用户要求的速度。
 - `continuity_from_previous`：首镜 `none`；真正无剪切续拍才用 `seamless`；换机位、插入特写和景别明显变化用 `intentional_cut`。
 - `composition_change` 只能是 `small`、`medium`、`large`。`seamless` 必须是 `small`。
 - `coverage_role` 只能是 `establish`、`action_subject`、`target_reaction`、`interaction`、`aftermath`、`insert`。

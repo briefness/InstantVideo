@@ -47,23 +47,50 @@ def test_real_intent_mode_failure_remains_rejected_and_is_excluded_by_request_co
 
 @pytest.mark.parametrize('brief', ['先入场。密集交锋！最后倒下。', 'No fighting. Show a quiet room.', '第一句\n第二句', '只保留一句'])
 def test_intent_evidence_can_only_select_contiguous_original_sentences(brief):
+    import hashlib
     from pipeline.director_intent import director_intent_response_schema
+    from pipeline.intent_evidence import decode_intent_evidence, evidence_catalog, evidence_grounded
     schema = director_intent_response_schema(brief)
+    catalog = evidence_catalog(brief)
     for variant in schema['oneOf']:
-        choices = variant['properties']['intent_evidence']['enum']
-        assert choices and all(choice and choice in brief for choice in choices)
-        assert variant['properties']['ending_evidence']['enum'] == ['', *choices]
+        selection = variant['properties']['intent_evidence']
+        choices = selection['properties']['references']['items']['enum']
+        assert choices == list(catalog)
+        assert selection['required'] == ['references']
+        assert selection['additionalProperties'] is False
+        assert variant['properties']['ending_evidence']['anyOf'] == [
+            selection, {'type': 'string', 'const': ''}]
+        for address in choices:
+            decoded = decode_intent_evidence({'intent_evidence': {'references': [address]}}, brief)['intent_evidence']
+            assert decoded == {'version': 'source-spans-v1', 'segments': [catalog[address]]}
+            span = decoded['segments'][0]
+            assert span['source'] == 'request'
+            assert span['document_sha256'] == hashlib.sha256(brief.encode()).hexdigest()
+            assert span['text'] == brief[span['start']:span['end']] and span['text']
+            assert evidence_grounded(decoded, brief)
+        # 多处证据保留各自来源坐标，不拼接成一段伪造的连续引文。
+        parts = [key for key, span in catalog.items()
+                 if (span['start'], span['end']) != (0, len(brief))]
+        if len(parts) > 1:
+            decoded = decode_intent_evidence({'intent_evidence': {'references': parts}}, brief)['intent_evidence']
+            assert decoded['segments'] == [catalog[key] for key in parts]
+            assert evidence_grounded(decoded, brief)
 
 
 def test_intent_diagnostics_preserve_failure_without_provider_exception_secrets():
     from pipeline.director_intent import resolve_director_intent
+    from pipeline.intent_evidence import EvidenceSourceError
     saved = {}
     bad = intent_reply('invented quote')
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as error:
         resolve_director_intent(Responses(bad), 'actual brief', save_diagnostic=saved.__setitem__)
     assert json.loads(saved['planning_intent_response.json']['content']) == bad
-    assert saved['planning_intent_error.json']['type'] == 'ValidationError'
-    assert 'input' not in saved['planning_intent_error.json']['fields'][0]
+    assert isinstance(error.value.__cause__, EvidenceSourceError)
+    diagnostic = saved['planning_intent_error.json']
+    assert diagnostic['type'] == 'EvidenceSourceError'
+    assert diagnostic['fields'] == [{'loc': ['intent_evidence'], 'type': 'unresolved_quote',
+                                    'message': str(error.value.__cause__)}]
+    assert 'input' not in diagnostic['fields'][0]
     class Failing:
         def __init__(self):
             self.chat = self.completions = self
@@ -95,9 +122,14 @@ def test_reasoning_is_explicit_and_does_not_change_extraction_defaults():
 
 
 def test_creative_calls_enable_thinking_in_actual_http_request(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    from authoring_cases import scene_authoring_from_legacy, contextual_shot_fixture, scheduled_shot_fixture
+    from pipeline.production_plan import build_production_plan
+    raw = scene_authoring_from_legacy(draft())
+    plan = build_production_plan('action', 15, intent={**intent_reply('continuous action'),
+        'source_request': 'continuous action', 'choreography': 'flexible', 'authoring_protocol': 'scene-units-v1'})
     values = [intent_reply('continuous action'), {k: v for k, v in raw.items() if k != 'shots'}]
-    values += [{'shot': {k: v for k, v in s.items() if k != 'shot_id'}} for s in raw['shots']]
+    values += [{'shot': scheduled_shot_fixture({k: v for k, v in contextual_shot_fixture(s).items() if k != 'shot_id'},
+               slot, execution_timing=True)} for s, slot in zip(raw['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, values)
     with sdk:
         generate_storyboard('continuous action', target_duration=15)

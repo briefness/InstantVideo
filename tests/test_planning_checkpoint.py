@@ -229,11 +229,13 @@ async def test_saved_step_still_requires_typed_compilation_and_cannot_be_promote
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: author)
     monkeypatch.setattr('pipeline.orchestrator.VideoGenerator', lambda **kw: pytest.fail('video stage reached'))
     pipeline = VideoPipeline(plan_only=True, paid_take_budget=0)
-    with pytest.raises(ValueError, match='未注册'):
+    with pytest.raises(ValueError, match=r'创作响应契约.*actor \(enum\)'):
         await pipeline.run(brief)
+    record = (pipeline.workspace / 'planning_checkpoint.json').read_bytes()
     for _ in range(2):
-        with pytest.raises(ValueError, match='未注册'):
+        with pytest.raises(ValueError, match='失败或请求结果不明'):
             await VideoPipeline.from_workspace(pipeline.workspace).run()
+    assert (pipeline.workspace / 'planning_checkpoint.json').read_bytes() == record
     assert len(author.calls) == 3 and not pipeline.run_workspace.manifest.paid_take_budget.reservations
 
 
@@ -279,8 +281,11 @@ async def test_real_failed_response_stays_failed_and_does_not_repeat_on_resume(t
     from test_structured_response_stream import Chunks
     fixture = json.loads((Path(__file__).parent / 'fixtures/real_repeated_field_failure.json').read_text())
     sources = fixture['sources']
+    # 新版合法上游的离线标注；被测身份及坏稿仍逐字使用原始响应。
+    intent = json.loads(sources['planning_intent_response.json']['value']['content'])
+    intent['completion_goals'] = [{'goal': intent['ending_requirement'], 'basis': 'user', 'evidence': intent['ending_evidence']}]
     responses = iter([
-        NS(choices=[NS(message=NS(content=sources['planning_intent_response.json']['value']['content']),
+        NS(choices=[NS(message=NS(content=json.dumps(intent)),
                        finish_reason='stop')]),
         Chunks(sources['planning_identity_response.json']['value']['content']),
         Chunks(sources['planning_shot_001_response.json']['value']['content']),
@@ -295,12 +300,12 @@ async def test_real_failed_response_stays_failed_and_does_not_repeat_on_resume(t
     pipeline = VideoPipeline(plan_only=True, paid_take_budget=0)
     # The unmodified historical identity now violates the earlier requirement
     # authority boundary. Replaying it must stop before the repeated-key shot.
-    with pytest.raises(ValueError, match='用户结局'):
+    with pytest.raises(ValueError, match=r'创作响应契约.*story_arc/resolution \(const\)'):
         await pipeline.run(sources['run_manifest.json']['value']['options']['request'])
     partial = (pipeline.workspace / 'planning_identity_response.json').read_bytes()
     record = (pipeline.workspace / 'planning_checkpoint.json').read_bytes()
     for _ in range(2):
-        with pytest.raises(ValueError, match='用户结局'):
+        with pytest.raises(ValueError, match='失败或请求结果不明'):
             await VideoPipeline.from_workspace(pipeline.workspace).run()
     assert len(calls) == 2
     assert not (pipeline.workspace / 'planning_shot_001_response.json').exists()
@@ -311,12 +316,13 @@ async def test_real_failed_response_stays_failed_and_does_not_repeat_on_resume(t
 
 def test_non_event_draft_checkpoint_replays_before_pure_compilation(tmp_path, monkeypatch):
     from pipeline.planning_checkpoint import PlanningCheckpoint
-    from pipeline.storyboard import generate_storyboard
     from test_director_intent import draft
     workspace = workspace_at(tmp_path)
     brief = workspace.options.request
-    author = Responses(intent_reply(brief, focus='balanced', pacing='atmospheric'), draft())
-    monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **kw: author)
+    calls = []
+    def legacy_draft():
+        calls.append(brief)
+        return draft()
     snapshots = []
     def pause_after_draft(name, value):
         if name == 'planning_draft_1.json':
@@ -324,6 +330,8 @@ def test_non_event_draft_checkpoint_replays_before_pure_compilation(tmp_path, mo
             raise asyncio.CancelledError()
     for resume in (False, True):
         with pytest.raises(asyncio.CancelledError):
-            generate_storyboard(brief, target_duration=15, save_diagnostic=pause_after_draft,
-                planning_checkpoint=PlanningCheckpoint(workspace, resume=resume))
-    assert len(author.calls) == 2 and snapshots[0] == snapshots[1]
+            # 直接重放历史草稿检查点；新建文字任务不再进入 legacy_draft。
+            value = PlanningCheckpoint(workspace, resume=resume).step('legacy_draft',
+                {'request': brief, 'protocol': 'historical'}, legacy_draft)
+            pause_after_draft('planning_draft_1.json', value)
+    assert calls == [brief] and snapshots[0] == snapshots[1]

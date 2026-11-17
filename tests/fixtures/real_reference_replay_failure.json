@@ -1,0 +1,172 @@
+{
+  "run": "20261112_184640_228865",
+  "request": {
+    "prompt": "[原始素材引用：视频1在5.950秒处，按区域{\"left\": 0.18, \"top\": 0.15000000000000002, \"scale\": 0.6799999999999999, \"regions\": {\"Sword_Yun\": [0.18, 0.18, 0.51, 0.8], \"Sword_Zhao\": [0.53, 0.2, 0.86, 0.8]}}建立新镜头取景；视频1在3.000秒处、归一化区域[0.2,0.18,0.52,0.8]内的人物\"Sword_Yun\"；视频1在3.000秒处、归一化区域[0.54,0.2,0.83,0.8]内的人物\"Sword_Zhao\"；图片1。视频只提供所指人物身份或指定时间的场景状态；生成当前分镜的新动作与运镜，不要重演整段参考视频，不继承参考声音。] [Identity binding — 视频1在3.000秒处、归一化区域[0.2,0.18,0.52,0.8]内的人物\"Sword_Yun\" identifies character \"Sword_Yun\"; 视频1在3.000秒处、归一化区域[0.54,0.2,0.83,0.8]内的人物\"Sword_Zhao\" identifies character \"Sword_Zhao\"; each image controls only its named character, never merge or exchange identities.] [图片1 is the SPATIAL GUIDE: observed object locations only, not new goals, desired framing, identity or style; 视频1在5.950秒处，按区域{\"left\": 0.18, \"top\": 0.15000000000000002, \"scale\": 0.6799999999999999, \"regions\": {\"Sword_Yun\": [0.18, 0.18, 0.51, 0.8], \"Sword_Zhao\": [0.53, 0.2, 0.86, 0.8]}}建立新镜头取景 supplies the accepted prior physical state, not the new camera framing; 视频1在3.000秒处、归一化区域[0.2,0.18,0.52,0.8]内的人物\"Sword_Yun\" supplies identity and appearance only, not action destination or camera framing; 视频1在3.000秒处、归一化区域[0.54,0.2,0.83,0.8]内的人物\"Sword_Zhao\" supplies identity and appearance only, not action destination or camera framing] Create one coherent cinematic shot. visual style: 原创二维手绘动漫武侠电影风格，清晰线稿、赛璐璐人物与有层次的月夜宫殿手绘背景。轻灵身法与快速连贯的交锋，借力变招有重量和节奏变化，实时播放。摄影服务招式和空间关系，保持双方动作可读，镜头切换有清楚的景别和视角变化。. mood: cinematic. setting: forbidden city roof ridge. lighting: 冷白月光从上方洒落，瓦面泛青灰反光，人物肩背与剑刃有清晰高光，背景宫殿轮廓压暗。. keep these subjects clearly visible: Sword Yun, Sword Zhao. scene inventory (not a demand to include every prop in frame): palace roof tile, full moon, palace gilded eave, plain silver sword, steel long sword, night breeze. declared appearance for Sword Yun: 成年男性剑客，身形挺拔利落，束高马尾，额间系藏青色布发带，身着玄色窄袖劲装，腰束刻银纹的黑色革带，脚蹬软底黑色快靴，随身持一柄无鞘素银直剑，剑尾系藏青色短剑绦。, mobility bipedal. declared appearance for Sword Zhao: 成年男性剑客，身形修长舒展，半束墨色长发，身着月白色宽袖武袍，袖口束黑色皮质绑带，腰系乌色丝绦，脚蹬白色布面快靴，随身持一柄配乌木剑鞘的精钢长剑，剑尾系月白色长剑绦。, mobility bipedal. positive lock - preserve setting identity forbidden city roof ridge; do not replace or invent a different environment. positive lock - preserve the declared lighting treatment without replacing it with an unrelated setup: 冷白月光从上方洒落，瓦面泛青灰反光，人物肩背与剑刃有清晰高光，背景宫殿轮廓压暗。. positive lock - preserve identity and relative scale for these declared entities; do not duplicate a declared subject identity: Sword Yun, Sword Zhao. positive lock - preserve the identity and form of these props unless the Action Contract visibly changes them: palace roof tile, full moon, palace gilded eave, plain silver sword, steel long sword, night breeze. world persistence - these props retain identity, form and physical state across cuts; leaving the camera field of view is not disappearance from the scene: palace roof tile, plain silver sword, steel long sword. Frame visibility follows the current camera and required_in_frame subjects, including the parts needed to show their action. Scene inventory does not require a wide shot or every object and whole body in frame. Preserve off-screen world state for later shots; do not move objects into frame or invent their completion. Required actions and their spatial results must remain readable, including which surface or recipient receives an object.. Begin from the observed physical and action state in 视频1在5.950秒处，按区域{\"left\": 0.18, \"top\": 0.15000000000000002, \"scale\": 0.6799999999999999, \"regions\": {\"Sword_Yun\": [0.18, 0.18, 0.51, 0.8], \"Sword_Zhao\": [0.53, 0.2, 0.86, 0.8]}}建立新镜头取景; apply the current camera composition. camera: medium shot. use a clearly different shot size or angle from the supplied previous tail. camera movement: controlled tracking; keep the action and required participants readable during the move. camera framing: start at medium shot, end at medium shot. preserve the established 180-degree screen axis. Camera composition: 中近景双人构图，两人膝上至头顶入画，交锋点保持在画面中央，瓦面仅占下方窄边，满月与远处宫殿轮廓虚化在背景。. Camera speed: normal. Camera end_framing: medium shot. Composition across the shot: palace_roof_tile: 画面下方窄边; full_moon: 背景上方虚化; palace_gilded_eave: 画面左右边缘外虚化; night_breeze: 吹动两人衣摆与剑绦. Performer staging for Sword_Yun: frame_position: 中线偏左，距Zhao半步; body_orientation: 面向右侧; facing_target: Sword_Zhao; eyeline_target: Sword_Zhao; travel_direction: 向Zhao左前方旋步抢位; action_target: Sword_Zhao. Performer staging for Sword_Zhao: frame_position: 中线偏右，距Yun半步; body_orientation: 面向左侧; facing_target: Sword_Yun; eyeline_target: Sword_Yun; travel_direction: 原地拧腰转身并横斩; action_target: Sword_Yun. Required observable functions: 借双剑交抵的较劲沉腕拧身，素银剑沿精钢剑刃斜向下压滑开锁扣，左脚蹬瓦面旋步抢向Zhao左前方。; 不待完全转身，借被压下沉的腰力反手上撩精钢剑，剑刃直取Yun面门。; 借仰头后缩的腰力顺势沉身滑步，素银剑自下而上斜挑Zhao持剑右腕。; 趁剑被挑开的空当拧腰沉步，精钢剑顺势旋身横斩Yun腰侧。; 借双剑交抵的较劲沉腕拧身，素银剑沿精钢剑刃斜向下压滑开锁扣，左脚蹬瓦面旋步抢向Zhao左前方。; 不待完全转身，借被压下沉的腰力反手上撩精钢剑，剑刃直取Yun面门。; 借仰头后缩的腰力顺势沉身滑步，素银剑自下而上斜挑Zhao持剑右腕。; 趁剑被挑开的空当拧腰沉步，精钢剑顺势旋身横斩Yun腰侧。. Opening world state observed in the accepted prior frame: {\"action_phase\": \"双剑交抵后的小幅较劲对峙阶段\", \"lighting\": \"冷白满月月光覆盖屋脊，人物边缘有清晰轮廓光\", \"location\": \"紫禁宫殿屋脊\", \"open_motion\": \"双方衣摆与发带被夜风持续掀动，双剑保持交叉相抵的较劲状态，无新的大幅挥剑动作\", \"pose_and_gaze\": \"Yun居画面左侧弓步前探，面向右侧的Zhao，Zhao居画面右侧弓步前探，面向左侧的Yun，双方视线交汇锁定对方\", \"prop_state\": \"Yun右手持素银直剑，Zhao右手持精钢长剑，两剑在两人中间交叉相抵，Zhao左手仍按在腰间乌木剑鞘上\", \"screen_direction\": \"Yun居画面左三分之一面向右，Zhao居右三分之一面向左\", \"subject\": \"Sword_Yun与Sword_Zhao\"}. This is the physical origin of the next action, not a pose to hold throughout. Authored starting poses and prop placements cannot reset it; realize the local work from this origin. The current camera plan selects the new framing independently. Previous observed camera: 固定机位全景. Observed incoming motion over the prior video interval 3.95-5.95s: The two swordsmen stand on the roof ridge in a crossed-sword lock. Yun, on the left, holds a low lunge facing right, while Zhao, on the right, holds a matching lunge facing left. Their swords remain crossed at the center, and their hair, ribbons, and robes are lifted by the night wind. The standoff is stable, with no new large swing, fall, or completed strike visible.. Continue this physical progress into the local work; do not replay the reference clip. The original reference video is motion/identity guidance, not an enforced camera pose. The SPATIAL GUIDE is only an observed object map in the prior frame: 1=Sword_Yun; 2=Sword_Zhao. It defines no new destination, action, trajectory or composition. Execute the unchanged authored work and current camera plan using the original video for appearance. Do not render this diagram or copy its layout into the film.. Play this 6s shot as connected action. The following time windows guide pacing, not held poses; preserve their sequence and overlap.. Allocate about 6s of this 6s shot to the authored interactions at the requested performer tempo; do not stretch gestures or substitute pauses and camera movement for the interaction. Beat 1: 0-1.4s; Sword_Yun 借双剑交抵的较劲沉腕拧身，素银剑沿精钢剑刃斜向下压滑开锁扣，左脚蹬瓦面旋步抢向Zhao左前方。; target=Sword_Zhao; ; response=deflection; response_kind=deflection: show the guard or weapon redirecting the incoming path; contact with the guard is not a body hit or injury. Preserve the redirected momentum.; physical source: plain_silver_sword; action region: 中线交抵的剑刃接触区; actor placement through this action: 中线偏左，距Zhao半步; target placement through this action: 中线偏右，距Yun半步; physical mode: direct_contact; affected scope: single; response: 两剑刃摩擦着滑开，精钢剑被压得向下偏开，Zhao重心被迫沉向右腿，Yun已抢到Zhao左前方半步的身位。; unaffected surroundings: 屋顶瓦面、夜空与远处宫殿轮廓; motion of the causal effect field (not actor/target travel): sweep; show the causal participants and action region together; occlusion: none; spatial context for this action: Sword_Yun: 中线偏左，旋步后短暂贴近Zhao左侧; Sword_Zhao: 中线偏右，拧腰沉步应对; plain_silver_sword: 画面中央交锋区; suggested visible realization: 两剑刃摩擦着滑开，精钢剑被压得向下偏开，Zhao重心被迫沉向右腿，Yun已抢到Zhao左前方半步的身位。; suggested response realization: Sword_Yun: 旋步至Zhao左前方半步，右肩前送，素银剑斜向下压; Sword_Zhao: 重心沉至右腿，精钢剑被压得向下偏开; plain_silver_sword: 剑刃沿精钢剑刃滑压后分离; steel_long_sword: 剑刃承接滑压，指向斜下方. Beat 2: 1.12-2.8s; Sword_Zhao 不待完全转身，借被压下沉的腰力反手上撩精钢剑，剑刃直取Yun面门。; target=Sword_Yun; Temporal relation for Beat 2: begin while Beat 1 is still underway.; response=evasion; response_kind=evasion: show the readable incoming threat and the target moving out of its path; the attack misses the target, with no impact or injury from this event. effect_at marks the visible threat onset, reaction_at marks the evasive movement, not a hit reaction. Continue from the preceding beat without resetting position, pose or momentum: Beat 1 -> Beat 2: continue the preceding movement into this action without an unexplained pause or reset.; physical source: steel_long_sword; action region: Yun面门前方的上撩路径; actor placement through this action: 中线偏右，距Yun半步; target placement through this action: 中线偏左，距Zhao半步; physical mode: directed_path; affected scope: single; response: Yun仰头后缩，剑尖擦着额间藏青布发带掠过，带起几缕碎发。; unaffected surroundings: 屋顶瓦面与Zhao下盘; motion of the causal effect field (not actor/target travel): sweep; keep the line of action visible; occlusion: none; spatial context for this action: Sword_Zhao: 中线偏右，拧腰沉步应对; Sword_Yun: 中线偏左，旋步后短暂贴近Zhao左侧; steel_long_sword: 画面中央交锋区; suggested visible realization: Yun仰头后缩，剑尖擦着额间藏青布发带掠过，带起几缕碎发。; suggested response realization: Sword_Zhao: 反手上撩后重心前倾，剑指Yun面门原位置; Sword_Yun: 上体后仰避开剑尖，额间藏青布发带被剑风擦动; steel_long_sword: 剑尖擦过Yun额前，未触及躯体; plain_silver_sword: 随后仰动作收在腰侧，准备回挑. Beat 3: 2.52-4.3s; Sword_Yun 借仰头后缩的腰力顺势沉身滑步，素银剑自下而上斜挑Zhao持剑右腕。; target=Sword_Zhao; Temporal relation for Beat 3: begin while Beat 2 is still underway.; response=deflection; response_kind=deflection: show the guard or weapon redirecting the incoming path; contact with the guard is not a body hit or injury. Preserve the redirected momentum. Continue from the preceding beat without resetting position, pose or momentum: Beat 2 -> Beat 3: continue the preceding movement into this action without an unexplained pause or reset.; physical source: plain_silver_sword; action region: Zhao腰侧的剑刃磕击区; actor placement through this action: 中线偏左，距Zhao半步; target placement through this action: 中线偏右，距Yun半步; physical mode: direct_contact; affected scope: single; response: 两剑在Zhao腰侧再次磕击，Zhao右腕被挑势带得向外翻开，剑路露出空当。; unaffected surroundings: 屋脊两端鎏金翘角与夜空; motion of the causal effect field (not actor/target travel): sweep; show the causal participants and action region together; occlusion: none; spatial context for this action: Sword_Yun: 中线偏左，旋步后短暂贴近Zhao左侧; Sword_Zhao: 中线偏右，拧腰沉步应对; plain_silver_sword: 画面中央交锋区; suggested visible realization: 两剑在Zhao腰侧再次磕击，Zhao右腕被挑势带得向外翻开，剑路露出空当。; suggested response realization: Sword_Yun: 沉身滑步至中线偏左，素银剑挑至Zhao腰侧高度; Sword_Zhao: 右腕向外翻开，上体微侧卸开挑势; plain_silver_sword: 剑刃与精钢长剑在腰侧磕击; steel_long_sword: 被挑得向外翻开，偏离原攻击线. Beat 4: 4-6s; Sword_Zhao 趁剑被挑开的空当拧腰沉步，精钢剑顺势旋身横斩Yun腰侧。; target=Sword_Yun; Temporal relation for Beat 4: begin while Beat 3 is still underway.; response=evasion; response_kind=evasion: show the readable incoming threat and the target moving out of its path; the attack misses the target, with no impact or injury from this event. effect_at marks the visible threat onset, reaction_at marks the evasive movement, not a hit reaction. Continue from the preceding beat without resetting position, pose or momentum: Beat 3 -> Beat 4: continue the preceding movement into this action without an unexplained pause or reset.; physical source: steel_long_sword; action region: Yun腰侧前方的横斩路径; actor placement through this action: 中线偏右，距Yun半步; target placement through this action: 中线偏左，距Zhao半步; physical mode: directed_path; affected scope: single; response: Yun向后滑步半尺，剑尖擦着玄色劲装前襟掠过，两人兵器短暂分离。; unaffected surroundings: 屋顶瓦面与远处宫殿; motion of the causal effect field (not actor/target travel): sweep; keep the line of action visible; occlusion: none; spatial context for this action: Sword_Zhao: 中线偏右，拧腰沉步应对; Sword_Yun: 中线偏左，旋步后短暂贴近Zhao左侧; steel_long_sword: 画面中央交锋区; suggested visible realization: Yun向后滑步半尺，剑尖擦着玄色劲装前襟掠过，两人兵器短暂分离。; suggested response realization: Sword_Zhao: 横斩后重心前倾，剑指Yun腰侧原位置; Sword_Yun: 向后滑步半尺，重心落于后腿，避开横斩; steel_long_sword: 剑尖擦过玄色劲装前襟，未触及躯体; plain_silver_sword: 收在腰侧，剑刃朝下蓄势; palace_roof_tile: 两人滑步处留下浅淡靴痕. Authored visual direction: 原创二维手绘赛璐璐风格中近景，冷白月光覆盖两人膝上至头顶的主体区域，深灰瓦面仅占画面下方窄边，满月与远处宫殿轮廓在背景中虚化。双剑交锋点保持在画面中央可读区，人物边缘有清晰轮廓光，衣摆与剑绦被夜风掀动。. Shot mood: 凌厉紧凑，剑势流动。. Creative direction v1: Stage the authored action with readable screen direction, eyelines and relationships between subjects and their surroundings; reveal a changed axis before relying on it. Connect authored movement through preparation, acceleration, redirection and recovery; carry momentum across gestures without mandatory alternating turns or resets. This does not prescribe playback speed. Compose shot boundaries for direct cuts; do not bake fades or dissolves into the footage. Use only scene-native sound, with no musical score or added background music. Apply relevant methods to this authored shot, not every method to every beat. Explicit subject tempo, playback treatment, camera blocking, exact choreography, reference motion, ordered outcomes and allocated duration take precedence. Do not add story events, change the ending or infer slow motion from a cinematic reference.. Motion timing v1: performer_tempo=fast; playback=real_time. Use brief accelerations, quick redirections and immediate responses with natural speed variation. A long interaction window is not permission to slow one gesture across it. Present real-time motion, without slow motion, suspended impacts, replay or speed ramps. Interaction occupancy, event count and camera speed are not evidence of performer speed..",
+    "duration": 6,
+    "model": "doubao-seedance-2.0-fast"
+  },
+  "materials": {
+    "version": "provider-original-materials-v1",
+    "bindings": [
+      {
+        "logical_index": 1,
+        "label": "视频1在5.950秒处，按区域{\"left\": 0.18, \"top\": 0.15000000000000002, \"scale\": 0.6799999999999999, \"regions\": {\"Sword_Yun\": [0.18, 0.18, 0.51, 0.8], \"Sword_Zhao\": [0.53, 0.2, 0.86, 0.8]}}建立新镜头取景",
+        "source_task_id": "cgt-20261112185247-jrcq2",
+        "source_sha256": "d8e9495bcf5717f1831e1341f08017da67bdd6b28545f071d3f50ad3b0cef6c1",
+        "observation_sha256": "dcb39630d2fd7a0210d2c355692a9daccfcf650e6ea222e61a8d5b0c7467b459",
+        "receipt_sha256": "7903e15d6c333232eeab5573582c0c3650baa0cb62895a7975e79f133b4a8be1"
+      },
+      {
+        "logical_index": 2,
+        "label": "视频1在3.000秒处、归一化区域[0.2,0.18,0.52,0.8]内的人物\"Sword_Yun\"",
+        "source_task_id": "cgt-20261112185247-jrcq2",
+        "source_sha256": "d8e9495bcf5717f1831e1341f08017da67bdd6b28545f071d3f50ad3b0cef6c1",
+        "observation_sha256": "865e1c569453d4f10e8a0a8a00157b40caba0a17194b994945b94230bba74400",
+        "receipt_sha256": "7903e15d6c333232eeab5573582c0c3650baa0cb62895a7975e79f133b4a8be1"
+      },
+      {
+        "logical_index": 3,
+        "label": "视频1在3.000秒处、归一化区域[0.54,0.2,0.83,0.8]内的人物\"Sword_Zhao\"",
+        "source_task_id": "cgt-20261112185247-jrcq2",
+        "source_sha256": "d8e9495bcf5717f1831e1341f08017da67bdd6b28545f071d3f50ad3b0cef6c1",
+        "observation_sha256": "e5ac5d4d9f974a43104a63324546edfdfe9263601b828d52b8b23500948f218b",
+        "receipt_sha256": "7903e15d6c333232eeab5573582c0c3650baa0cb62895a7975e79f133b4a8be1"
+      },
+      {
+        "logical_index": 4,
+        "label": "图片1",
+        "sha256": "ddbc49ce0063079cf7a29138f912ea94a9b9df5096b808ac014867ed3a15b1b2"
+      }
+    ],
+    "image_role": "reference_image",
+    "content_sha256": "6c04dda7fcca4e8beeb661c63bb31c82c0241db4eea0f5ba602e18a48b3adda0"
+  },
+  "first_shot": {
+    "shot_id": 1,
+    "duration": 6,
+    "scene_id": "forbidden_city_roof_ridge",
+    "continuity_from_previous": "none",
+    "media_selection": "planned-prefix-v1",
+    "camera": {
+      "primary_movement": "fixed",
+      "composition": "全景构图，屋脊横贯画面下半，满月位于上中，两名剑客分列左右三分线，交锋点保持在画面中央可读区域。",
+      "start_framing": "wide shot",
+      "end_framing": "wide shot",
+      "speed": "normal",
+      "screen_positions": {
+        "Sword_Yun": "左三分之一屋脊",
+        "Sword_Zhao": "右三分之一屋脊",
+        "palace_roof_tile": "下半幅瓦面",
+        "full_moon": "上中景屋脊后方",
+        "palace_gilded_eave": "画面左右边缘",
+        "plain_silver_sword": "画面中线偏左",
+        "steel_long_sword": "画面中线偏右",
+        "night_breeze": "吹动衣摆与剑绦的气流，无固定实体位置"
+      },
+      "axis_change": "establish"
+    },
+    "characters": [
+      "Sword_Yun",
+      "Sword_Zhao"
+    ]
+  },
+  "execution_shot": {
+    "shot_id": 2,
+    "duration": 6,
+    "scene_id": "forbidden_city_roof_ridge",
+    "continuity_from_previous": "intentional_cut",
+    "media_selection": "planned-prefix-v1",
+    "camera": {
+      "primary_movement": "tracking",
+      "composition": "中近景双人构图，两人膝上至头顶入画，交锋点保持在画面中央，瓦面仅占下方窄边，满月与远处宫殿轮廓虚化在背景。",
+      "start_framing": "medium shot",
+      "end_framing": "medium shot",
+      "speed": "normal",
+      "screen_positions": {
+        "Sword_Yun": "中线偏左，旋步后短暂贴近Zhao左侧",
+        "Sword_Zhao": "中线偏右，拧腰沉步应对",
+        "palace_roof_tile": "画面下方窄边",
+        "full_moon": "背景上方虚化",
+        "palace_gilded_eave": "画面左右边缘外虚化",
+        "plain_silver_sword": "画面中央交锋区",
+        "steel_long_sword": "画面中央交锋区",
+        "night_breeze": "吹动两人衣摆与剑绦"
+      },
+      "axis_change": "hold"
+    },
+    "characters": [
+      "Sword_Yun",
+      "Sword_Zhao"
+    ],
+    "reference_view": {
+      "version": "observed-camera-view-v1",
+      "camera": {
+        "camera_movement": "tracking",
+        "camera_speed": "controlled",
+        "camera_framing": {
+          "start": "medium shot",
+          "end": "medium shot"
+        },
+        "camera_axis": "hold"
+      },
+      "camera_plan": {
+        "primary_movement": "tracking",
+        "composition": "中近景双人构图，两人膝上至头顶入画，交锋点保持在画面中央，瓦面仅占下方窄边，满月与远处宫殿轮廓虚化在背景。",
+        "start_framing": "medium shot",
+        "end_framing": "medium shot",
+        "speed": "normal",
+        "screen_positions": {
+          "Sword_Yun": "中线偏左，旋步后短暂贴近Zhao左侧",
+          "Sword_Zhao": "中线偏右，拧腰沉步应对",
+          "palace_roof_tile": "画面下方窄边",
+          "full_moon": "背景上方虚化",
+          "palace_gilded_eave": "画面左右边缘外虚化",
+          "plain_silver_sword": "画面中央交锋区",
+          "steel_long_sword": "画面中央交锋区",
+          "night_breeze": "吹动两人衣摆与剑绦"
+        },
+        "axis_change": "hold"
+      },
+      "region_entities": [
+        "Sword_Yun",
+        "Sword_Zhao"
+      ],
+      "source_size": [
+        864,
+        496
+      ],
+      "execution_capability": {
+        "mode": "original_video_guidance",
+        "source_task_id": "cgt-20261112185247-jrcq2",
+        "source_sha256": "d8e9495bcf5717f1831e1341f08017da67bdd6b28545f071d3f50ad3b0cef6c1",
+        "observation_sha256": "1a69ac782b0decdcf6f32bc17fcdae3e0540de07b013bc7bfbc7e17fb17032d7",
+        "timestamp": 5.95
+      },
+      "presentation_policy": "local-reframe-v1",
+      "source_sha256": "1a69ac782b0decdcf6f32bc17fcdae3e0540de07b013bc7bfbc7e17fb17032d7",
+      "window": {
+        "left": 0.18,
+        "top": 0.15000000000000002,
+        "scale": 0.6799999999999999,
+        "regions": {
+          "Sword_Yun": [
+            0.18,
+            0.18,
+            0.51,
+            0.8
+          ],
+          "Sword_Zhao": [
+            0.53,
+            0.2,
+            0.86,
+            0.8
+          ]
+        }
+      }
+    }
+  },
+  "file_sha256": {
+    "submission_requests/shot_002_attempt_001.json": "254b8175ba08bee83b94339191f4d12f49c3f4e858f9c7dbb1a24b433acd4603",
+    "continuations/shot_002.json": "df45929dafe03b52996224343923769f8ef29211e86e189b419a141aaa7225be"
+  }
+}

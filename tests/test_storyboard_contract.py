@@ -1819,7 +1819,8 @@ def test_fast_shot_over_five_seconds_is_critical():
     warnings, is_critical = _validate_storyboard_richness(storyboard)
 
     assert is_critical
-    assert any("fast" in warning and "5s" in warning for warning in warnings)
+    # 非结构化示例仍有其他问题；运镜速度不能再创建额外时长门槛。
+    assert not any("fast" in warning and "5s" in warning for warning in warnings)
 
 
 def test_missing_motion_contract_is_critical():

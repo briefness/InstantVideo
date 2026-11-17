@@ -112,8 +112,13 @@ def result_claims(beat: dict) -> dict[str, dict]:
 
 
 def required_outcomes(beat: dict) -> list[dict]:
-    directions = set(beat.get('result_directions') or [])
+    directions = set(beat.get('result_directions') or []) | set(beat.get('result_functions') or [])
     return [claim for path, claim in result_claims(beat).items() if path not in directions]
+
+
+def functional_outcomes(beat: dict) -> list[dict]:
+    sources = set(beat.get('result_functions') or [])
+    return [claim for path, claim in result_claims(beat).items() if path in sources]
 
 
 def directed_outcomes(beat: dict) -> list[dict]:
@@ -131,7 +136,8 @@ def incidental_changes(beat: dict) -> list[dict]:
 def scene_change_issues(shot: dict) -> list[str]:
     """Validate new result references at both persistence and direct compilation."""
     beats = [b for b in shot.get('action_beats', []) if isinstance(b, dict)
-             and (b.get('scene_changes') is not None or b.get('result_directions') is not None)]
+             and (b.get('scene_changes') is not None or b.get('result_directions') is not None
+                  or b.get('result_functions') is not None)]
     if not beats:
         return []
     slot = shot.get('production_slot') or {}
@@ -140,6 +146,13 @@ def scene_change_issues(shot: dict) -> list[str]:
     registry = set(shot.get('characters', [])) | set(shot.get('key_props', [])) | set(shot.get('continuity_props', []))
     issues = []
     for beat in beats:
+        functions = beat.get('result_functions')
+        if functions is not None and (
+                shot.get('result_policy') != 'functional-v1' or shot.get('result_admission') != 'reviewed-results-v1'
+                or not isinstance(functions, list) or any(not isinstance(p, str) for p in functions)
+                or len(functions) != len(set(functions)) or not set(functions) <= set(result_claims(beat))
+                or set(functions) & set(beat.get('result_directions') or [])):
+            issues.append('功能结果必须来自当前协议的独立审定来源，不能与可选细节重叠')
         directions = beat.get('result_directions')
         if directions is not None and (
                 shot.get('result_admission') != 'reviewed-results-v1'

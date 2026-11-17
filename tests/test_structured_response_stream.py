@@ -187,8 +187,11 @@ async def test_real_failure_replays_formal_plan_only_without_video_or_extra_mode
     from pipeline.orchestrator import VideoPipeline
     fixture = json.loads((Path(__file__).parent / 'fixtures/real_repeated_field_failure.json').read_text())
     sources = fixture['sources']
+    # 只标注新版上游目标，不修改用来复现失败的身份和分镜响应。
+    intent = json.loads(sources['planning_intent_response.json']['value']['content'])
+    intent['completion_goals'] = [{'goal': intent['ending_requirement'], 'basis': 'user', 'evidence': intent['ending_evidence']}]
     responses = iter([
-        NS(choices=[NS(message=NS(content=sources['planning_intent_response.json']['value']['content']),
+        NS(choices=[NS(message=NS(content=json.dumps(intent)),
                        finish_reason='stop')]),
         Chunks(sources['planning_identity_response.json']['value']['content']),
         Chunks(real_content()),
@@ -205,7 +208,7 @@ async def test_real_failure_replays_formal_plan_only_without_video_or_extra_mode
     pipeline = VideoPipeline(plan_only=True, paid_take_budget=0, take_policy='single_pass')
     # The original identity is already inconsistent with the source requirement;
     # duplicate-key transport behavior remains independently covered above.
-    with pytest.raises(ValueError, match='用户结局'):
+    with pytest.raises(ValueError, match=r'创作响应契约.*story_arc/resolution \(const\)'):
         await pipeline.run(sources['run_manifest.json']['value']['options']['request'])
     assert len(calls) == 2  # Intent and rejected identity; no retries or shot calls.
     assert pipeline.run_workspace.manifest.status.value == 'failed'

@@ -7,14 +7,16 @@ from pipeline.action_timing import RESPONSE_MODES
 from pipeline.action_results import CandidateResolution, entity_resolution_schema
 from pipeline.camera_contract import SUPPORTED_CAMERA_MOVEMENTS, camera_contract_issues
 from pipeline.production_plan import CANONICAL_FRAMING
+from pipeline.action_vocabulary import INDEPENDENT_ACTIVITIES
 
 
 def _layout(slot: dict) -> tuple[list[str], bool, int]:
     limit = next(item.max_length for item in AuthoredShot.model_fields['action_plan'].metadata
                  if hasattr(item, 'max_length'))
-    count = slot.get('min_interaction_events') if isinstance(slot, dict) else None
+    scene_units = isinstance(slot, dict) and slot.get('authoring_protocol') == 'scene-units-v1'
+    count = slot.get('min_interaction_events', 0 if scene_units else None) if isinstance(slot, dict) else None
     hold = slot.get('result_hold_seconds', 0) if isinstance(slot, dict) else None
-    if (type(count) is not int or not 1 <= count <= limit
+    if (type(count) is not int or not (0 if scene_units else 1) <= count <= limit
             or type(hold) not in (int, float) or not math.isfinite(hold) or hold < 0):
         raise ValueError('动作创作槽位缺少有效的必需交互数或结果停留预算')
     terminal = hold > 0
@@ -34,7 +36,7 @@ def _without_fields(schema: dict, names: tuple[str, ...]) -> dict:
     return result
 
 
-def scheduled_shot_schema(base_schema: dict, slot: dict) -> dict:
+def scheduled_shot_schema(base_schema: dict, slot: dict, *, explicit_absence: bool = False) -> dict:
     """必填键来自计划；总展开容量仍由本地检查，避免组合枚举的巨大schema。"""
     keys, terminal, limit = _layout(slot)
     result = deepcopy(base_schema)
@@ -58,6 +60,11 @@ def scheduled_shot_schema(base_schema: dict, slot: dict) -> dict:
     definitions['ScheduledPassiveUnit'] = passive
     definitions['ScheduledFollowingUnit'] = {'oneOf': [
         following_interaction, {'$ref': '#/$defs/ScheduledPassiveUnit'}]}
+    has_character = bool(definitions['InteractionUnit']['oneOf'][0]['properties']['actor']['enum'])
+    if keys and not has_character:
+        raise ValueError('既定交互任务缺少已登记的执行人物，无法创建有效的创作请求')
+    if not has_character:
+        definitions['ScheduledFollowingUnit'] = {'$ref': '#/$defs/ScheduledPassiveUnit'}
     following = {'type': 'array', 'maxItems': optional_capacity,
                  'items': {'$ref': '#/$defs/ScheduledFollowingUnit'}}
     interaction = _without_fields(definitions['InteractionUnit'], ('id', 'kind'))
@@ -72,7 +79,8 @@ def scheduled_shot_schema(base_schema: dict, slot: dict) -> dict:
         variant['properties']['link_previous'] = {'type': 'boolean', 'const': False}
     definitions['ScheduledFirstInteraction'] = first_interaction
     properties = {key: {'$ref': '#/$defs/ScheduledRequiredInteraction'} for key in keys}
-    properties[keys[0]] = {'$ref': '#/$defs/ScheduledFirstInteraction'}
+    if keys:
+        properties[keys[0]] = {'$ref': '#/$defs/ScheduledFirstInteraction'}
     required = list(keys)
     if terminal:
         properties['result_hold'] = _without_fields(definitions['PassiveUnit'], ('id', 'kind'))
@@ -80,7 +88,7 @@ def scheduled_shot_schema(base_schema: dict, slot: dict) -> dict:
     without_opening = {'type': 'object', 'properties': properties,
                        'required': required, 'additionalProperties': False}
     variants = [without_opening]
-    if optional_capacity:
+    if keys and optional_capacity:
         # 非空入场用 first + following 表示；required 在提供方投影后仍然有效，
         # 不依赖会被移除的数组 minItems，也不让首项猜测前驱是否存在。
         with_opening = deepcopy(without_opening)
@@ -92,7 +100,26 @@ def scheduled_shot_schema(base_schema: dict, slot: dict) -> dict:
         with_opening['required'].append('opening')
         with_opening['properties'][keys[0]] = {'$ref': '#/$defs/ScheduledAfterOpeningInteraction'}
         variants.append(with_opening)
+    if keys and explicit_absence:
+        # 缺省与null都表示没有准备段，不占动作容量；对象一旦出现就必须完整。
+        # 不用 action=""、weight=0 等无效单元表达“没有”。
+        without_opening['properties']['opening'] = {'type': 'null'}
     result['properties']['shot']['properties']['action_plan'] = {'type': 'object', 'oneOf': variants}
+    if not keys:
+        # 无数量任务仍使用同一动作类型；必填首项避免空表演，不虚构交互配额。
+        first = deepcopy(following_interaction)
+        for variant in first['oneOf']:
+            variant['properties']['overlap'] = {'type': 'boolean', 'const': False}
+            variant['properties']['link_previous'] = {'type': 'boolean', 'const': False}
+        definitions['ScheduledFirstUnit'] = {'oneOf': [first, {'$ref': '#/$defs/ScheduledPassiveUnit'}]}
+        if not has_character:
+            definitions['ScheduledFirstUnit'] = {'$ref': '#/$defs/ScheduledPassiveUnit'}
+        properties.update(first={'$ref': '#/$defs/ScheduledFirstUnit'}, following={
+            'type': 'array', 'maxItems': limit - 1 - int(terminal),
+            'items': {'$ref': '#/$defs/ScheduledFollowingUnit'}})
+        result['properties']['shot']['properties']['action_plan'] = {
+            'type': 'object', 'properties': properties, 'required': ['first', *required],
+            'additionalProperties': False}
     # 只保留新响应能够到达的定义，不向模型同时展示原数组的 id/kind 所有权。
     definitions = result.pop('$defs')
     reachable = {}
@@ -122,7 +149,7 @@ def _unit(raw: object, index: int, *, kind: str | None = None, passive_only: boo
     unit = {'id': f'unit_{index + 1}', **deepcopy(raw)}
     if kind is not None:
         unit['kind'] = kind
-    if unit.get('kind') in ('transition', 'hold'):
+    if unit.get('kind') in INDEPENDENT_ACTIVITIES:
         PassiveUnit.model_validate(unit)
     elif unit.get('kind') == 'interaction' and not passive_only:
         if ('carry' in unit or 'outcomes' in unit or 'response' not in unit
@@ -138,14 +165,16 @@ def _unit(raw: object, index: int, *, kind: str | None = None, passive_only: boo
     return unit
 
 
-def bind_authored_schedule(raw: dict, slot: dict) -> dict:
+def bind_authored_schedule(raw: dict, slot: dict, *, explicit_absence: bool = False) -> dict:
     """只展开已填写的内容；缺失、混用或超容量整体拒绝，不补造动作。"""
     if isinstance(raw, dict) and 'result_admission' in raw:
         raise ValueError('结果审查状态由程序管理，创作响应不能提供批准或待审状态')
     keys, terminal, limit = _layout(slot)
     schedule = raw.get('action_plan') if isinstance(raw, dict) else None
     required = set(keys) | ({'result_hold'} if terminal else set())
-    allowed = required | {'opening'}
+    if not keys:
+        required.add('first')
+    allowed = required | ({'opening'} if keys else {'following'})
     if (not isinstance(schedule, dict) or not required <= set(schedule)
             or not set(schedule) <= allowed):
         raise ValueError('动作创作必须逐项覆盖槽位绑定的必需作用，不能使用旧列表、缺项或新增键')
@@ -159,7 +188,18 @@ def bind_authored_schedule(raw: dict, slot: dict) -> dict:
             raise ValueError('展开后的动作超出已有单元容量；未截断或删除创作')
         units.append(_unit(value, len(units), kind=kind, passive_only=passive_only))
 
-    if 'opening' in schedule:
+    if not keys:
+        first = schedule['first']
+        if isinstance(first, dict) and (first.get('overlap', False) is not False
+                                       or first.get('link_previous', False) is not False):
+            raise ValueError('本镜第一个动作没有前项，不能绑定或搭接不存在的运动来源')
+        following = schedule.get('following', [])
+        if not isinstance(following, list) or len(following) > limit:
+            raise ValueError('following必须是有界的后续动作列表')
+        append(first)
+        for value in following:
+            append(value)
+    if 'opening' in schedule and not (explicit_absence and schedule['opening'] is None):
         opening = schedule['opening']
         if (not isinstance(opening, dict) or 'first' not in opening
                 or not set(opening) <= {'first', 'following'}):

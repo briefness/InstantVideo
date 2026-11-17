@@ -153,6 +153,10 @@
                 <svg aria-hidden="true"><use href="#icon-alert"></use></svg>
                 <p></p>
               </div>
+              <div id="run-warnings" class="warning-panel" role="status" hidden>
+                <strong>已保留的审查问题</strong>
+                <ul></ul>
+              </div>
               <div id="export-list" class="export-list"></div>
             </aside>
           </div>
@@ -216,12 +220,12 @@
           </label>
 
           <label class="field">
-            <span>交付方式</span>
+            <span>审查模式</span>
             <select name="delivery_mode" aria-describedby="delivery-mode-help">
-              <option value="reviewed">逐镜验收后成片</option>
-              <option value="preview">先完成预览片</option>
+              <option value="reviewed">严格模式（默认）</option>
+              <option value="normal">正常模式（优先完成整片）</option>
             </select>
-            <small id="delivery-mode-help">预览片仅检查技术可用性，人物、动作和运镜待验收；仍按预算生成。</small>
+            <small id="delivery-mode-help">严格：审查发现问题即停止。正常：一般质量问题保留警告后继续；核心事件、人物、因果、衔接或素材问题仍停止。两种模式均审查，不因审查失败自动追加重拍。</small>
           </label>
 
           <fieldset class="field full-field">

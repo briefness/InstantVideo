@@ -125,6 +125,8 @@ class GenerationResult:
 class SeedanceAPI:
     """Seedance 2.0 统一接口 — 自动选择最佳可用路径"""
 
+    requires_original_materials = True
+
     def __init__(self):
         self.ark_client = None
         self._init_clients()
@@ -137,6 +139,7 @@ class SeedanceAPI:
                 self.ark_client = Ark(
                     api_key=config.ARK_API_KEY_SEEDANCE,
                     base_url=config.ARK_BASE_URL_SEEDANCE,
+                    max_retries=0,
                 )
                 print(f"  ✓ Volcengine Ark 客户端已配置 (视频生成: {config.ARK_BASE_URL_SEEDANCE}；尚未验证鉴权)")
             except ImportError:
@@ -168,6 +171,7 @@ class SeedanceAPI:
         on_submitted: Callable[[str], None] | None = None,
         reference_video: str | None = None,
         reference_video_sha256: str | None = None,
+        provider_materials: dict | None = None,
     ) -> dict:
         """
         生成视频 — 通过火山引擎 Ark
@@ -185,16 +189,12 @@ class SeedanceAPI:
             {"status": "succeeded", "video_url": "...", "last_frame_url": "...", ...}
             {"status": "failed", "error": "...", "error_code": "...", "error_type": "..."}
         """
-        if resolution not in config.SUPPORTED_RESOLUTIONS:
-            raise ValueError(f"Seedance 2.0 Mini 不支持分辨率: {resolution}")
-        if ratio not in config.SUPPORTED_ASPECT_RATIOS:
-            raise ValueError(f"Seedance 2.0 Mini 不支持画幅: {ratio}")
-        if (
-            isinstance(duration, bool)
-            or not isinstance(duration, int)
-            or not 4 <= duration <= 15
-        ):
-            raise ValueError("Seedance 2.0 Mini 时长必须为 4-15 秒的整数")
+        from pipeline.provider_capabilities import execution_request_issues
+        if not isinstance(model, str) or not model.strip():
+            raise ValueError('provider model 必须是有效的配置标识')
+        issues = execution_request_issues(model=model, resolution=resolution, ratio=ratio, duration=duration)
+        if issues:
+            raise ValueError('Provider 提交预检失败: ' + '; '.join(issues))
 
         return await self._generate_ark(
             prompt=prompt,
@@ -211,6 +211,7 @@ class SeedanceAPI:
             on_submitted=on_submitted,
             reference_video=reference_video,
             reference_video_sha256=reference_video_sha256,
+            provider_materials=provider_materials,
         )
 
     async def poll_task(self, task_id: str, *, timeout: int) -> dict:
@@ -225,9 +226,21 @@ class SeedanceAPI:
         self, prompt, duration, ratio, resolution, model,
         generate_audio, return_last_frame, image_urls, image_role, timeout,
         task_id=None, on_submitted=None, reference_video=None, reference_video_sha256=None,
+        provider_materials=None,
     ) -> dict:
         """通过火山引擎 Ark 官方 API 生成"""
         if task_id is None:
+            from pipeline.provider_materials import material_plan
+            current_materials = material_plan(image_urls or [], image_role, live=True, strict_generated=True,
+                execution=(provider_materials or {}).get('execution'))
+            if current_materials != provider_materials:
+                return {'status': 'failed', 'error_type': 'reference_validation',
+                        'error': '素材来源与已编译请求不一致；未提交生成'}
+            if current_materials and 'operation' in current_materials:
+                from pipeline.provider_operation import operation_prefix
+                if not prompt.startswith(operation_prefix(current_materials['operation'])):
+                    return {'status': 'failed', 'error_type': 'reference_validation',
+                            'error': '素材执行操作与最终请求不一致；未提交生成'}
             if reference_video is not None:
                 validate_video_reference(reference_video, model, image_role, len(image_urls or []))
                 if reference_video.startswith("https://"):
@@ -236,7 +249,19 @@ class SeedanceAPI:
                     except ValueError as exc:
                         return {"status": "failed", "error_type": "reference_validation", "error": str(exc)}
             content = [{"type": "text", "text": prompt}]
-            if image_urls:
+            if provider_materials is not None:
+                # 清单在预留预算前由生成器编译，保留官方原始 URL，不编码本地裁剪图。
+                current = current_materials
+                if current != provider_materials or reference_video is not None:
+                    return {'status': 'failed', 'error_type': 'reference_validation',
+                            'error': '原始素材清单发生变化或与动作参考冲突；未提交生成'}
+                for item in current['content']:
+                    item = {**item, item['type']: dict(item[item['type']])}
+                    url = item[item['type']]['url']
+                    if item['type'] == 'image_url' and os.path.isfile(url):
+                        item['image_url']['url'] = self._local_image_to_data_uri(url)
+                    content.append(item)
+            elif image_urls:
                 role = image_role or (
                     "first_frame" if len(image_urls) == 1 else "reference_image"
                 )
@@ -255,6 +280,7 @@ class SeedanceAPI:
                     "role": "reference_video",
                 })
 
+            phase = 'create_request'
             try:
                 print(f"     [API] model={model}, duration={duration}, resolution={resolution}")
                 print(f"     [API] content items: {len(content)} (types: {[c['type'] for c in content]})")
@@ -270,13 +296,23 @@ class SeedanceAPI:
                     return_last_frame=return_last_frame,
                     watermark=False,
                 )
-                task_id = resp.id
+                phase = 'create_response'
+                from tools.submission_evidence import identifier
+                task_id = getattr(resp, 'id', None)
+                if identifier(task_id) != task_id or not task_id:
+                    raise ValueError('创建响应没有有效任务标识')
             except Exception as exc:
+                from tools.submission_evidence import creation_diagnostic
+                diagnostic = creation_diagnostic(exc, phase=phase)
                 status = getattr(exc, "status_code", None)
-                if type(status) is not int or status >= 500 or status == 408:
+                # SDK 也可能在 HTTP 2xx 后解析响应失败；缺少有效任务 ID
+                # 时，这不构成未受理的证据，不能释放预算或再次创建。
+                if not (type(status) is int and 400 <= status < 500 and status != 408):
                     return {"status": "failed", "error_type": "submission_unknown",
+                            'submission_diagnostic': diagnostic,
                             "error": "创建任务结果未知；请核对供应商任务记录，禁止自动重新提交"}
                 failure = self._failure_from_error(exc)
+                failure['submission_diagnostic'] = diagnostic
                 if status in (401, 403):
                     failure["error_type"] = "authentication" if status == 401 else "permission_denied"
                 return failure
@@ -311,6 +347,13 @@ class SeedanceAPI:
                         "video_url": result.content.video_url,
                         "last_frame_url": getattr(result.content, "last_frame_url", None),
                         "audio_url": getattr(result.content, "audio_url", None),
+                        "provider_output": {
+                            "task_id": task_id,
+                            "model": getattr(result, 'model', None),
+                            "created_at": getattr(result, 'created_at', None),
+                            "video_url": result.content.video_url,
+                            "last_frame_url": getattr(result.content, 'last_frame_url', None),
+                        },
                     }
                 elif status in ("failed", "expired", "cancelled"):
                     error_msg = getattr(result, "error", status)

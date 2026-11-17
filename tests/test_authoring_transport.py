@@ -14,7 +14,7 @@ from test_director_intent import draft, intent_reply
 from structured_transport_cases import completion_response
 
 
-def http_client(monkeypatch, responses):
+def http_client(monkeypatch, responses, *, annotate_legacy_intent=False):
     calls = []
     values = iter(responses)
 
@@ -24,6 +24,11 @@ def http_client(monkeypatch, responses):
         value = next(values)
         if isinstance(value, httpx.Response):
             return value
+        if (annotate_legacy_intent and body.get('response_format', {}).get('json_schema', {}).get('name') == 'director_intent'
+                and isinstance(value, dict) and 'completion_goals' not in value):
+            # 仅为测试后续原始坏稿提供新版合法上游；绝不改写被测身份/分镜响应。
+            value = {**value, 'completion_goals': [{'goal': value.get('ending_requirement') or value['intent_evidence'],
+                'basis': 'user', 'evidence': value['intent_evidence']}]}
         return completion_response(value, body)
 
     sdk = OpenAI(api_key='offline-key', base_url='https://offline.invalid/v1',
@@ -33,9 +38,14 @@ def http_client(monkeypatch, responses):
 
 
 def test_formal_authoring_sends_strict_schema_in_actual_http_body(monkeypatch):
-    raw = authoring_from_legacy(draft())
+    from authoring_cases import scene_authoring_from_legacy, contextual_shot_fixture, scheduled_shot_fixture
+    from pipeline.production_plan import build_production_plan
+    raw = scene_authoring_from_legacy(draft())
+    plan = build_production_plan('action', 15, intent={**intent_reply('continuous action'),
+        'source_request': 'continuous action', 'choreography': 'flexible', 'authoring_protocol': 'scene-units-v1'})
     values = [intent_reply('continuous action'), {k: v for k, v in raw.items() if k != 'shots'}]
-    values += [{'shot': {k: v for k, v in s.items() if k != 'shot_id'}} for s in raw['shots']]
+    values += [{'shot': scheduled_shot_fixture({k: v for k, v in contextual_shot_fixture(s).items() if k != 'shot_id'},
+               slot, execution_timing=True)} for s, slot in zip(raw['shots'], plan['slots'])]
     sdk, calls = http_client(monkeypatch, values)
     with sdk:
         assert len(generate_storyboard('continuous action', target_duration=15)['shots']) == 3
@@ -49,11 +59,12 @@ def test_formal_authoring_sends_strict_schema_in_actual_http_body(monkeypatch):
     schema = calls[2]['response_format']['json_schema']['schema']
     assert schema['properties']['shot']['additionalProperties'] is False
     assert 'is_final' not in schema['properties']['shot']['properties']
-    variants = schema['$defs']['InteractionUnit']['oneOf']
+    variants = schema['$defs']['ScheduledFirstInteraction']['oneOf']
     assert all(v['properties']['actor']['enum'] == ['attacker', 'defender'] for v in variants)
     assert all('response' in v['required'] for v in variants)
-    assert {v['properties']['response']['const']: v['properties']['effect']['properties']['mode']['enum']
-            for v in variants} == {
+    modes = {v['properties']['response']['const']: v['properties']['effect']['properties']['mode']['enum']
+             for v in variants}
+    assert {k: modes[k] for k in ('impact', 'evasion', 'deflection')} == {
         'impact': ['direct_contact', 'directed_path', 'area_effect', 'indirect_effect'],
         'evasion': ['directed_path'], 'deflection': ['direct_contact', 'directed_path'],
     }
@@ -69,10 +80,14 @@ def test_unsupported_schema_stops_without_json_mode_fallback(monkeypatch):
 
 
 def test_real_protocol_violation_remains_rejected_even_if_provider_ignores_schema(monkeypatch):
+    from authoring_cases import scene_authoring_from_legacy
     record = json.loads((Path(__file__).parent / 'fixtures/real_authoring_protocol_failure.json').read_text())
     original = deepcopy(record)
-    sdk, calls = http_client(monkeypatch, [intent_reply('continuous action'), record['identity'], record['response']])
-    with sdk, pytest.raises(ValueError, match='is_final'):
+    # 上游新协议身份为独立合成夹具；被测真实坏响应保持原样。
+    source = scene_authoring_from_legacy(draft())
+    identity = {k: v for k, v in source.items() if k != 'shots'}
+    sdk, calls = http_client(monkeypatch, [intent_reply('continuous action'), identity, record['response']])
+    with sdk, pytest.raises(ValueError, match=r'创作响应契约.*action_plan \(type\)'):
         generate_storyboard('continuous action', target_duration=15)
     assert len(calls) == 3 and record == original
 

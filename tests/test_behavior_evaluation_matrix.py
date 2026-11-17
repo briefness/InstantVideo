@@ -168,6 +168,7 @@ def test_reference_matrix_separates_same_scene_state_and_cross_scene_identity(
     identity = tmp_path / "hero.jpg"
     identity.write_bytes(b"fixture")
     generator = object.__new__(VideoGenerator)
+    generator.output_dir = tmp_path
     generator.character_refs = {"hero": str(identity)}
 
     previous = {"scene_id": "street", "output_reference_depth": 1}
@@ -180,8 +181,8 @@ def test_reference_matrix_separates_same_scene_state_and_cross_scene_identity(
     cross_scene = {**same_scene, "scene_id": "rooftop"}
 
     assert generator._build_image_refs(same_scene, "/tmp/tail.jpg", previous) == (
-        ["/tmp/tail.jpg"],
-        "first_frame",
+        ["/tmp/tail.jpg", str(identity)],
+        "reference_image",
     )
     assert generator._build_image_refs(cross_scene, "/tmp/tail.jpg", previous) == (
         [str(identity)],
@@ -189,8 +190,9 @@ def test_reference_matrix_separates_same_scene_state_and_cross_scene_identity(
     )
 
 
-def test_planned_reanchor_never_claims_reset_without_canonical_identity():
+def test_planned_reanchor_never_claims_reset_without_canonical_identity(tmp_path):
     generator = object.__new__(VideoGenerator)
+    generator.output_dir = tmp_path
     generator.character_refs = {}
     shot = {
         "scene_id": "street",
@@ -203,7 +205,7 @@ def test_planned_reanchor_never_claims_reset_without_canonical_identity():
     refs, role = generator._build_image_refs(shot, "/tmp/tail.jpg", previous)
 
     assert refs == ["/tmp/tail.jpg"]
-    assert role == "first_frame"
+    assert role == "reference_image"
     assert generator._next_reference_depth(shot, previous, "/tmp/tail.jpg") == 3
 
 

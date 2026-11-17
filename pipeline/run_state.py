@@ -279,7 +279,11 @@ class RunWorkspace:
             if str(shot_id) not in self.manifest.shots:
                 raise ValueError('提交的镜头不在冻结生产计划内')
             submitted_shots = {reservation.shot_id for reservation in active}
-            if policy == 'single_pass' and shot_id in submitted_shots:
+            # 释放未受理请求的金额占用，不等于重新获得提交许可。
+            # 单次策略按尝试历史计数，计费容量仍只统计 active 记录。
+            if policy == 'single_pass' and any(
+                reservation.shot_id == shot_id for reservation in ledger.reservations
+            ):
                 raise PaidTakeBudgetExhaustedError('本次策略每个镜头最多提交一次；原任务与素材已保留')
             if limit is not None:
                 future = sum(state.shot_id != shot_id and state.shot_id not in submitted_shots
@@ -391,6 +395,7 @@ class RunWorkspace:
         accepted_contract_fingerprint: str | None = None,
         semantic_evaluator_version: str | None = None,
         acceptance_policy: str | None = None,
+        review_warnings: list[str] | None = None,
         recovery_actions: list[str] | None = None,
         prompt_attempts: list[dict[str, Any]] | None = None,
         rejection_evidence: list[dict[str, Any]] | None = None,
@@ -407,6 +412,10 @@ class RunWorkspace:
         errors: list[str] | None = None,
     ) -> None:
         key = str(shot_id)
+        if acceptance_policy == 'reviewed_with_warnings' and (
+                self.options.delivery_mode != 'normal' or semantic_accepted is not False
+                or not review_warnings):
+            raise ValueError('带警告交付必须来自正常模式，且保留未通过的审查结论与问题')
         previous = self.manifest.shots.get(key)
         relative_path = self._relative_to_workspace(local_path)
         previous_errors = list(previous.errors) if previous else []
@@ -474,6 +483,7 @@ class RunWorkspace:
                 accepted_contract_fingerprint=accepted_contract_fingerprint,
                 semantic_evaluator_version=semantic_evaluator_version,
                 acceptance_policy=acceptance_policy,
+                review_warnings=review_warnings or [],
                 rejection_evidence=(
                     rejection_evidence or [] if disposition == "rejected" else []
                 ),
@@ -526,6 +536,7 @@ class RunWorkspace:
                 or (previous.acceptance_policy if previous else None)
             ),
             recovery_actions=merged_recovery,
+            review_warnings=review_warnings or [],
             prompt_attempts=merged_attempts,
             take_history=take_history,
             canonical_take_id=canonical_take_id,
@@ -575,7 +586,11 @@ class RunWorkspace:
     def resumable_pending_tasks(self) -> dict[int, dict[str, Any]]:
         """Return only fully identified submissions that may be polled safely."""
         return {
-            state.shot_id: state.pending_task.model_dump(mode="json")
+            state.shot_id: {
+                **state.pending_task.model_dump(mode="json"),
+                **({'resume_from': 'provider_result'}
+                   if state.provider_error_locus == 'local_processing' else {}),
+            }
             for state in self.manifest.shots.values()
             if state.status == ShotStatus.running and state.pending_task is not None
         }
@@ -634,6 +649,7 @@ class RunWorkspace:
                 accepted_contract_fingerprint = canonical.accepted_contract_fingerprint
                 semantic_evaluator_version = canonical.semantic_evaluator_version
                 acceptance_policy = canonical.acceptance_policy
+                review_warnings = canonical.review_warnings
                 errors = canonical.errors
             elif state.status == ShotStatus.success and state.local_path:
                 local_value = state.local_path
@@ -651,9 +667,14 @@ class RunWorkspace:
                 accepted_contract_fingerprint = state.accepted_contract_fingerprint
                 semantic_evaluator_version = state.semantic_evaluator_version
                 acceptance_policy = state.acceptance_policy
+                review_warnings = state.review_warnings
                 errors = state.errors
             else:
                 continue
+            if acceptance_policy == 'reviewed_with_warnings' and (
+                    self.options.delivery_mode != 'normal' or semantic_accepted is not False
+                    or not review_warnings):
+                raise ValueError('正常模式的带警告素材与运行模式或审查记录不一致')
             local_path = self._resolve_artifact(local_value)
             if not local_path or not Path(local_path).is_file():
                 continue
@@ -678,6 +699,7 @@ class RunWorkspace:
                 "accepted_contract_fingerprint": accepted_contract_fingerprint,
                 "semantic_evaluator_version": semantic_evaluator_version,
                 "acceptance_policy": acceptance_policy,
+                "review_warnings": list(review_warnings),
                 "recovery_actions": list(state.recovery_actions),
                 "prompt_attempts": [
                     attempt.model_dump(mode="json", exclude_none=True)
@@ -709,8 +731,28 @@ class RunWorkspace:
     def completed_output(self) -> str | None:
         if self.manifest.status != RunStatus.succeeded or not self.manifest.final_path:
             return None
+        if self.manifest.delivery_fingerprint:
+            from pipeline.delivery import verified_output
+            return verified_output(self)
         path = self.path / self.manifest.final_path
         return str(path) if path.is_file() and path.stat().st_size > 0 else None
+
+    @_manifest_transaction
+    def bind_delivery(self, fingerprint: str, *, base: dict[str, Any] | None = None) -> None:
+        """已验收母版的交付身份不可由后续导出或恢复替换。"""
+        if self.manifest.delivery_fingerprint not in (None, fingerprint):
+            raise ValueError("交付母版身份已变化；不能覆盖已有成片记录")
+        if base is not None:
+            from pipeline.delivery import _digest
+            if _digest(base) != fingerprint:
+                raise ValueError("交付母版内容与身份不一致")
+            if self.manifest.delivery_base not in (None, base):
+                raise ValueError("交付母版记录不可更改")
+            # 同一次 manifest 原子提交拥有完整交付依据；导出进度可单独恢复。
+            self.manifest.delivery_base = json.loads(json.dumps(base, allow_nan=False))
+        self.manifest.delivery_fingerprint = fingerprint
+        self.manifest.stage = "delivery_ready"
+        self._save_manifest()
 
     def _relative_to_workspace(self, value: str | None) -> str | None:
         if not value:

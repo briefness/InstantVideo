@@ -13,6 +13,7 @@ from typing import Optional
 
 import config
 from pipeline.continuation import prepare_continuation
+from pipeline.presentation_media import ensure_presentation, resolve_presentation, source_box
 from pipeline.visual_assets import prepare_identity_assets, identity_reference_bindings
 from tools.seedance_api import (
     SeedanceAPI,
@@ -28,6 +29,12 @@ from pipeline.storyboard import (
     _should_use_previous_tail_reference,
 )
 from pipeline.production_plan import reference_policy
+from pipeline.reference_binding import resolve_image_references, observed_start_state
+from pipeline.provider_operation import execution_intent
+from pipeline.provider_materials import (
+    capture_output, bind_derivation, derivation_path, material_plan, material_prompt, plan_evidence,
+    record_request, move_original,
+)
 from pipeline.participants import visible_character_names
 from pipeline.causality import ACTION_CONTRACT_VERSION, compile_action_contract
 from pipeline.provider_prompt import (
@@ -92,6 +99,7 @@ class ShotResult:
     accepted_contract_fingerprint: Optional[str] = None
     semantic_evaluator_version: Optional[str] = None
     acceptance_policy: Optional[str] = None
+    review_warnings: list[str] = field(default_factory=list)
     recovery_actions: list[str] = field(default_factory=list)
     prompt_attempts: list[dict] = field(default_factory=list)
     rejection_evidence: list[dict] = field(default_factory=list)
@@ -134,7 +142,11 @@ class VideoGenerator:
         accepted_shot_artifacts: Mapping[int, Mapping[str, object]] | None = None,
         check_paid_take: Callable[[int], None] | None = None,
         review_content: bool | None = None,
+        review_mode: str | None = None,
     ):
+        if review_mode not in (None, 'strict', 'normal') or (review_mode and review_content is False):
+            raise ValueError('审查模式不能与跳过审查同时使用')
+        self.review_mode = review_mode
         self.api = SeedanceAPI()
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -148,6 +160,8 @@ class VideoGenerator:
         self.confirm_paid_take_submission = confirm_paid_take_submission
         self.reconcile_paid_take = reconcile_paid_take
         self.release_unsubmitted_paid_take = release_unsubmitted_paid_take
+        # 显式预览只绑定真实参考素材，不把未审查画面补写成已验收末态。
+        self._reference_only_delivery = review_content is False
         self.resume_tasks = {
             int(shot_id): dict(descriptor)
             for shot_id, descriptor in (resume_tasks or {}).items()
@@ -162,9 +176,10 @@ class VideoGenerator:
         }
         self.semantic_reviewer = (
             SemanticTakeReviewer(
-                self.output_dir, model=config.SEMANTIC_REVIEW_MODEL
+                self.output_dir, model=config.SEMANTIC_REVIEW_MODEL,
+                **({'review_mode': 'normal'} if review_mode == 'normal' else {}),
             )
-            if (config.SEMANTIC_REVIEW_ENABLED if review_content is None else review_content)
+            if review_mode or (config.SEMANTIC_REVIEW_ENABLED if review_content is None else review_content)
             else None
         )
 
@@ -199,7 +214,7 @@ class VideoGenerator:
         ┌─────────────────────────────────────────────────────────────────┐
         │ 合格镜头: 从已验收中点帧裁出无污染角色身份参考                  │
         │ seamless: first_frame (仅上一尾帧，锁定真实起始状态)            │
-        │ 同场景切镜: 已验收尾帧 first_frame，锁定真实起始状态         │
+        │ 同场景切镜: 已验收尾帧 reference_image，允许新镜头构图       │
         │ 跨场景 intentional_cut: 仅 canonical 角色身份                  │
         └─────────────────────────────────────────────────────────────────┘
         """
@@ -246,6 +261,8 @@ class VideoGenerator:
                     prev_shot,
                     incoming_last_frame,
                     reference_role=role_argument,
+                    reference_fingerprints=provenance.get('reference_fingerprints'),
+                    reference_source_fingerprints=provenance.get('reference_source_fingerprints'),
                 )
                 shot["output_reference_depth"] = result.reference_chain_depth
                 self._notify_progress(result)
@@ -265,7 +282,8 @@ class VideoGenerator:
                 # 提取角色参考帧
                 if shot.get("extract_character_ref") and not self.semantic_reviewer:
                     await self._extract_character_ref(shot, result.local_path, storyboard)
-                prev_shot = shot
+                prev_shot = {**shot, '_accepted_video_path':
+                             resolve_presentation(result.local_path, shot, self.output_dir)}
             elif result.status == "running":
                 print(
                     f"     ⏸ 远端任务 {result.provider_task_id or 'unknown'} "
@@ -326,6 +344,8 @@ class VideoGenerator:
         )
 
     def _retake_allowed(self, result: ShotResult) -> bool:
+        if self.review_mode is not None:
+            return False
         if self.check_paid_take:
             try:
                 self.check_paid_take(result.shot_id)
@@ -334,6 +354,28 @@ class VideoGenerator:
                 result.status = 'failed'
                 self._notify_progress(result)
                 return False
+        return True
+
+    def _admit_review(self, result, review, shot, video_path, image_urls, role) -> bool:
+        """只在交付层容忍已分类瑕疵，保留原始审查和可交接的真实末态。"""
+        from pipeline.review_policy import decide_review, WARNING_POLICY
+        result.semantic_accepted = review.accepted
+        result.observed_end_state = review.observed_end_state
+        decision = decide_review(review, self.review_mode or 'strict')
+        if not decision.allowed:
+            return False
+        result.review_warnings = list(decision.warnings)
+        result.accepted_contract_version = ACTION_CONTRACT_VERSION
+        result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
+        result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
+        result.acceptance_policy = WARNING_POLICY if decision.warnings else 'semantic_reviewed'
+        result.rejection_evidence = []
+        self._write_acceptance_context(shot['shot_id'], video_path, shot, image_urls, role,
+                                       policy=result.acceptance_policy)
+        self._register_identity_crops(shot_id=shot['shot_id'], video_path=video_path,
+                                      crop_boxes=review.identity_crop_boxes, shot=shot)
+        if decision.warnings:
+            print('     ⚠ 正常模式保留质量警告继续：' + '；'.join(decision.warnings))
         return True
 
     async def _generate_single_shot(
@@ -360,7 +402,8 @@ class VideoGenerator:
         expected_refs, expected_role = self._build_image_refs(
             shot, prev_last_frame, prev_shot
         )
-        if expected_role == "first_frame":
+        if (not self._reference_only_delivery
+                and self._has_state_reference(shot, prev_shot, prev_last_frame, expected_refs, expected_role)):
             shot = await asyncio.to_thread(
                 prepare_continuation, shot, prev_shot, prev_last_frame, self.output_dir,
                 allow_create=(
@@ -371,6 +414,7 @@ class VideoGenerator:
             )
             ensure_shot_ready(shot, previous_frame=prev_last_frame,
                               previous_shot=prev_shot, character_refs=self.character_refs)
+            expected_refs, expected_role = self._build_image_refs(shot, prev_last_frame, prev_shot)
         motion = prepare_motion_reference(
             shot, storyboard.get("aspect_ratio", "16:9"), self.output_dir, config.SEEDANCE_MODEL
         )
@@ -419,21 +463,8 @@ class VideoGenerator:
                     previous_shot=prev_shot,
                     storyboard=storyboard,
                 )
-                if review and review.accepted:
+                if review and self._admit_review(result, review, shot, result.local_path, expected_refs, expected_role):
                     result.status = "success"
-                    result.semantic_accepted = True
-                    result.observed_end_state = review.observed_end_state
-                    result.accepted_contract_version = ACTION_CONTRACT_VERSION
-                    result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
-                    result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
-                    result.acceptance_policy = "semantic_reviewed"
-                    self._write_acceptance_context(
-                        shot["shot_id"],
-                        result.local_path,
-                        shot,
-                        expected_refs,
-                        expected_role,
-                    )
                     result.last_frame_url = self._extract_local_tail_frame(
                         shot["shot_id"], result.local_path, shot
                     )
@@ -483,6 +514,7 @@ class VideoGenerator:
                 accepted_contract_fingerprint=restored.get("accepted_contract_fingerprint"),
                 semantic_evaluator_version=restored.get("semantic_evaluator_version"),
                 acceptance_policy=restored.get("acceptance_policy"),
+                review_warnings=list(restored.get('review_warnings', [])),
                 recovery_actions=list(restored.get("recovery_actions", [])),
                 prompt_attempts=list(restored.get("prompt_attempts", [])),
                 reference_chain_depth=int(restored.get("reference_chain_depth", 0)),
@@ -491,9 +523,10 @@ class VideoGenerator:
                 result.last_frame_url = self._extract_local_tail_frame(
                     shot["shot_id"], result.local_path, shot
                 )
-            if self.semantic_reviewer and result.semantic_accepted is True:
+            if self.semantic_reviewer and (result.semantic_accepted is True
+                    or result.acceptance_policy == 'reviewed_with_warnings'):
                 accepted_boxes = self.semantic_reviewer.accepted_identity_crop_boxes(
-                    result.local_path
+                    resolve_presentation(result.local_path, shot, self.output_dir)
                 )
                 if accepted_boxes:
                     self._register_identity_crops(
@@ -592,6 +625,9 @@ class VideoGenerator:
         cached_path = str(
             self.output_dir / "shots" / f"shot_{shot['shot_id']:03d}.mp4"
         )
+        resume_materialization = bool(
+            resume_descriptor and resume_descriptor.get('resume_from') == 'provider_result'
+        )
         cache_is_compatible = (
             not state_reference_required
             or self._provenance_matches(
@@ -599,11 +635,13 @@ class VideoGenerator:
             )
         )
         if (
-            Path(cached_path).exists()
+            not resume_materialization
+            and Path(cached_path).exists()
             and Path(cached_path).stat().st_size > 0
             and cache_is_compatible
         ):
-            qa = check_video_quality(cached_path)
+            presented = ensure_presentation(cached_path, shot, prev_last_frame, self.output_dir)
+            qa = check_video_quality(presented)
             if qa["pass"]:
                 result.status = "success"
                 result.local_path = cached_path
@@ -621,20 +659,7 @@ class VideoGenerator:
                     )
                     result.semantic_accepted = review.accepted
                     result.observed_end_state = review.observed_end_state
-                    if review.accepted:
-                        result.accepted_contract_version = ACTION_CONTRACT_VERSION
-                        result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
-                        result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
-                        result.acceptance_policy = "semantic_reviewed"
-                        self._write_acceptance_context(
-                            shot["shot_id"], cached_path, shot, expected_refs, expected_role
-                        )
-                        self._register_identity_crops(
-                            shot_id=shot["shot_id"],
-                            video_path=cached_path,
-                            crop_boxes=review.identity_crop_boxes,
-                        )
-                    if not review.accepted:
+                    if not self._admit_review(result, review, shot, cached_path, expected_refs, expected_role):
                         reason = review.failure_reason or "镜头未满足动作与空间契约"
                         result.rejection_evidence = semantic_review_failure_evidence(
                             review
@@ -703,7 +728,7 @@ class VideoGenerator:
                     return result
             else:
                 print(f"     ⚠ 缓存文件 QA 不通过 ({qa['issues']}), 重新生成")
-        elif Path(cached_path).exists() and Path(cached_path).stat().st_size > 0:
+        elif not resume_materialization and Path(cached_path).exists() and Path(cached_path).stat().st_size > 0:
             result.status = "failed"
             result.local_path = cached_path
             result.rejection_evidence = pipeline_state_failure_evidence(
@@ -722,7 +747,6 @@ class VideoGenerator:
         input_text_recompile_used = False
 
         use_refs = True  # 是否使用参考图 (失败后会关闭)
-        skip_char_refs = False  # 隐私审核失败后, 丢弃角色参考帧但保留尾帧衔接
         for level, deg_config in enumerate(
             config.GENERATION_CHAINS[requested_resolution]
         ):
@@ -753,10 +777,6 @@ class VideoGenerator:
                     # 先选择参考职责，prompt 才能准确说明每张图的权限边界。
                     if not use_refs:
                         image_urls, role = [], None
-                    elif skip_char_refs:
-                        image_urls, role = self._build_state_only_refs(
-                            shot, prev_last_frame, prev_shot
-                        )
                     else:
                         image_urls, role = self._build_image_refs(
                             shot, prev_last_frame, prev_shot
@@ -764,6 +784,10 @@ class VideoGenerator:
                     has_state_reference = self._has_state_reference(
                         shot, prev_shot, prev_last_frame, image_urls, role
                     )
+                    materials = material_plan(image_urls, role, execution=execution_intent(shot), live=resume_descriptor is None,
+                        strict_generated=resume_descriptor is None and getattr(self.api, 'requires_original_materials', False))
+                    if materials and motion:
+                        raise GenerationReadinessError('原始人物/状态参考与独立动作参考需联合分配容量；当前不能混用，也不删参考试错')
                     resuming_existing_task = resume_descriptor is not None
                     if resuming_existing_task:
                         if not self._pending_descriptor_matches(
@@ -833,11 +857,13 @@ class VideoGenerator:
                         if not has_explicit_action_contract(shot) and shot.get("negative_prompt"):
                             prompt += f". {shot['negative_prompt']}"
 
+                        from pipeline.spatial_guidance import reference_kind
                         prompt = self._inject_reference_scope(
                             prompt,
                             role,
                             reference_count=len(image_urls),
                             has_state_reference=has_state_reference,
+                            spatial_reference=reference_kind(shot),
                         )
                     if not resuming_existing_task:
                         if prepared_identity_refs:
@@ -854,9 +880,9 @@ class VideoGenerator:
                             if deg_config["model"] != motion["model"]:
                                 raise ValueError("动作参考不允许隐式切换模型")
                             prompt += motion_prompt_suffix(shot)
-                        provider_duration = min(
-                            shot["duration"], deg_config["max_duration"]
-                        )
+                        if materials:
+                            prompt = material_prompt(prompt, materials)
+                        provider_duration = shot["duration"]
                         ensure_provider_submission_ready(
                             prompt,
                             shot,
@@ -885,6 +911,16 @@ class VideoGenerator:
                         "outcome": "pending",
                     }
                     reservation_id = None
+
+                    if not resuming_existing_task:
+                        record_request(self.output_dir, shot['shot_id'], candidate.attempts, {
+                            'prompt': prompt, 'duration': provider_duration,
+                            'ratio': storyboard.get('aspect_ratio', '16:9'),
+                            'model': deg_config['model'], 'resolution': deg_config['resolution'],
+                            'generate_audio': shot.get('generate_audio', True),
+                            'return_last_frame': self.api.supports_last_frame,
+                            'provenance': generation_provenance,
+                        })
 
                     # A new provider task is paid work. Persist its authorization
                     # before the call; existing remote tasks are polling only.
@@ -919,17 +955,25 @@ class VideoGenerator:
                             return_last_frame=self.api.supports_last_frame,
                             image_urls=image_urls if image_urls else None,
                             image_role=role,
+                            **({'provider_materials': materials} if materials else {}),
                             timeout=config.GENERATION_TIMEOUT,
                             task_id=None,
                             on_submitted=remember_submission,
                             **({"reference_video": motion.get("video_url") or motion["asset_uri"],
                                 "reference_video_sha256": motion["sha256"]} if motion else {}),
                         )
+                    if not resuming_existing_task:
+                        from tools.submission_evidence import record_submission_result
+                        record_submission_result(self.output_dir, shot['shot_id'], result.attempts, gen_result)
+                    if gen_result.get('submission_diagnostic') is not None:
+                        prompt_attempt['submission_diagnostic'] = gen_result['submission_diagnostic']
                     if gen_result.get("error_type") == "submission_unknown":
                         # 保留 reserved 账本；没有任务 ID 不等于供应商没有创建任务。
                         prompt_attempt["outcome"] = "pending"
                         result.provider_error_type = "submission_unknown"
-                        result.status = "failed"
+                        result.provider_error_message = gen_result['error']
+                        result.provider_error_locus = 'task_creation'
+                        result.status = "running"
                         result.errors.append(gen_result["error"])
                         self._notify_progress(result)
                         return result
@@ -1039,10 +1083,12 @@ class VideoGenerator:
                             return result
                         result.local_path = local_path
                         result.last_frame_url = gen_result.get("last_frame_url")
+                        capture_output(local_path, gen_result)
 
                         # 质量检测
                         try:
-                            qa = check_video_quality(local_path)
+                            presented = ensure_presentation(local_path, shot, prev_last_frame, self.output_dir)
+                            qa = check_video_quality(presented)
                         except Exception as exc:
                             result.status = "failed"
                             result.rejection_evidence = technical_failure_evidence(
@@ -1084,26 +1130,7 @@ class VideoGenerator:
                             )
                             result.semantic_accepted = review.accepted
                             result.observed_end_state = review.observed_end_state
-                            if review.accepted:
-                                result.rejection_evidence = []
-                                result.accepted_contract_version = ACTION_CONTRACT_VERSION
-                                result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
-                                result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
-                                result.acceptance_policy = "semantic_reviewed"
-                                self._write_acceptance_context(
-                                    shot["shot_id"],
-                                    local_path,
-                                    shot,
-                                    image_urls,
-                                    role,
-                                )
-                                self._register_identity_crops(
-                                    shot_id=shot["shot_id"],
-                                    video_path=local_path,
-                                    crop_boxes=review.identity_crop_boxes,
-                                    shot=shot,
-                                )
-                            if not review.accepted:
+                            if not self._admit_review(result, review, shot, local_path, image_urls, role):
                                 reason = review.failure_reason or "镜头未满足动作与空间契约"
                                 result.rejection_evidence = (
                                     semantic_review_failure_evidence(review)
@@ -1141,7 +1168,7 @@ class VideoGenerator:
                             # just because local observation failed. Keep provider tail
                             # when available and stop before a dependent next shot.
                             remote_tail = gen_result.get("last_frame_url") if not shot.get('media_selection') else None
-                            if remote_tail:
+                            if remote_tail and not shot.get('presentation_policy'):
                                 result.last_frame_url = remote_tail
                                 result.errors.append(
                                     f"本地尾帧提取失败，保留 provider 尾帧: {exc}"
@@ -1179,50 +1206,12 @@ class VideoGenerator:
                         return result
 
                     elif gen_result.get("error_type") == "privacy":
-                        if any(path in prepared_identity_refs.values() for path in image_urls):
-                            result.errors.append('已绑定的定妆素材被拒绝，停止；不能移除素材后改变人物身份重试')
-                            result.status = 'failed'
-                            self._notify_progress(result)
-                            return result
-                        # 隐私审核: 角色参考帧被判定为含真实人物
-                        # 降级策略: 丢弃角色参考帧, 仅保留尾帧做画面衔接
-                        if not image_urls:
-                            # 纯文本请求没有可降级的参考职责；重复提交相同请求
-                            # 只会增加成本，并不能改变远端审核结果。
-                            result.errors.append(
-                                f"L{level}: 纯文本请求仍被隐私审核拒绝, 停止重试"
-                            )
-                            result.status = "failed"
-                            self._notify_progress(result)
-                            return result
-                        if (
-                            not skip_char_refs
-                            and self._has_removable_identity_refs(image_urls, role)
-                        ):
-                            skip_char_refs = True
-                            result.errors.append(
-                                f"L{level}: 隐私审核拒绝角色参考帧, 降级为尾帧衔接 + 文字描述"
-                            )
-                            print(f"     ⚠ 隐私审核: 角色参考帧含类真实人物, 改为尾帧衔接模式")
-                            await asyncio.sleep(3)
-                            continue
-                        else:
-                            # 状态镜头不能丢尾帧；独立镜头才可继续 T2V。
-                            if state_reference_required:
-                                result.errors.append(
-                                    f"L{level}: 状态参考被隐私审核拒绝，"
-                                    "没有可移除的身份参考，无法满足连续性契约"
-                                )
-                                result.status = "failed"
-                                self._notify_progress(result)
-                                return result
-                            use_refs = False
-                            result.errors.append(
-                                f"L{level}: 隐私审核再次拒绝, 退化为纯文本 T2V"
-                            )
-                            print(f"     ⚠ 隐私审核: 尾帧也被拒绝, 退化为纯文本 T2V")
-                            await asyncio.sleep(3)
-                            continue
+                        result.errors.append(
+                            '人物素材隐私审核拒绝；保留全部身份和连续性要求，停止自动重试。'
+                            '需核对同账号原始产物的来源/有效期，或使用官方已授权/预置人像 asset。')
+                        result.status = 'failed'
+                        self._notify_progress(result)
+                        return result
 
                     elif gen_result.get("error_type") == "copyright_policy":
                         detail = self._provider_failure_detail(gen_result)
@@ -1297,18 +1286,10 @@ class VideoGenerator:
                             ]
                         )
                         if is_ref_error:
-                            if state_reference_required or any(path in prepared_identity_refs.values() for path in image_urls):
-                                result.errors.append(
-                                    f"L{level}: 必需的状态或身份参考图不可用，停止以避免生成不连续镜头"
-                                )
-                                result.status = "failed"
-                                self._notify_progress(result)
-                                return result
-                            result.errors.append(f"L{level}: 参考图异常, 改为无图重试")
-                            print(f"     ⚠ 参考图异常, 改为无图重试")
-                            use_refs = False
-                            await asyncio.sleep(3)
-                            continue
+                            result.errors.append('参考素材不可用，保留完整引用并停止；不删除参考或改为纯文本重试')
+                            result.status = 'failed'
+                            self._notify_progress(result)
+                            return result
 
                 except (
                     ProgressPersistenceError,
@@ -1322,10 +1303,21 @@ class VideoGenerator:
                     result.status = "failed"
                     self._notify_progress(result)
                     return result
-                except asyncio.TimeoutError:
-                    result.errors.append(f"L{level}: 超时")
-                    print(f"     ⚠ L{level} 超时")
                 except Exception as e:
+                    if result is candidate and result.provider_task_id:
+                        # 受理后的本地失败只能恢复这个任务；磁盘/来源保存异常
+                        # 不能穿过通用重试循环，再创建一个已经成功生成的 Take。
+                        result.status = 'running'
+                        result.provider_error_type = 'local_processing'
+                        result.provider_error_locus = 'local_processing'
+                        from pipeline.operation_failure import failure_evidence
+                        result.errors.append(
+                            f"任务 {result.provider_task_id} 已受理，后续处理未完成；"
+                            "已保留同一任务，恢复时继续物化且不会重新提交: "
+                            + json.dumps(failure_evidence(e), ensure_ascii=False)
+                        )
+                        self._notify_progress(result)
+                        return result
                     result.errors.append(f"L{level}: {str(e)}")
                     print(f"     ⚠ L{level} 异常: {str(e)[:200]}")
 
@@ -1401,6 +1393,17 @@ class VideoGenerator:
             for name, reference in self.character_refs.items()
             if role == 'reference_image' and reference == path
         ]
+        materials = plan_evidence(material_plan(image_urls, role, execution=execution_intent(shot)))
+        if materials is not None:
+            provenance['provider_materials'] = materials
+        if shot.get('reference_view'):
+            provenance['reference_view'] = shot['reference_view']
+            provenance['reference_source_fingerprints'] = [shot['reference_view']['source_sha256']]
+        if shot.get('reference_view_decision'):
+            provenance['reference_view_decision'] = shot['reference_view_decision']
+        if shot.get('spatial_guidance') is not None:
+            from pipeline.spatial_guidance import checked_guidance
+            provenance['spatial_guidance'] = checked_guidance(shot)
         if shot.get('visual_description') is not None:
             provenance['visual_direction_fingerprint'] = hashlib.sha256(
                 shot['visual_description'].encode('utf-8')).hexdigest()
@@ -1459,13 +1462,16 @@ class VideoGenerator:
             "compiled_contract_version": ACTION_CONTRACT_VERSION,
             "compiled_contract_fingerprint": self._compiled_contract_fingerprint(shot),
             "semantic_evaluator_version": (
-                SEMANTIC_REVIEW_VERSION if policy == "semantic_reviewed" else None
+                SEMANTIC_REVIEW_VERSION if policy != "technical_only" else None
             ),
             "image_role": role,
             "reference_fingerprints": [
                 self._reference_fingerprint(value) for value in image_urls
             ],
         }
+        materials = plan_evidence(material_plan(image_urls, role, execution=execution_intent(shot)))
+        if materials is not None:
+            context['provider_materials'] = materials
         invariants_fingerprint = visual_invariants_fingerprint(shot)
         if shot.get('visual_description') is not None:
             context['visual_direction_fingerprint'] = hashlib.sha256(
@@ -1478,7 +1484,9 @@ class VideoGenerator:
         selection = media_selection_policy(shot)
         if selection:
             context['media_selection'] = selection
-        if policy == "semantic_reviewed" and invariants_fingerprint:
+        if shot.get('presentation_policy'):
+            context['presentation_policy'] = shot['presentation_policy']
+        if policy != "technical_only" and invariants_fingerprint:
             context.update({
                 "visual_invariants_version": VISUAL_INVARIANTS_VERSION,
                 "visual_invariants_fingerprint": invariants_fingerprint,
@@ -1585,7 +1593,11 @@ class VideoGenerator:
         if not isinstance(acceptance_context, dict):
             return False
         policy = restored.get("acceptance_policy")
-        if policy not in {"semantic_reviewed", "technical_only"}:
+        if policy not in {"semantic_reviewed", "reviewed_with_warnings", "technical_only"}:
+            return False
+        if policy == 'reviewed_with_warnings' and self.review_mode != 'normal':
+            return False
+        if policy == 'technical_only' and self.review_mode:
             return False
         expected_context = self._acceptance_context(
             shot, image_urls, role, policy=str(policy)
@@ -1600,7 +1612,7 @@ class VideoGenerator:
             == self._compiled_contract_fingerprint(shot)
             and (
                 restored.get("semantic_evaluator_version") == SEMANTIC_REVIEW_VERSION
-                if policy == "semantic_reviewed"
+                if policy != "technical_only"
                 else restored.get("semantic_evaluator_version") is None
             )
         )
@@ -1625,7 +1637,7 @@ class VideoGenerator:
         rejected = source.with_name(
             f"shot_{shot_id:03d}_incompatible_{existing + 1}.mp4"
         )
-        source.replace(rejected)
+        move_original(source, rejected)
         provenance = self._generation_provenance_path(shot_id, video_path=str(source))
         if provenance.is_file():
             provenance.replace(
@@ -1639,66 +1651,33 @@ class VideoGenerator:
         prev_last_frame: Optional[str],
         prev_shot: Optional[dict] = None,
     ) -> tuple[list[str], Optional[str]]:
-        """按单一职责选择参考图，避免身份与起始状态共用一个 role。
-
-        返回 (image_urls, role):
-        ┌───────────────────────────────────────────────────────────┐
-        │ seamless / 同场景切镜: 尾帧 first_frame，锁定真实起始状态 │
-        │ 跨场景 intentional_cut: 角色图 reference_image            │
-        │ 无可用职责资产: [] + None                                 │
-        └───────────────────────────────────────────────────────────┘
-        """
-        continuity = shot.get("continuity_from_previous")
-        if continuity == "seamless" and prev_last_frame:
-            print("     [REF] 无缝续接: 尾帧 first_frame")
-            return [prev_last_frame], "first_frame"
-
-        # 收集本镜头涉及的角色参考帧 (本地文件路径)
-        shot_chars = shot.get("characters", [])
-        char_ref_paths = []
-        for char_name in shot_chars:
-            if char_name in self.character_refs:
-                path = self.character_refs[char_name]
-                if os.path.isfile(path):
-                    char_ref_paths.append(path)
-
-        if continuity == "intentional_cut":
-            policy = reference_policy(shot)
-            if policy == "identity_only" and not char_ref_paths:
-                if prev_last_frame:
-                    print(
-                        "     [REF] 计划重锚点暂无 canonical identity，"
-                        "保留尾帧 first_frame"
-                    )
-                    return [prev_last_frame], "first_frame"
-                print("     [REF] 计划重锚点暂无 canonical identity，T2V 模式")
-                return [], None
-            if prev_last_frame and _should_use_previous_tail_reference(
-                shot,
-                prev_shot,
-                has_identity_reference=bool(char_ref_paths),
-            ):
-                print("     [REF] 同场景状态交接: 尾帧 first_frame（官方状态职责）")
-                return [prev_last_frame], "first_frame"
-            if char_ref_paths:
-                print(
-                    f"     [REF] 有意切镜: {len(char_ref_paths)} 张角色 reference_image"
-                )
-                return char_ref_paths, "reference_image"
-            print("     [REF] 有意切镜: 无角色锚点，T2V 模式")
-            return [], None
-
-        # 旧分镜没有显式契约时，尾帧优先承担连续性职责。
-        if prev_last_frame:
-            print("     [REF] 兼容续接: 尾帧 first_frame")
-            return [prev_last_frame], "first_frame"
-
-        if char_ref_paths:
-            print(f"     [REF] 角色锚定: {len(char_ref_paths)} 张 reference_image")
-            return char_ref_paths, "reference_image"
-
-        print("     [REF] T2V 模式: 无参考图")
-        return [], None
+        """新取景锁定派生首帧，其余引用仍按剪辑边界和身份职责解析。"""
+        from pipeline.spatial_guidance import append_guidance
+        if shot.get('reference_view'):
+            from pipeline.reference_view import materialize_view
+            if not prev_last_frame:
+                raise ValueError('新取景缺少实际来源尾帧')
+            view = materialize_view(shot, prev_last_frame, self.output_dir)
+            # 原始素材不能裁剪后上传；可选取景转为基于原件的定位指令。
+            # 原摄影要求仍由影片审查验证，不宣称物理裁剪已经实现了镜头变化。
+            role = 'reference_image' if derivation_path(view).exists() else 'first_frame'
+            capability = shot['reference_view'].get('execution_capability')
+            if capability and capability['mode'] == 'original_video_guidance':
+                # 状态视窗不替代人物身份。分别绑定，供应商层再按原视频去重。
+                identities = [self.character_refs[name] for name in shot.get('characters', [])
+                              if name in self.character_refs]
+                if any(not os.path.isfile(path) for path in identities):
+                    raise ValueError('已绑定的身份参考不可用；未丢弃身份或提交生成')
+                refs = list(dict.fromkeys([view, *identities]))
+                if len(refs) > 9:
+                    raise ValueError('取景状态与身份参考超过 9 张；未丢弃参考或提交生成')
+                return append_guidance(shot, refs, role, prev_last_frame, self.output_dir)
+            return append_guidance(shot, [view], role, prev_last_frame, self.output_dir)
+        identities = [self.character_refs[name] for name in shot.get('characters', [])
+                      if name in self.character_refs and os.path.isfile(self.character_refs[name])]
+        refs, role = resolve_image_references(shot, prev_last_frame, prev_shot, identities)
+        print(f"     [REF] {shot.get('continuity_from_previous') or 'legacy'}: {role or 'T2V'}, {len(refs)} 张")
+        return append_guidance(shot, refs, role, prev_last_frame, self.output_dir)
 
     async def _review_take(
         self,
@@ -1741,16 +1720,26 @@ class VideoGenerator:
                     dict(previous_state) if isinstance(previous_state, dict) else {}
                 ),
             }
+            if provenance.get('provider_materials'):
+                boundary_context['state_reference_role'] = provenance['provider_materials']['image_role']
+            if provenance.get('reference_view'):
+                boundary_context['reference_view_version'] = provenance['reference_view']['version']
         try:
+            presented = ensure_presentation(video_path, shot, previous_frame_path, self.output_dir)
+            from pipeline.temporal_evidence import enabled
+            temporal_args = ({'previous_video_path': previous_shot.get('_accepted_video_path'),
+                              'previous_shot': previous_shot}
+                             if enabled(shot) and previous_shot is not None else {})
             return await asyncio.to_thread(
                 self.semantic_reviewer.review,
-                video_path,
+                presented,
                 shot,
                 previous_frame_path=previous_frame_path,
                 identity_reference_paths=identity_paths,
                 identity_reference_entities=identity_entities,
                 boundary_context=boundary_context,
                 identity_crop_entities=crop_entities,
+                **temporal_args,
             )
         except SemanticReviewUnavailableError:
             raise
@@ -1767,9 +1756,17 @@ class VideoGenerator:
         previous_frame: Optional[str],
         *,
         reference_role: object = _REFERENCE_ROLE_UNSET,
+        reference_fingerprints: list[str] | None = None,
+        reference_source_fingerprints: list[str] | None = None,
     ) -> int:
         if previous_shot is None or not previous_frame:
             return 0
+        if reference_fingerprints is not None:
+            # reference_image 也可能承接上一尾帧；角色名不能冒充身份重锚成功。
+            lineage = reference_source_fingerprints or reference_fingerprints
+            uses_tail = bool(lineage and lineage[0]
+                             == self._reference_fingerprint(previous_frame))
+            return int(previous_shot.get('output_reference_depth', 0)) + 1 if uses_tail else 0
         if reference_role is not _REFERENCE_ROLE_UNSET:
             return (
                 int(previous_shot.get("output_reference_depth", 0)) + 1
@@ -1798,32 +1795,17 @@ class VideoGenerator:
         prev_last_frame: Optional[str],
         prev_shot: Optional[dict],
     ) -> tuple[list[str], Optional[str]]:
-        """Drop identity refs while preserving the active continuity mode."""
-        if not prev_last_frame:
-            print("     [REF] 隐私降级: 无可用尾帧, T2V 模式")
-            return [], None
-        if shot.get("continuity_from_previous") == "seamless":
-            print("     [REF] 隐私降级: 仅尾帧 first_frame")
-            return [prev_last_frame], "first_frame"
-        if reference_policy(shot) == "identity_only":
-            print("     [REF] 隐私降级: canonical identity 不可用，保留尾帧 first_frame")
-            return [prev_last_frame], "first_frame"
-        if _should_use_previous_tail_reference(
-            shot,
-            prev_shot,
-            has_identity_reference=False,
-        ):
-            print("     [REF] 隐私降级: 仅尾帧 first_frame")
-            return [prev_last_frame], "first_frame"
-        print("     [REF] 隐私降级: 跨场景且无状态参考职责, T2V 模式")
-        return [], None
+        """移除身份图不改变剪辑边界，不能退回会锁死切镜构图的首帧。"""
+        if shot.get('reference_view'):
+            return self._build_image_refs(shot, prev_last_frame, prev_shot)
+        return resolve_image_references(shot, prev_last_frame, prev_shot, [])
 
     @staticmethod
     def _has_removable_identity_refs(
-        image_urls: list[str], role: Optional[str]
+        image_urls: list[str], role: Optional[str], *, has_state_reference: bool = False
     ) -> bool:
-        """Only reference_image carries identity assets that can be dropped."""
-        return bool(image_urls) and role == "reference_image"
+        """参考模式不等于身份职责；第一张状态图不能被当作可移除身份图。"""
+        return role == 'reference_image' and len(image_urls) > int(has_state_reference)
 
     @staticmethod
     def _is_privacy_failure(result: Mapping[str, object]) -> bool:
@@ -1864,11 +1846,12 @@ class VideoGenerator:
         image_urls: list[str],
         role: Optional[str],
     ) -> bool:
-        if not prev_last_frame or not image_urls or image_urls[0] != prev_last_frame:
+        if not prev_last_frame or not image_urls or role not in {'first_frame', 'reference_image'}:
             return False
-        if role == "first_frame":
+        if image_urls[0] == prev_last_frame:
             return True
-        return role == "reference_image"
+        from pipeline.reference_view import matches_view
+        return matches_view(shot, prev_last_frame, image_urls[0])
 
     def _inject_character_description(
         self, prompt: str, shot: dict, storyboard: dict
@@ -1980,8 +1963,13 @@ class VideoGenerator:
         *,
         reference_count: int = 1,
         has_state_reference: bool = False,
+        spatial_reference: bool | str = False,
     ) -> str:
         """Assign one non-overlapping responsibility to every reference image."""
+        if spatial_reference:
+            from pipeline.spatial_guidance import reference_clauses
+            return '[' + '; '.join(reference_clauses(reference_count, role, has_state_reference,
+                observed_layout=spatial_reference == 'observed-layout-v1')) + '] ' + prompt
         if role != "reference_image":
             return prompt
         if has_state_reference:
@@ -2031,12 +2019,19 @@ class VideoGenerator:
             self.output_dir / "shots" / f"shot_{shot_id:03d}_lastframe.jpg"
         )
         from pipeline.media_selection import resolve_media_window
-        window = resolve_media_window(shot, video_path)
-        duration = window['duration'] if window else get_video_duration(video_path)
-        return extract_frame(
-            video_path, output_path,
+        presented = resolve_presentation(video_path, shot, self.output_dir)
+        box = source_box(video_path, shot, self.output_dir)
+        window = resolve_media_window(shot, presented)
+        duration = window['duration'] if window else get_video_duration(presented)
+        extracted = extract_frame(
+            presented, output_path,
             timestamp=window['last_sample_seconds'] if window else max(0.0, duration - 0.1)
         )
+        bind_derivation(extracted, video_path,
+                        kind='selected_state' if window or box else 'official_tail',
+                        timestamp=window['last_sample_seconds'] if window else max(0., duration - .1), box=box,
+                        selected_end_seconds=window['end_seconds'] if window else None)
+        return extracted
 
     @staticmethod
     def _file_sha256(path: Path) -> str:
@@ -2101,7 +2096,7 @@ class VideoGenerator:
         rejected = self.output_dir / "shots" / (
             f"shot_{shot_id:03d}_rejected_{take_number}.mp4"
         )
-        source.replace(rejected)
+        move_original(source, rejected)
         provenance = self._generation_provenance_path(
             shot_id, video_path=str(source)
         )
@@ -2165,12 +2160,9 @@ class VideoGenerator:
         image_urls: list[str],
         image_role: Optional[str],
     ) -> ShotResult:
-        self._register_identity_crops(
-            shot_id=shot["shot_id"],
-            video_path=str(rejected_path),
-            crop_boxes=review.identity_crop_boxes,
-            shot=shot,
-        )
+        from pipeline.review_policy import decide_review
+        if not decide_review(review, self.review_mode or 'strict').allowed:
+            raise ValueError('当前模式不允许复用该审查结果')
         canonical_path = (
             self.output_dir / "shots" / f"shot_{shot['shot_id']:03d}.mp4"
         )
@@ -2178,12 +2170,16 @@ class VideoGenerator:
             shot["shot_id"], video_path=str(rejected_path)
         )
         provenance = self._read_generation_provenance(str(rejected_path))
-        rejected_path.replace(canonical_path)
+        move_original(rejected_path, canonical_path)
         if rejected_provenance.is_file():
             rejected_provenance.replace(
                 self._generation_provenance_path(shot["shot_id"])
             )
         result.local_path = str(canonical_path)
+        self._register_identity_crops(
+            shot_id=shot['shot_id'], video_path=str(canonical_path),
+            crop_boxes=review.identity_crop_boxes, shot=shot,
+        )
         result.last_frame_url = self._extract_local_tail_frame(
             shot["shot_id"], str(canonical_path), shot
         )
@@ -2191,19 +2187,7 @@ class VideoGenerator:
         result.provider_task_id = (
             str(provider_task_id) if provider_task_id else None
         )
-        result.semantic_accepted = True
-        result.observed_end_state = review.observed_end_state
-        result.accepted_contract_version = ACTION_CONTRACT_VERSION
-        result.accepted_contract_fingerprint = self._compiled_contract_fingerprint(shot)
-        result.semantic_evaluator_version = SEMANTIC_REVIEW_VERSION
-        result.acceptance_policy = "semantic_reviewed"
-        self._write_acceptance_context(
-            shot["shot_id"],
-            str(canonical_path),
-            shot,
-            image_urls,
-            image_role,
-        )
+        self._admit_review(result, review, shot, str(canonical_path), image_urls, image_role)
         result.status = "success"
         self._notify_progress(result)
         print("     ♻️ 使用当前验收器复核通过本地 take，不重新调用视频生成")
@@ -2237,7 +2221,8 @@ class VideoGenerator:
             )
             self._notify_progress(result)
             return result
-        if not review.accepted:
+        from pipeline.review_policy import decide_review
+        if not decide_review(review, self.review_mode or 'strict').allowed:
             result.status = "failed"
             result.errors.append(
                 "按当前验收器复核仍不通过，语义重拍预算已达到上限: "
@@ -2293,10 +2278,11 @@ class VideoGenerator:
         )
         try:
             from pipeline.media_selection import resolve_media_window
-            window = resolve_media_window(shot, video_path)
-            duration = window['duration'] if window else get_video_duration(video_path)
+            presented = resolve_presentation(video_path, shot, self.output_dir)
+            window = resolve_media_window(shot, presented)
+            duration = window['duration'] if window else get_video_duration(presented)
             extract_frame(
-                video_path,
+                presented,
                 str(midpoint_path),
                 timestamp=window['midpoint_seconds'] if window else duration * 0.5,
             )
@@ -2330,6 +2316,9 @@ class VideoGenerator:
                     continue
                 self.character_refs[name] = str(ref_path)
                 self.character_ref_hashes[digest] = name
+                bind_derivation(str(ref_path), video_path, kind='identity',
+                    timestamp=window['midpoint_seconds'] if window else duration * .5,
+                    character=name, box=source_box(video_path, shot, self.output_dir, [x1, y1, x2, y2]))
                 print(f"     📸 已注册验收裁剪身份参考: {name} → {ref_path}")
         finally:
             midpoint_path.unlink(missing_ok=True)
@@ -2353,16 +2342,7 @@ class VideoGenerator:
         observed = previous_shot.get("observed_end_state")
         if not isinstance(observed, dict) or not any(observed.values()):
             return
-        planned = shot.get("start_state", {})
-        planned = planned if isinstance(planned, dict) else {}
-        shot["start_state"] = {
-            key: str(observed.get(key) or planned.get(key, ""))
-            for key in (
-                "location", "subject", "action_phase", "camera",
-                "screen_direction", "pose_and_gaze", "prop_state", "open_motion",
-                "lighting",
-            )
-        }
+        shot['start_state'] = observed_start_state(shot, observed)
 
     async def _extract_character_ref(
         self, shot: dict, video_path: str, storyboard: dict
@@ -2395,9 +2375,10 @@ class VideoGenerator:
 
         # Legacy fallback used only when semantic review is disabled.
         from pipeline.media_selection import resolve_media_window
-        window = resolve_media_window(shot, video_path)
-        midpoint = window['midpoint_seconds'] if window else get_video_duration(video_path) * 0.5
-        extract_frame(video_path, ref_path, timestamp=midpoint)
+        presented = resolve_presentation(video_path, shot, self.output_dir)
+        window = resolve_media_window(shot, presented)
+        midpoint = window['midpoint_seconds'] if window else get_video_duration(presented) * 0.5
+        extract_frame(presented, ref_path, timestamp=midpoint)
         digest = hashlib.sha256(Path(ref_path).read_bytes()).hexdigest()
         existing = self.character_ref_hashes.get(digest)
         if existing and existing != char_name:
@@ -2408,6 +2389,8 @@ class VideoGenerator:
             return
         self.character_refs[char_name] = ref_path
         self.character_ref_hashes[digest] = char_name
+        bind_derivation(ref_path, video_path, kind='identity', timestamp=midpoint,
+                        character=char_name, box=source_box(video_path, shot, self.output_dir))
         print(f"     📸 角色参考帧已提取: {char_name} → {ref_path}")
 
     @staticmethod

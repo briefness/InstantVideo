@@ -58,6 +58,8 @@ async def test_formal_flow_exports_only_when_observed_film_rhythm_passes(tmp_pat
                 video = self.directory / f'raw_{i}.mp4'
                 # Different source durations make independently generated media bytes.
                 clip(video, 5.1 + i / 24)
+                from pipeline.presentation_media import ensure_presentation
+                assert ensure_presentation(str(video), shot, None, self.directory) == str(video)
                 media.append(video)
                 response = outcome_response()
                 contract = compile_action_contract(shot)

@@ -192,12 +192,14 @@ async def test_real_authoring_stops_at_first_invalid_boundary_without_retry(tmp_
     ('Door', 'pushes the door open', 'open with the passage clear'),
     ('Panel', 'presses the panel switch', 'switch depressed and indicator lit'),
 ])
+@pytest.mark.parametrize('response_kind', ['impact', 'state_change'])
 async def test_formal_object_flow_sdk_review_continuation_export_and_resume(
-        production_services, monkeypatch, target, action, state):
+        production_services, monkeypatch, target, action, state, response_kind):
     from types import SimpleNamespace
     import config
     from pipeline.orchestrator import VideoPipeline
     from tools.seedance_api import SeedanceAPI
+    from test_full_production_flow import original_task_response
     import subprocess
     _, services = production_services
     raw = object_story(target, action, state)
@@ -206,6 +208,7 @@ async def test_formal_object_flow_sdk_review_continuation_export_and_resume(
         for unit in shot['action_plan']:
             if unit['kind'] == 'interaction':
                 unit['weight'] = 3.
+                unit['response'] = response_kind
     services.author = Responses({**intent_reply(brief), 'choreography': 'flexible',
         'requested_duration_seconds': 15, 'duration_evidence': '15秒',
         'requested_shot_count': 3, 'shot_count_evidence': '三段'}, raw)
@@ -218,7 +221,14 @@ async def test_formal_object_flow_sdk_review_continuation_export_and_resume(
             # Two character identities plus one visible object, independently
             # labelled; the object does not acquire a third face crop.
             value['required_entities_visible'] = [True, True, True]
-            value['observed_end_state']['prop_state'] = f'{target}: {state}'
+            if 'terminal_observation' in value:
+                value['terminal_observation']['prop_state'] = f'{target}: {state}'
+            elif 'observations' in value:
+                key = 'beat:2/completion'
+                value['observations'][key]['observation'] = f'{target}: {state}'
+                value['end_state_sources']['prop_state'] = [key]
+            else:
+                value['observed_end_state']['prop_state'] = f'{target}: {state}'
         elif 'observed_state' in json.loads(content):
             value['entry_action'] = f'continues the movement beside {target}'
             if 'entry_visible_result' in value:
@@ -231,8 +241,7 @@ async def test_formal_object_flow_sdk_review_continuation_export_and_resume(
         return SimpleNamespace(id=f'offline-{len(services.submissions)}')
     api = object.__new__(SeedanceAPI)
     api.ark_client = SimpleNamespace(content_generation=SimpleNamespace(tasks=SimpleNamespace(
-        create=create_task, get=lambda **kw: SimpleNamespace(status='succeeded',
-            content=SimpleNamespace(video_url=kw['task_id'])))))
+        create=create_task, get=lambda **kw: original_task_response(kw['task_id']))))
     api.download_video = services.download_video
     monkeypatch.setattr('pipeline.generator.SeedanceAPI', lambda: api)
     pipeline = VideoPipeline(resolution='720p', platforms=['youtube'], paid_take_budget=3, take_policy='single_pass')
@@ -246,8 +255,12 @@ async def test_formal_object_flow_sdk_review_continuation_export_and_resume(
         assert request['model'] == config.SEEDANCE_MODEL
         text = request['content'][0]['text']
         assert target in text and action in text and state in text
+        if response_kind == 'state_change':
+            from pipeline.action_vocabulary import STATE_CHANGE_EXECUTION
+            assert STATE_CHANGE_EXECUTION in text
     for contract in services.reviews:
         assert all(e['target'] == target for e in contract['action_events'])
+        assert all(e['response_kind'] == response_kind for e in contract['action_events'])
     for entry in services.entries:
         assert target in entry['planned_shot']['required_visible_entities']
         assert target not in entry['planned_shot']['characters']

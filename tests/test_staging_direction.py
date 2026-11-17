@@ -8,6 +8,7 @@ import pytest
 
 from pipeline.action_authoring import compile_authored_storyboard
 from pipeline.provider_prompt import compile_normal_provider_prompt, compile_policy_safe_prompt
+from pipeline.generation_instructions import shooting_projection, shooting_instruction_parts
 from pipeline.storyboard import _compile_storyboard_contract
 from pipeline.semantic_review import _review_contract
 from test_creation_schedule_flow import SCENARIOS, scenario_story
@@ -167,13 +168,17 @@ def test_blocking_target_wire_and_local_binding_share_registered_entities(target
 @pytest.mark.asyncio
 async def test_invalid_staging_stops_formal_authoring_before_next_slot(scheduled_services):
     from pipeline.orchestrator import VideoPipeline
+    from pipeline.authoring_contract import AuthoringContractError
     brief, services = scheduled_services('货物交接')
     responses = list(services.author.values)
     responses[2]['shot']['blocking']['Lead']['action_target'] = 'describes a motion, not an entity'
+    before = deepcopy(responses)
     services.author.values = iter(responses)
     run = VideoPipeline(plan_only=True, paid_take_budget=0, take_policy='single_pass')
-    with pytest.raises(ValueError, match='未注册'):
+    with pytest.raises(AuthoringContractError) as caught:
         await run.run(brief)
+    assert caught.value.issues == [{'path': '/shot/blocking/Lead/action_target', 'constraint': 'enum'}]
+    assert responses == before
     assert len(services.author.calls) == 3  # intent, identity, first shot; no second shot/retry
     assert not services.planning and not services.submissions and not services.reviews
     assert not run.run_workspace.manifest.paid_take_budget.reservations
@@ -224,7 +229,7 @@ async def test_saved_preview_reaches_resumed_submission_and_export_without_repla
     preview_path = run.workspace / 'generation_preview.json'
     preview_bytes = preview_path.read_bytes()
     preview = json.loads(preview_bytes)
-    frozen = json.loads((run.workspace / 'storyboard.json').read_text())
+    frozen = json.loads((run.workspace / 'result_admission.json').read_text())['execution_storyboard']
     author_calls, planning_calls = len(services.author.calls), len(services.planning)
     assert author_calls == 5 and planning_calls == 1
 
@@ -238,11 +243,14 @@ async def test_saved_preview_reaches_resumed_submission_and_export_without_repla
     assert preview_path.read_bytes() == preview_bytes
     for shot, row, submitted in zip(frozen['shots'], preview['shots'], services.submissions):
         direction = staging_projection(shot)
-        assert direction['instruction'] in row['profiles']['normal']['prompt']
+        assert row['execution_projection'] == shooting_projection(shot, frozen)
+        assert all(part in row['profiles']['normal']['prompt']
+                   for part in shooting_instruction_parts(row['execution_projection']))
         entry_path = run.workspace / 'continuations' / f'shot_{shot["shot_id"]:03d}.json'
         execution = json.loads(entry_path.read_text())['execution_shot'] if entry_path.exists() else shot
         runtime_direction = staging_projection(execution)
-        assert runtime_direction['instruction'] in submitted['prompt']
+        assert all(part in submitted['prompt']
+                   for part in shooting_instruction_parts(shooting_projection(execution, frozen)))
         pacing = f'Allocate about {row["allocated_interaction_seconds"]:g}s of this {shot["duration"]:g}s shot'
         assert pacing in row['profiles']['normal']['prompt'] and pacing in submitted['prompt']
         assert submitted['model'] == preview['model'] == config.SEEDANCE_MODEL

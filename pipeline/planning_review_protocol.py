@@ -6,12 +6,19 @@ counts source claims, or repeats their prose to identify them.
 from copy import deepcopy
 
 from pipeline.result_admission import review_claims
+from pipeline.goal_allocation import VERSION as ALLOCATION_VERSION
+from pipeline.goal_allocation import LEGACY_VERSION as LEGACY_ALLOCATION_VERSION
+from pipeline.goal_allocation import SCOPED_VERSION as SCOPED_ALLOCATION_VERSION
+from pipeline.planning_evidence import MAX_REVIEW_UNITS
 
 
 LEGACY_VERSION = 'planning-semantics-v6-bound-targets'
 CITATION_VERSION = 'planning-semantics-v7-bound-citations'
-VERSION = 'planning-semantics-v8-evidence-sources'
-SUPPORTED_VERSIONS = (LEGACY_VERSION, CITATION_VERSION, VERSION)
+SOURCE_VERSION = 'planning-semantics-v8-evidence-sources'
+VERSION = 'planning-semantics-v9-completion-intent'
+GOAL_VERSION = 'planning-semantics-v10-source-goals'
+SUPPORTED_VERSIONS = (LEGACY_VERSION, CITATION_VERSION, SOURCE_VERSION, VERSION, GOAL_VERSION,
+                      LEGACY_ALLOCATION_VERSION, SCOPED_ALLOCATION_VERSION, ALLOCATION_VERSION)
 TARGET_INSTRUCTION = '''输出units是对象，不是列表。逐项填写review_targets中的固定键，不返回shot_id或beat_index。
 有candidate_results的项目必须给result_admission；其中decisions也是对象，键与candidate_results完全一致。
 程序已绑定项目与原稿；不要重抄陈述作为键，不返回source，不新增或合并项目。只给出分类、证据及判断。
@@ -69,7 +76,7 @@ def _decode_sourced_decision(judgment: dict, sources: dict, key: str) -> dict:
             'minimal': composition == 'single_category', 'reason': reason}
 
 
-def review_targets(storyboard: dict) -> dict:
+def review_targets(storyboard: dict, *, admit_intents: bool = False) -> dict:
     targets = {}
     for shot in storyboard['shots']:
         for index, beat in enumerate(shot['action_beats']):
@@ -79,7 +86,9 @@ def review_targets(storyboard: dict) -> dict:
             targets[key] = {'shot_id': shot['shot_id'], 'beat_index': index,
                             'outcome_contract_required': bool(beat.get('outcomes')),
                             'candidate_results': review_claims(shot, beat)}
-    if not 1 <= len(targets) <= 120:
+            if admit_intents:
+                targets[key]['completion_owners'] = [i + 1 for i in range(len(shot['action_beats'])) if i != index]
+    if not 1 <= len(targets) <= MAX_REVIEW_UNITS:
         raise ValueError('分镜审查项目数量超出单批范围')
     return targets
 
@@ -99,6 +108,12 @@ def compile_review_response_schema(base: dict, targets: dict, *, sources: dict |
         for field in ('shot_id', 'beat_index'):
             unit['properties'].pop(field)
             unit['required'].remove(field)
+        if 'completion_owners' in target:
+            from pipeline.completion_intent import intent_schema
+            unit['properties']['completion_intent'] = intent_schema(evidence_sources, key, target['completion_owners'])
+            unit['required'].append('completion_intent')
+        else:
+            unit['properties'].pop('completion_intent', None)
         if target['outcome_contract_required']:
             unit['properties']['outcome_contract_valid'] = {'type': 'boolean'}
             unit['required'].append('outcome_contract_valid')
@@ -154,6 +169,11 @@ def decode_review_response(raw: dict, targets: dict, *, sources: dict | None = N
         if not isinstance(source, dict) or {'shot_id', 'beat_index'} & set(source):
             raise ValueError('分镜审查项目必须仅含判断，编号由程序绑定')
         unit = deepcopy(source)
+        if 'completion_owners' in target:
+            from pipeline.completion_intent import validate_intent
+            unit['completion_intent'] = validate_intent(unit.get('completion_intent'), evidence_sources, key)
+        elif unit.get('completion_intent') is not None:
+            raise ValueError('历史审查不能自行增加功能审定')
         if target['outcome_contract_required']:
             if type(unit.get('outcome_contract_valid')) is not bool:
                 raise ValueError(f'分镜审查项目 {key} 缺少结果合同判断')

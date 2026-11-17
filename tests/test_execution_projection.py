@@ -46,10 +46,15 @@ def test_allocation_is_visible_to_both_generators_without_creating_review_quotas
     assert planned_interaction_seconds(allocated['shots']) >= 10.5 - 1e-6
     for before, shot in zip(baseline['shots'], allocated['shots']):
         target = planned_interaction_seconds([shot])
-        for prompt in prompts(shot):
+        for index, prompt in enumerate(prompts(shot)):
             assert f'Allocate about {target:g}s of this {shot["duration"]:g}s shot' in prompt
             assert 'Show at least 0s' not in prompt
-            assert 'not fixed timestamps or a separate per-shot acceptance minimum' in prompt
+            if index == 0:
+                assert 'Preserve the following event dependencies at the requested performer tempo' in prompt
+                assert 'time windows guide pacing' not in prompt
+                assert 'separate per-shot acceptance minimum' not in prompt
+            else:
+                assert 'not fixed timestamps or a separate per-shot acceptance minimum' in prompt
         assert shot['production_slot']['min_interaction_seconds'] == 0
         assert _review_contract(shot) == _review_contract(before)
         assert 'Allocate about' not in compile_action_contract(shot).event_review_instruction()
@@ -169,14 +174,16 @@ def test_all_registered_camera_moves_survive_wire_lowering_and_execution():
 
 def test_invalid_camera_stops_formal_creation_before_next_shot_without_retry(monkeypatch):
     from pipeline.storyboard import generate_storyboard
+    from pipeline.authoring_contract import AuthoringContractError
     from test_director_intent import Responses
     brief, intent, raw, _ = scenario_story('货物交接')
     raw['shots'][1]['camera']['primary_movement'] = 'tracking right'
     before = deepcopy(raw)
     client = Responses(intent, raw)
     monkeypatch.setattr('pipeline.storyboard.OpenAI', lambda **_: client)
-    with pytest.raises(ValueError, match='运镜无法执行'):
+    with pytest.raises(AuthoringContractError) as caught:
         generate_storyboard(brief, target_duration=15)
+    assert caught.value.issues == [{'path': '/shot/camera/primary_movement', 'constraint': 'enum'}]
     assert len(client.calls) == 4  # intent, identity, first shot, second shot
     assert raw == before
 

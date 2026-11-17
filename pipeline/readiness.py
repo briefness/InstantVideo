@@ -21,7 +21,7 @@ from pipeline.participants import (
     visible_character_names,
 )
 from pipeline.production_plan import production_plan_issues
-from pipeline.provider_capabilities import capability_contract_issues
+from pipeline.provider_capabilities import execution_request_issues
 from pipeline.visual_invariants import compile_visual_invariants
 
 
@@ -56,8 +56,9 @@ def storyboard_readiness_issues(storyboard: dict) -> list[str]:
         duration = shot.get("duration")
         if not prompt:
             issues.append(f"Shot {shot_id}: prompt_en 为空")
-        if isinstance(duration, bool) or not isinstance(duration, int) or not 4 <= duration <= 15:
-            issues.append(f"Shot {shot_id}: duration 必须是 4-15 秒整数")
+        issues.extend(f'Shot {shot_id}: {issue}' for issue in execution_request_issues(
+            resolution=storyboard.get('resolution', config.DEFAULT_RESOLUTION),
+            ratio=storyboard.get('aspect_ratio', config.DEFAULT_RATIO), duration=duration))
 
         issues.extend(structured_entity_reference_issues(
             shot,
@@ -182,10 +183,11 @@ def provider_submission_issues(
     issues: list[str] = []
     if shot.get('result_admission') == 'review-required-v1':
         issues.append(f'Shot {shot_id}: 结果候选尚未完成必要性审查，不能提交视频任务')
-    issues.extend(
-        f"Provider capability contract 不完整: {issue}"
-        for issue in capability_contract_issues()
-    )
+    issues.extend(f'Shot {shot_id}: {issue}' for issue in execution_request_issues(
+        model=model, resolution=resolution, ratio=storyboard.get('aspect_ratio', config.DEFAULT_RATIO),
+        duration=duration, requested_resolution=storyboard.get('resolution', config.DEFAULT_RESOLUTION)))
+    if 'duration' in shot and (type(shot['duration']) is not int or duration != shot['duration']):
+        issues.append(f'Shot {shot_id}: 提交时长与计划时长不一致；不能静默截短或延长')
     normalized_prompt = " ".join(str(prompt or "").split())
     if not normalized_prompt:
         issues.append(f"Shot {shot_id}: 最终 provider prompt 为空")
@@ -193,54 +195,20 @@ def provider_submission_issues(
     if prompt_profile not in {"normal", "policy_safe"}:
         issues.append(f"Shot {shot_id}: 未知 prompt profile: {prompt_profile}")
 
-    aspect_ratio = str(storyboard.get("aspect_ratio", config.DEFAULT_RATIO))
-    if aspect_ratio not in config.SUPPORTED_ASPECT_RATIOS:
-        issues.append(f"Shot {shot_id}: provider 不支持画幅 {aspect_ratio}")
-    if resolution not in config.SUPPORTED_RESOLUTIONS:
-        issues.append(f"Shot {shot_id}: provider 不支持分辨率 {resolution}")
-    if (
-        isinstance(duration, bool)
-        or not isinstance(duration, int)
-        or not config.MIN_SHOT_DURATION <= duration <= config.MAX_SHOT_DURATION
-    ):
-        issues.append(
-            f"Shot {shot_id}: provider 时长必须是 "
-            f"{config.MIN_SHOT_DURATION}-{config.MAX_SHOT_DURATION} 秒整数"
-        )
-
-    requested_resolution = str(
-        storyboard.get("resolution", config.DEFAULT_RESOLUTION)
-    )
-    chain = config.GENERATION_CHAINS.get(requested_resolution)
-    matching_profiles = [
-        profile
-        for profile in chain or []
-        if profile.get("model") == model
-        and profile.get("resolution") == resolution
-    ]
-    if not matching_profiles:
-        issues.append(
-            f"Shot {shot_id}: model={model}、resolution={resolution} "
-            f"不属于请求分辨率 {requested_resolution} 的 generation chain"
-        )
-    elif isinstance(duration, int) and not isinstance(duration, bool):
-        max_duration = min(
-            int(profile.get("max_duration", 0)) for profile in matching_profiles
-        )
-        if duration > max_duration:
-            issues.append(
-                f"Shot {shot_id}: duration={duration} 超出当前 generation profile "
-                f"上限 {max_duration}"
-            )
-
     phase = str(interaction_geometry(shot).get("effect_phase", "")).strip()
     if normalized_prompt and prompt_profile == "normal" and phase in {
         "none", "setup", "active", "aftermath",
     }:
-        contract = compile_action_contract(shot)
+        from pipeline.generation_instructions import VERSIONS, shooting_projection, shooting_instruction_parts
+        # 新执行版本检查实际生成投影；审查文字不再兼任视频接口的序列化契约。
+        # 历史版本仍按原投影核对，任何动作、空间上下文或要求丢失都拒绝提交。
+        if shot.get('generation_execution') in VERSIONS:
+            required_parts = shooting_instruction_parts(shooting_projection(shot, storyboard))
+        else:
+            required_parts = compile_action_contract(shot).prompt_parts
         missing_parts = [
             part
-            for part in contract.prompt_parts
+            for part in required_parts
             if " ".join(str(part).split()) not in normalized_prompt
         ]
         if missing_parts:

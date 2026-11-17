@@ -103,14 +103,14 @@ def test_batch_sources_use_only_forward_external_context():
 
 
 def test_real_sdk_request_binds_citations_and_keeps_semantic_rejection(tmp_path, monkeypatch):
-    from planning_protocol_cases import annotated_outcome, sourced_wire
+    from planning_protocol_cases import annotated_outcome, sourced_wire, strict_intent_wire
     story = recorded()['storyboard.json']['value']
     wire = synthetic_wire(story)
     wire.update(requested_outcome_valid=False,
         reason='Offline negative annotation: incapacitation does not establish the requested death.')
     wire['units']['2:3']['result_admission']['decisions']['outcomes/1'].update(
         basis='continuity', evidence='/shots/2/start_state/prop_state')
-    wire = sourced_wire(annotated_outcome(wire, story), story)
+    wire = strict_intent_wire(sourced_wire(annotated_outcome(wire, story), story), story)
     sdk, calls = sdk_reviewer(monkeypatch, wire)
     with sdk:
         for _ in range(2):
